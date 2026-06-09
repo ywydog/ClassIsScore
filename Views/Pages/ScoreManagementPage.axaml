@@ -205,7 +205,7 @@
                                    FontSize="13" />
                         <TextBox Grid.Column="3"
                                  Text="{Binding Reason}"
-                                 Watermark="可选" />
+                                 Watermark="请输入原因" />
                         <Button Grid.Column="4"
                                 Content="加分"
                                 Command="{Binding AddScoreCommand}"
@@ -293,6 +293,145 @@
                 </StackPanel>
             </Border>
 
+            <!-- 导入配置面板（选择列映射） -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource AccentControlElevationBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    IsVisible="{Binding IsImportConfigVisible}">
+                <DockPanel>
+                    <!-- 标题和操作按钮 -->
+                    <Border DockPanel.Dock="Top"
+                            Padding="0,0,0,12"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="导入配置"
+                                           FontSize="16"
+                                           FontWeight="SemiBold" />
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="共 {0} 行数据，{1} 列">
+                                            <Binding Path="ImportColumnMapping.TotalRows" />
+                                            <Binding Path="ImportColumnMapping.ColumnHeaders.Count" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Content="预览导入"
+                                    Command="{Binding ApplyImportMappingCommand}"
+                                    Background="{DynamicResource AccentButtonBackground}"
+                                    Foreground="{DynamicResource AccentButtonForeground}"
+                                    Padding="16,6"
+                                    Margin="0,0,8,0" />
+                            <Button Grid.Column="2"
+                                    Content="取消"
+                                    Command="{Binding CancelImportCommand}"
+                                    Padding="16,6" />
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer DockPanel.Dock="Bottom">
+                        <StackPanel Spacing="12" Margin="0,8,0,0">
+                            <!-- 列映射选择 -->
+                            <TextBlock Text="列映射配置"
+                                       FontSize="14"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="请选择表格中各列对应的字段（姓名列和积分列为必选）"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                            <Grid ColumnDefinitions="Auto,200,Auto,200,Auto,200,Auto,200"
+                                  Margin="0,4,0,0">
+                                <TextBlock Text="姓名列："
+                                           VerticalAlignment="Center"
+                                           FontSize="13" />
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{Binding ImportColumnMapping.ColumnHeaders}"
+                                          SelectedIndex="{Binding ImportColumnMapping.NameColumnIndex}"
+                                          MinWidth="160" />
+                                <TextBlock Grid.Column="2"
+                                           Text="  学号列："
+                                           VerticalAlignment="Center"
+                                           FontSize="13" />
+                                <ComboBox Grid.Column="3"
+                                          ItemsSource="{Binding ImportColumnMapping.ColumnHeaders}"
+                                          SelectedIndex="{Binding ImportColumnMapping.NumberColumnIndex}"
+                                          MinWidth="160" />
+                                <TextBlock Grid.Column="4"
+                                           Text="  积分列："
+                                           VerticalAlignment="Center"
+                                           FontSize="13" />
+                                <ComboBox Grid.Column="5"
+                                          ItemsSource="{Binding ImportColumnMapping.ColumnHeaders}"
+                                          SelectedIndex="{Binding ImportColumnMapping.ScoreColumnIndex}"
+                                          MinWidth="160" />
+                                <TextBlock Grid.Column="6"
+                                           Text="  原因列："
+                                           VerticalAlignment="Center"
+                                           FontSize="13" />
+                                <ComboBox Grid.Column="7"
+                                          ItemsSource="{Binding ImportColumnMapping.ColumnHeaders}"
+                                          SelectedIndex="{Binding ImportColumnMapping.ReasonColumnIndex}"
+                                          MinWidth="160" />
+                            </Grid>
+
+                            <!-- 行范围选择 -->
+                            <TextBlock Text="数据行范围"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Margin="0,8,0,0" />
+                            <Grid ColumnDefinitions="Auto,80,Auto,80,Auto"
+                                  Margin="0,4,0,0">
+                                <TextBlock Text="起始行："
+                                           VerticalAlignment="Center"
+                                           FontSize="13" />
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding ImportColumnMapping.DataStartRow}"
+                                               Minimum="1"
+                                               Maximum="9999"
+                                               MinWidth="80" />
+                                <TextBlock Grid.Column="2"
+                                           Text="  结束行："
+                                           VerticalAlignment="Center"
+                                           FontSize="13" />
+                                <NumericUpDown Grid.Column="3"
+                                               Value="{Binding ImportColumnMapping.DataEndRow}"
+                                               Minimum="0"
+                                               Maximum="9999"
+                                               MinWidth="80" />
+                                <TextBlock Grid.Column="4"
+                                           Text="  (0=到末尾)"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+
+                            <!-- 数据预览 -->
+                            <TextBlock Text="数据预览（前5行）"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Margin="0,8,0,0" />
+                            <DataGrid ItemsSource="{Binding ImportColumnMapping.PreviewRows}"
+                                      IsReadOnly="True"
+                                      AutoGenerateColumns="False"
+                                      MaxHeight="200">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="#" Binding="{Binding [0]}" Width="80" />
+                                    <DataGridTextColumn Header="" Binding="{Binding [1]}" Width="80" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
             <!-- 导入预览面板 -->
             <Border Grid.Row="2"
                     Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
@@ -307,7 +446,7 @@
                             Padding="0,0,0,12"
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                             BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="*,Auto,Auto">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <TextBlock Text="导入预览"
                                            FontSize="16"
@@ -325,13 +464,18 @@
                                 </TextBlock>
                             </StackPanel>
                             <Button Grid.Column="1"
+                                    Content="返回配置"
+                                    Command="{Binding BackToImportConfigCommand}"
+                                    Padding="16,6"
+                                    Margin="0,0,8,0" />
+                            <Button Grid.Column="2"
                                     Content="确认导入"
                                     Command="{Binding ConfirmImportCommand}"
                                     Background="{DynamicResource AccentButtonBackground}"
                                     Foreground="{DynamicResource AccentButtonForeground}"
                                     Padding="16,6"
                                     Margin="0,0,8,0" />
-                            <Button Grid.Column="2"
+                            <Button Grid.Column="3"
                                     Content="取消"
                                     Command="{Binding CancelImportCommand}"
                                     Padding="16,6" />
@@ -379,7 +523,7 @@
                       CanUserResizeColumns="True"
                       CanUserSortColumns="True"
                       Margin="8,4"
-                      IsVisible="{Binding !IsImportPreviewVisible}">
+                      IsVisible="{Binding IsHistoryVisible}">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="120" />
                     <DataGridTextColumn Header="学生" Binding="{Binding StudentName}" Width="80" />

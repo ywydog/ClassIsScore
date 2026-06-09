@@ -117,6 +117,27 @@ public partial class ScoreManagementViewModel : ObservableObject
     private ImportScoreResult? _importPreviewResult;
 
     /// <summary>
+    /// 导入列映射配置
+    /// </summary>
+    [ObservableProperty]
+    private ImportColumnMapping? _importColumnMapping;
+
+    /// <summary>
+    /// 是否显示导入配置面板（选择列映射）
+    /// </summary>
+    [ObservableProperty]
+    private bool _isImportConfigVisible;
+
+    /// <summary>
+    /// 是否显示历史记录（导入面板不可见时显示）
+    /// </summary>
+    public bool IsHistoryVisible => !IsImportPreviewVisible && !IsImportConfigVisible;
+
+    partial void OnIsImportPreviewVisibleChanged(bool value) => OnPropertyChanged(nameof(IsHistoryVisible));
+
+    partial void OnIsImportConfigVisibleChanged(bool value) => OnPropertyChanged(nameof(IsHistoryVisible));
+
+    /// <summary>
     /// 导入文件路径请求事件，由 View 层处理文件选择对话框
     /// </summary>
     public event Func<Task<string?>>? ImportFileRequested;
@@ -264,12 +285,17 @@ public partial class ScoreManagementViewModel : ObservableObject
                 return;
             }
 
-            try
-            {
-                var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "加分";
-                var ids = SelectedStudents.Select(s => s.Id).ToList();
-                await _scoreService.AddScoreToMultipleStudentsAsync(ids, ScoreChange, reason);
-                StatusMessage = $"已为 {SelectedStudents.Count} 名学生加 {ScoreChange} 分";
+            if (string.IsNullOrWhiteSpace(Reason))
+                {
+                    StatusMessage = "请输入原因";
+                    return;
+                }
+
+                try
+                {
+                    var ids = SelectedStudents.Select(s => s.Id).ToList();
+                    await _scoreService.AddScoreToMultipleStudentsAsync(ids, ScoreChange, Reason);
+                    StatusMessage = $"已为 {SelectedStudents.Count} 名学生加 {ScoreChange} 分";
                 Reason = string.Empty;
                 await LoadHistoryAsync();
             }
@@ -293,10 +319,15 @@ public partial class ScoreManagementViewModel : ObservableObject
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(Reason))
+        {
+            StatusMessage = "请输入原因";
+            return;
+        }
+
         try
         {
-            var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "加分";
-            await _scoreService.AddScoreAsync(SelectedStudent.Id, ScoreChange, reason);
+            await _scoreService.AddScoreAsync(SelectedStudent.Id, ScoreChange, Reason);
             StatusMessage = $"已为 {SelectedStudent.Name} 加 {ScoreChange} 分";
             Reason = string.Empty;
             await LoadHistoryAsync();
@@ -328,11 +359,16 @@ public partial class ScoreManagementViewModel : ObservableObject
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(Reason))
+            {
+                StatusMessage = "请输入原因";
+                return;
+            }
+
             try
             {
-                var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "减分";
                 var ids = SelectedStudents.Select(s => s.Id).ToList();
-                await _scoreService.AddScoreToMultipleStudentsAsync(ids, -ScoreChange, reason);
+                await _scoreService.AddScoreToMultipleStudentsAsync(ids, -ScoreChange, Reason);
                 StatusMessage = $"已为 {SelectedStudents.Count} 名学生减 {ScoreChange} 分";
                 Reason = string.Empty;
                 await LoadHistoryAsync();
@@ -357,10 +393,15 @@ public partial class ScoreManagementViewModel : ObservableObject
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(Reason))
+        {
+            StatusMessage = "请输入原因";
+            return;
+        }
+
         try
         {
-            var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "减分";
-            await _scoreService.AddScoreAsync(SelectedStudent.Id, -ScoreChange, reason);
+            await _scoreService.AddScoreAsync(SelectedStudent.Id, -ScoreChange, Reason);
             StatusMessage = $"已为 {SelectedStudent.Name} 减 {ScoreChange} 分";
             Reason = string.Empty;
             await LoadHistoryAsync();
@@ -512,7 +553,7 @@ public partial class ScoreManagementViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 导入评价命令 - 选择文件并预览
+    /// 导入评价命令 - 选择文件并读取列信息
     /// </summary>
     [RelayCommand]
     private async Task ImportScoresAsync()
@@ -526,7 +567,50 @@ public partial class ScoreManagementViewModel : ObservableObject
             IsLoading = true;
             StatusMessage = "正在读取文件...";
 
-            var result = await _scoreService.PreviewImportScoresAsync(filePath);
+            var mapping = await _scoreService.ReadTableHeadersAsync(filePath);
+
+            if (mapping.ColumnHeaders.Count == 0)
+            {
+                StatusMessage = "无法读取文件列信息，请检查文件格式";
+                return;
+            }
+
+            ImportColumnMapping = mapping;
+            IsImportConfigVisible = true;
+            IsImportPreviewVisible = false;
+            StatusMessage = $"已读取 {mapping.TotalRows} 行数据，请配置列映射";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "读取导入文件失败");
+            StatusMessage = $"读取文件失败: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// 应用列映射配置并预览导入数据
+    /// </summary>
+    [RelayCommand]
+    private async Task ApplyImportMappingAsync()
+    {
+        if (ImportColumnMapping == null || string.IsNullOrEmpty(_lastImportFilePath)) return;
+
+        if (ImportColumnMapping.NameColumnIndex < 0 || ImportColumnMapping.ScoreColumnIndex < 0)
+        {
+            StatusMessage = "请至少选择姓名列和积分列";
+            return;
+        }
+
+        try
+        {
+            IsLoading = true;
+            StatusMessage = "正在预览导入数据...";
+
+            var result = await _scoreService.PreviewImportWithMappingAsync(_lastImportFilePath, ImportColumnMapping);
 
             ImportPreviewEntries.Clear();
             foreach (var entry in result.PreviewEntries)
@@ -535,19 +619,30 @@ public partial class ScoreManagementViewModel : ObservableObject
             }
 
             ImportPreviewResult = result;
+            IsImportConfigVisible = false;
             IsImportPreviewVisible = true;
 
             StatusMessage = $"预览: 共 {result.TotalCount} 条，匹配 {result.SuccessCount} 条，未匹配 {result.SkipCount} 条";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "导入评价失败");
-            StatusMessage = $"导入失败: {ex.Message}";
+            _logger.LogError(ex, "预览导入评价失败");
+            StatusMessage = $"预览失败: {ex.Message}";
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    /// <summary>
+    /// 返回导入配置（从预览返回）
+    /// </summary>
+    [RelayCommand]
+    private void BackToImportConfig()
+    {
+        IsImportPreviewVisible = false;
+        IsImportConfigVisible = true;
     }
 
     /// <summary>
@@ -585,14 +680,16 @@ public partial class ScoreManagementViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 取消导入预览
+    /// 取消导入
     /// </summary>
     [RelayCommand]
     private void CancelImport()
     {
         IsImportPreviewVisible = false;
+        IsImportConfigVisible = false;
         ImportPreviewEntries.Clear();
         ImportPreviewResult = null;
+        ImportColumnMapping = null;
         StatusMessage = "已取消导入";
     }
 

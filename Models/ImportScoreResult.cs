@@ -78,3 +78,54 @@ public class ImportScoreEntry
     /// </summary>
     public string MatchStatus => IsMatched ? "已匹配" : "未找到";
 }
+
+/// <summary>
+/// 导入列映射配置
+/// </summary>
+public class ImportColumnMapping
+{
+    /// <summary>
+    /// 表格中所有列的表头名称
+    /// </summary>
+    public List<string> ColumnHeaders { get; set; } = new();
+
+    /// <summary>
+    /// 姓名列索引（0开始），-1表示未选择
+    /// </summary>
+    public int NameColumnIndex { get; set; } = -1;
+
+    /// <summary>
+    /// 学号列索引（0开始），-1表示未选择
+    /// </summary>
+    public int NumberColumnIndex { get; set; } = -1;
+
+    /// <summary>
+    /// 积分列索引（0开始），-1表示未选择
+    /// </summary>
+    public int ScoreColumnIndex { get; set; } = -1;
+
+    /// <summary>
+    /// 原因列索引（0开始），-1表示未选择
+    /// </summary>
+    public int ReasonColumnIndex { get; set; } = -1;
+
+    /// <summary>
+    /// 数据起始行（1开始），默认2（第1行为表头）
+    /// </summary>
+    public int DataStartRow { get; set; } = 2;
+
+    /// <summary>
+    /// 数据结束行（1开始），0表示到最后一行
+    /// </summary>
+    public int DataEndRow { get; set; } = 0;
+
+    /// <summary>
+    /// 表格预览数据（前几行原始数据，用于展示给用户选择列）
+    /// </summary>
+    public List<List<string>> PreviewRows { get; set; } = new();
+
+    /// <summary>
+    /// 总行数
+    /// </summary>
+    public int TotalRows { get; set; }
+}

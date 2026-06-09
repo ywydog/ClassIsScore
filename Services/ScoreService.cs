@@ -383,13 +383,82 @@ public class ScoreService : IScoreService
     }
 
     /// <inheritdoc/>
-    public async Task<ImportScoreResult> PreviewImportScoresAsync(string filePath)
+    public async Task<ImportColumnMapping> ReadTableHeadersAsync(string filePath)
+    {
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        var mapping = new ImportColumnMapping();
+
+        try
+        {
+            if (extension == ".csv")
+            {
+                var lines = File.ReadAllLines(filePath);
+                if (lines.Length == 0) return mapping;
+
+                var header = ParseCsvLine(lines[0]);
+                mapping.ColumnHeaders = header.Select(h => h.Trim()).ToList();
+                mapping.TotalRows = lines.Length;
+
+                // 自动猜测列映射
+                mapping.NameColumnIndex = FindColumnIndex(header, "姓名", "学生", "名字", "Name");
+                mapping.NumberColumnIndex = FindColumnIndex(header, "学号", "编号", "StudentNumber");
+                mapping.ScoreColumnIndex = FindColumnIndex(header, "积分", "分数", "变动", "分值", "Score", "Change");
+                mapping.ReasonColumnIndex = FindColumnIndex(header, "原因", "理由", "备注", "说明", "Reason");
+
+                // 预览前5行数据
+                var previewCount = Math.Min(5, lines.Length - 1);
+                for (var i = 1; i <= previewCount; i++)
+                {
+                    var fields = ParseCsvLine(lines[i]);
+                    mapping.PreviewRows.Add(fields);
+                }
+            }
+            else if (extension == ".xlsx" || extension == ".xls")
+            {
+                using var workbook = new ClosedXML.Excel.XLWorkbook(filePath);
+                var worksheet = workbook.Worksheets.FirstOrDefault();
+                if (worksheet == null) return mapping;
+
+                var headerRow = worksheet.Row(1);
+                var usedCells = headerRow.CellsUsed().ToList();
+                mapping.ColumnHeaders = usedCells.Select(c => c.GetString().Trim()).ToList();
+                mapping.TotalRows = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+
+                // 自动猜测列映射
+                mapping.NameColumnIndex = FindExcelColumnIndex(headerRow, "姓名", "学生", "名字", "Name");
+                mapping.NumberColumnIndex = FindExcelColumnIndex(headerRow, "学号", "编号", "StudentNumber");
+                mapping.ScoreColumnIndex = FindExcelColumnIndex(headerRow, "积分", "分数", "变动", "分值", "Score", "Change");
+                mapping.ReasonColumnIndex = FindExcelColumnIndex(headerRow, "原因", "理由", "备注", "说明", "Reason");
+
+                // 预览前5行数据
+                var previewCount = Math.Min(5, mapping.TotalRows - 1);
+                for (var r = 2; r <= 1 + previewCount; r++)
+                {
+                    var row = new List<string>();
+                    foreach (var cell in usedCells)
+                    {
+                        row.Add(worksheet.Cell(r, cell.Address.ColumnNumber).GetString().Trim());
+                    }
+                    mapping.PreviewRows.Add(row);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "读取表格文件表头失败");
+        }
+
+        return mapping;
+    }
+
+    /// <inheritdoc/>
+    public async Task<ImportScoreResult> PreviewImportWithMappingAsync(string filePath, ImportColumnMapping mapping)
     {
         var result = new ImportScoreResult();
 
         try
         {
-            var entries = ReadTableFile(filePath);
+            var entries = ReadTableFileWithMapping(filePath, mapping);
             result.TotalCount = entries.Count;
             result.PreviewEntries = entries;
 
@@ -488,43 +557,34 @@ public class ScoreService : IScoreService
     }
 
     /// <summary>
-    /// 读取表格文件，支持 xlsx/xls/csv 格式
+    /// 根据列映射配置读取表格文件
     /// </summary>
-    private List<ImportScoreEntry> ReadTableFile(string filePath)
+    private List<ImportScoreEntry> ReadTableFileWithMapping(string filePath, ImportColumnMapping mapping)
     {
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
 
         return extension switch
         {
-            ".csv" => ReadCsvFile(filePath),
-            ".xlsx" or ".xls" => ReadExcelFile(filePath),
+            ".csv" => ReadCsvFileWithMapping(filePath, mapping),
+            ".xlsx" or ".xls" => ReadExcelFileWithMapping(filePath, mapping),
             _ => throw new NotSupportedException($"不支持的文件格式: {extension}，请使用 xlsx/xls/csv 文件")
         };
     }
 
     /// <summary>
-    /// 读取 CSV 文件
+    /// 根据列映射配置读取 CSV 文件
     /// </summary>
-    private List<ImportScoreEntry> ReadCsvFile(string filePath)
+    private List<ImportScoreEntry> ReadCsvFileWithMapping(string filePath, ImportColumnMapping mapping)
     {
         var entries = new List<ImportScoreEntry>();
         var lines = File.ReadAllLines(filePath);
 
         if (lines.Length == 0) return entries;
 
-        // 解析表头，确定列索引
-        var header = ParseCsvLine(lines[0]);
-        var nameIdx = FindColumnIndex(header, "姓名", "学生", "名字", "Name");
-        var numberIdx = FindColumnIndex(header, "学号", "编号", "StudentNumber");
-        var scoreIdx = FindColumnIndex(header, "积分", "分数", "变动", "分值", "Score", "Change");
-        var reasonIdx = FindColumnIndex(header, "原因", "理由", "备注", "说明", "Reason");
+        var startRow = Math.Max(mapping.DataStartRow - 1, 1); // 转为0索引
+        var endRow = mapping.DataEndRow > 0 ? Math.Min(mapping.DataEndRow, lines.Length) : lines.Length;
 
-        if (nameIdx < 0 && scoreIdx < 0)
-        {
-            throw new InvalidDataException("CSV文件缺少必要列：需要至少包含\"姓名\"和\"积分\"列");
-        }
-
-        for (var i = 1; i < lines.Length; i++)
+        for (var i = startRow; i < endRow; i++)
         {
             var line = lines[i].Trim();
             if (string.IsNullOrEmpty(line)) continue;
@@ -533,14 +593,71 @@ public class ScoreService : IScoreService
 
             var entry = new ImportScoreEntry
             {
-                StudentName = nameIdx >= 0 && nameIdx < fields.Count ? fields[nameIdx].Trim() : "",
-                StudentNumber = numberIdx >= 0 && numberIdx < fields.Count ? fields[numberIdx].Trim() : null,
-                Reason = reasonIdx >= 0 && reasonIdx < fields.Count ? fields[reasonIdx].Trim() : null
+                StudentName = mapping.NameColumnIndex >= 0 && mapping.NameColumnIndex < fields.Count
+                    ? fields[mapping.NameColumnIndex].Trim() : "",
+                StudentNumber = mapping.NumberColumnIndex >= 0 && mapping.NumberColumnIndex < fields.Count
+                    ? fields[mapping.NumberColumnIndex].Trim() : null,
+                Reason = mapping.ReasonColumnIndex >= 0 && mapping.ReasonColumnIndex < fields.Count
+                    ? fields[mapping.ReasonColumnIndex].Trim() : null
             };
 
-            if (scoreIdx >= 0 && scoreIdx < fields.Count && double.TryParse(fields[scoreIdx].Trim(), out var score))
+            if (mapping.ScoreColumnIndex >= 0 && mapping.ScoreColumnIndex < fields.Count
+                && double.TryParse(fields[mapping.ScoreColumnIndex].Trim(), out var score))
             {
                 entry.ScoreChange = score;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.StudentName) || entry.ScoreChange != 0)
+            {
+                entries.Add(entry);
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// 根据列映射配置读取 Excel 文件
+    /// </summary>
+    private List<ImportScoreEntry> ReadExcelFileWithMapping(string filePath, ImportColumnMapping mapping)
+    {
+        var entries = new List<ImportScoreEntry>();
+
+        using var workbook = new ClosedXML.Excel.XLWorkbook(filePath);
+        var worksheet = workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null) return entries;
+
+        var headerRow = worksheet.Row(1);
+        var usedCells = headerRow.CellsUsed().ToList();
+
+        // 将映射索引转换为Excel列号
+        var nameColNum = mapping.NameColumnIndex >= 0 && mapping.NameColumnIndex < usedCells.Count
+            ? usedCells[mapping.NameColumnIndex].Address.ColumnNumber : -1;
+        var numberColNum = mapping.NumberColumnIndex >= 0 && mapping.NumberColumnIndex < usedCells.Count
+            ? usedCells[mapping.NumberColumnIndex].Address.ColumnNumber : -1;
+        var scoreColNum = mapping.ScoreColumnIndex >= 0 && mapping.ScoreColumnIndex < usedCells.Count
+            ? usedCells[mapping.ScoreColumnIndex].Address.ColumnNumber : -1;
+        var reasonColNum = mapping.ReasonColumnIndex >= 0 && mapping.ReasonColumnIndex < usedCells.Count
+            ? usedCells[mapping.ReasonColumnIndex].Address.ColumnNumber : -1;
+
+        var lastRow = worksheet.LastRowUsed();
+        var maxRow = lastRow != null ? lastRow.RowNumber() : 1;
+        var startRow = Math.Max(mapping.DataStartRow, 2);
+        var endRow = mapping.DataEndRow > 0 ? Math.Min(mapping.DataEndRow, maxRow) : maxRow;
+
+        for (var row = startRow; row <= endRow; row++)
+        {
+            var entry = new ImportScoreEntry
+            {
+                StudentName = nameColNum >= 0 ? worksheet.Cell(row, nameColNum).GetString().Trim() : "",
+                StudentNumber = numberColNum >= 0 ? worksheet.Cell(row, numberColNum).GetString().Trim() : null,
+                Reason = reasonColNum >= 0 ? worksheet.Cell(row, reasonColNum).GetString().Trim() : null
+            };
+
+            if (scoreColNum >= 0)
+            {
+                var scoreCell = worksheet.Cell(row, scoreColNum);
+                entry.ScoreChange = scoreCell.TryGetValue(out double scoreVal) ? scoreVal : 0;
             }
 
             if (!string.IsNullOrWhiteSpace(entry.StudentName) || entry.ScoreChange != 0)
@@ -583,56 +700,6 @@ public class ScoreService : IScoreService
     }
 
     /// <summary>
-    /// 读取 Excel 文件
-    /// </summary>
-    private List<ImportScoreEntry> ReadExcelFile(string filePath)
-    {
-        var entries = new List<ImportScoreEntry>();
-
-        using var workbook = new ClosedXML.Excel.XLWorkbook(filePath);
-        var worksheet = workbook.Worksheets.FirstOrDefault();
-        if (worksheet == null) return entries;
-
-        // 解析表头
-        var headerRow = worksheet.Row(1);
-        var nameCol = FindExcelColumn(headerRow, "姓名", "学生", "名字", "Name");
-        var numberCol = FindExcelColumn(headerRow, "学号", "编号", "StudentNumber");
-        var scoreCol = FindExcelColumn(headerRow, "积分", "分数", "变动", "分值", "Score", "Change");
-        var reasonCol = FindExcelColumn(headerRow, "原因", "理由", "备注", "说明", "Reason");
-
-        if (nameCol == null && scoreCol == null)
-        {
-            throw new InvalidDataException("Excel文件缺少必要列：需要至少包含\"姓名\"和\"积分\"列");
-        }
-
-        var lastRow = worksheet.LastRowUsed();
-        var maxRow = lastRow != null ? lastRow.RowNumber() : 1;
-
-        for (var row = 2; row <= maxRow; row++)
-        {
-            var entry = new ImportScoreEntry
-            {
-                StudentName = nameCol != null ? worksheet.Cell(row, nameCol.Address.ColumnNumber).GetString().Trim() : "",
-                StudentNumber = numberCol != null ? worksheet.Cell(row, numberCol.Address.ColumnNumber).GetString().Trim() : null,
-                Reason = reasonCol != null ? worksheet.Cell(row, reasonCol.Address.ColumnNumber).GetString().Trim() : null
-            };
-
-            if (scoreCol != null)
-            {
-                var scoreCell = worksheet.Cell(row, scoreCol.Address.ColumnNumber);
-                entry.ScoreChange = scoreCell.TryGetValue(out double scoreVal) ? scoreVal : 0;
-            }
-
-            if (!string.IsNullOrWhiteSpace(entry.StudentName) || entry.ScoreChange != 0)
-            {
-                entries.Add(entry);
-            }
-        }
-
-        return entries;
-    }
-
-    /// <summary>
     /// 在表头中查找匹配的列索引
     /// </summary>
     private static int FindColumnIndex(List<string> headers, params string[] names)
@@ -652,16 +719,21 @@ public class ScoreService : IScoreService
     }
 
     /// <summary>
-    /// 在 Excel 表头行中查找匹配的列
+    /// 在 Excel 表头行中查找匹配的列索引（0开始）
     /// </summary>
-    private static ClosedXML.Excel.IXLCell? FindExcelColumn(ClosedXML.Excel.IXLRow headerRow, params string[] names)
+    private static int FindExcelColumnIndex(ClosedXML.Excel.IXLRow headerRow, params string[] names)
     {
+        var usedCells = headerRow.CellsUsed().ToList();
         foreach (var name in names)
         {
-            var cell = headerRow.CellsUsed().FirstOrDefault(c =>
-                c.GetString().Trim().Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (cell != null) return cell;
+            for (var i = 0; i < usedCells.Count; i++)
+            {
+                if (usedCells[i].GetString().Trim().Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
         }
-        return null;
+        return -1;
     }
 }
