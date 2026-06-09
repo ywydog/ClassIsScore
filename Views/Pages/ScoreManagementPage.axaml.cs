@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using ClassIsScore.Models;
 using ClassIsScore.ViewModels;
 using FluentAvalonia.UI.Controls;
@@ -34,6 +35,9 @@ public partial class ScoreManagementPage : UserControl
 
             // 监听多选模式变更以更新列表选择模式
             vm.PropertyChanged += OnViewModelPropertyChanged;
+
+            // 注册导入文件选择事件
+            vm.ImportFileRequested += OnImportFileRequested;
         }
 
         // 监听列表选择变更
@@ -133,5 +137,44 @@ public partial class ScoreManagementPage : UserControl
                 vm.SelectedStudents.Remove(student);
             }
         }
+    }
+
+    /// <summary>
+    /// 导入文件选择事件处理
+    /// </summary>
+    private async Task<string?> OnImportFileRequested()
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return null;
+
+        var storageProvider = topLevel.StorageProvider;
+
+        var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "选择评价导入文件",
+            AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("表格文件")
+                {
+                    Patterns = new[] { "*.xlsx", "*.xls", "*.csv" }
+                },
+                new FilePickerFileType("Excel 文件")
+                {
+                    Patterns = new[] { "*.xlsx", "*.xls" }
+                },
+                new FilePickerFileType("CSV 文件")
+                {
+                    Patterns = new[] { "*.csv" }
+                }
+            }
+        });
+
+        if (files.Count > 0)
+        {
+            return files[0].TryGetLocalPath();
+        }
+
+        return null;
     }
 }

@@ -75,6 +75,20 @@ public interface IScoreService
     Task AddScoreToMultipleStudentsAsync(List<Guid> studentIds, double scoreChange, string reason, string? operatorName = null);
 
     /// <summary>
+    /// 预览导入评价数据（不实际写入）
+    /// </summary>
+    /// <param name="filePath">文件路径（支持xlsx/xls/csv）</param>
+    /// <returns>导入结果（含预览数据，但不写入积分）</returns>
+    Task<ImportScoreResult> PreviewImportScoresAsync(string filePath);
+
+    /// <summary>
+    /// 执行导入评价（实际写入积分记录）
+    /// </summary>
+    /// <param name="entries">待导入的评价条目</param>
+    /// <returns>导入结果</returns>
+    Task<ImportScoreResult> ExecuteImportScoresAsync(List<ImportScoreEntry> entries);
+
+    /// <summary>
     /// 获取学生当前积分
     /// </summary>
     /// <param name="studentId">学生ID</param>

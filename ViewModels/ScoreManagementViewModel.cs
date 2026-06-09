@@ -99,6 +99,33 @@ public partial class ScoreManagementViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedStudentCount;
 
+    /// <summary>
+    /// 导入预览数据
+    /// </summary>
+    public ObservableCollection<ImportScoreEntry> ImportPreviewEntries { get; } = new();
+
+    /// <summary>
+    /// 是否显示导入预览
+    /// </summary>
+    [ObservableProperty]
+    private bool _isImportPreviewVisible;
+
+    /// <summary>
+    /// 导入预览结果
+    /// </summary>
+    [ObservableProperty]
+    private ImportScoreResult? _importPreviewResult;
+
+    /// <summary>
+    /// 导入文件路径请求事件，由 View 层处理文件选择对话框
+    /// </summary>
+    public event Func<Task<string?>>? ImportFileRequested;
+
+    /// <summary>
+    /// 上次导入的文件路径
+    /// </summary>
+    private string? _lastImportFilePath;
+
     public ScoreManagementViewModel(
         IScoreService scoreService,
         IStudentService studentService,
@@ -237,16 +264,11 @@ public partial class ScoreManagementViewModel : ObservableObject
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(Reason))
-            {
-                StatusMessage = "请输入原因";
-                return;
-            }
-
             try
             {
+                var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "加分";
                 var ids = SelectedStudents.Select(s => s.Id).ToList();
-                await _scoreService.AddScoreToMultipleStudentsAsync(ids, ScoreChange, Reason);
+                await _scoreService.AddScoreToMultipleStudentsAsync(ids, ScoreChange, reason);
                 StatusMessage = $"已为 {SelectedStudents.Count} 名学生加 {ScoreChange} 分";
                 Reason = string.Empty;
                 await LoadHistoryAsync();
@@ -271,15 +293,10 @@ public partial class ScoreManagementViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(Reason))
-        {
-            StatusMessage = "请输入原因";
-            return;
-        }
-
         try
         {
-            await _scoreService.AddScoreAsync(SelectedStudent.Id, ScoreChange, Reason);
+            var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "加分";
+            await _scoreService.AddScoreAsync(SelectedStudent.Id, ScoreChange, reason);
             StatusMessage = $"已为 {SelectedStudent.Name} 加 {ScoreChange} 分";
             Reason = string.Empty;
             await LoadHistoryAsync();
@@ -311,16 +328,11 @@ public partial class ScoreManagementViewModel : ObservableObject
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(Reason))
-            {
-                StatusMessage = "请输入原因";
-                return;
-            }
-
             try
             {
+                var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "减分";
                 var ids = SelectedStudents.Select(s => s.Id).ToList();
-                await _scoreService.AddScoreToMultipleStudentsAsync(ids, -ScoreChange, Reason);
+                await _scoreService.AddScoreToMultipleStudentsAsync(ids, -ScoreChange, reason);
                 StatusMessage = $"已为 {SelectedStudents.Count} 名学生减 {ScoreChange} 分";
                 Reason = string.Empty;
                 await LoadHistoryAsync();
@@ -345,15 +357,10 @@ public partial class ScoreManagementViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(Reason))
-        {
-            StatusMessage = "请输入原因";
-            return;
-        }
-
         try
         {
-            await _scoreService.AddScoreAsync(SelectedStudent.Id, -ScoreChange, Reason);
+            var reason = !string.IsNullOrWhiteSpace(Reason) ? Reason : "减分";
+            await _scoreService.AddScoreAsync(SelectedStudent.Id, -ScoreChange, reason);
             StatusMessage = $"已为 {SelectedStudent.Name} 减 {ScoreChange} 分";
             Reason = string.Empty;
             await LoadHistoryAsync();
@@ -502,5 +509,102 @@ public partial class ScoreManagementViewModel : ObservableObject
         FilterEndDate = null;
         FilterStudent = null;
         await LoadHistoryAsync();
+    }
+
+    /// <summary>
+    /// 导入评价命令 - 选择文件并预览
+    /// </summary>
+    [RelayCommand]
+    private async Task ImportScoresAsync()
+    {
+        try
+        {
+            var filePath = await GetImportFilePathAsync();
+            if (string.IsNullOrEmpty(filePath)) return;
+
+            _lastImportFilePath = filePath;
+            IsLoading = true;
+            StatusMessage = "正在读取文件...";
+
+            var result = await _scoreService.PreviewImportScoresAsync(filePath);
+
+            ImportPreviewEntries.Clear();
+            foreach (var entry in result.PreviewEntries)
+            {
+                ImportPreviewEntries.Add(entry);
+            }
+
+            ImportPreviewResult = result;
+            IsImportPreviewVisible = true;
+
+            StatusMessage = $"预览: 共 {result.TotalCount} 条，匹配 {result.SuccessCount} 条，未匹配 {result.SkipCount} 条";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "导入评价失败");
+            StatusMessage = $"导入失败: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// 确认导入预览中的数据
+    /// </summary>
+    [RelayCommand]
+    private async Task ConfirmImportAsync()
+    {
+        if (ImportPreviewResult == null) return;
+
+        try
+        {
+            IsLoading = true;
+            StatusMessage = "正在导入评价...";
+
+            var matchedEntries = ImportPreviewResult.PreviewEntries.Where(e => e.IsMatched).ToList();
+            var result = await _scoreService.ExecuteImportScoresAsync(matchedEntries);
+
+            StatusMessage = $"导入完成: 成功 {result.SuccessCount} 条，失败 {result.FailCount} 条，跳过 {result.SkipCount} 条";
+            IsImportPreviewVisible = false;
+            ImportPreviewEntries.Clear();
+            ImportPreviewResult = null;
+            await LoadHistoryAsync();
+            await LoadStudentsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "确认导入失败");
+            StatusMessage = $"导入失败: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// 取消导入预览
+    /// </summary>
+    [RelayCommand]
+    private void CancelImport()
+    {
+        IsImportPreviewVisible = false;
+        ImportPreviewEntries.Clear();
+        ImportPreviewResult = null;
+        StatusMessage = "已取消导入";
+    }
+
+    /// <summary>
+    /// 获取导入文件路径（触发 View 层的文件选择对话框）
+    /// </summary>
+    private async Task<string?> GetImportFilePathAsync()
+    {
+        if (ImportFileRequested != null)
+        {
+            return await ImportFileRequested();
+        }
+        return null;
     }
 }

@@ -381,4 +381,287 @@ public class ScoreService : IScoreService
         var student = _studentService.GetStudentByIdAsync(studentId).Result;
         return student?.Score ?? 0;
     }
+
+    /// <inheritdoc/>
+    public async Task<ImportScoreResult> PreviewImportScoresAsync(string filePath)
+    {
+        var result = new ImportScoreResult();
+
+        try
+        {
+            var entries = ReadTableFile(filePath);
+            result.TotalCount = entries.Count;
+            result.PreviewEntries = entries;
+
+            var students = await _studentService.GetAllStudentsAsync();
+
+            foreach (var entry in entries)
+            {
+                Student? matchedStudent = null;
+
+                if (!string.IsNullOrWhiteSpace(entry.StudentNumber))
+                {
+                    matchedStudent = students.FirstOrDefault(s =>
+                        s.StudentNumber?.Equals(entry.StudentNumber, StringComparison.OrdinalIgnoreCase) == true);
+                }
+
+                if (matchedStudent == null && !string.IsNullOrWhiteSpace(entry.StudentName))
+                {
+                    matchedStudent = students.FirstOrDefault(s =>
+                        s.Name.Equals(entry.StudentName, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (matchedStudent == null)
+                {
+                    entry.IsMatched = false;
+                    result.SkipCount++;
+                    result.Errors.Add($"未找到学生: {entry.StudentName}{(entry.StudentNumber != null ? $" (学号: {entry.StudentNumber})" : "")}");
+                }
+                else
+                {
+                    entry.IsMatched = true;
+                    result.SuccessCount++;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "预览导入评价文件失败");
+            result.Errors.Add($"文件读取失败: {ex.Message}");
+        }
+
+        return result;
+    }
+
+    /// <inheritdoc/>
+    public async Task<ImportScoreResult> ExecuteImportScoresAsync(List<ImportScoreEntry> entries)
+    {
+        var result = new ImportScoreResult { TotalCount = entries.Count };
+
+        var students = await _studentService.GetAllStudentsAsync();
+
+        foreach (var entry in entries)
+        {
+            if (!entry.IsMatched)
+            {
+                result.SkipCount++;
+                continue;
+            }
+
+            Student? matchedStudent = null;
+
+            if (!string.IsNullOrWhiteSpace(entry.StudentNumber))
+            {
+                matchedStudent = students.FirstOrDefault(s =>
+                    s.StudentNumber?.Equals(entry.StudentNumber, StringComparison.OrdinalIgnoreCase) == true);
+            }
+
+            if (matchedStudent == null && !string.IsNullOrWhiteSpace(entry.StudentName))
+            {
+                matchedStudent = students.FirstOrDefault(s =>
+                    s.Name.Equals(entry.StudentName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (matchedStudent == null)
+            {
+                result.SkipCount++;
+                continue;
+            }
+
+            try
+            {
+                var reason = !string.IsNullOrWhiteSpace(entry.Reason) ? entry.Reason : "外部导入";
+                await AddScoreAsync(matchedStudent.Id, entry.ScoreChange, reason, "导入");
+                result.SuccessCount++;
+            }
+            catch (Exception ex)
+            {
+                result.FailCount++;
+                result.Errors.Add($"学生 {entry.StudentName} 加分失败: {ex.Message}");
+            }
+        }
+
+        _logger.LogInformation("导入评价完成: 成功 {Success}, 失败 {Fail}, 跳过 {Skip}",
+            result.SuccessCount, result.FailCount, result.SkipCount);
+
+        return result;
+    }
+
+    /// <summary>
+    /// 读取表格文件，支持 xlsx/xls/csv 格式
+    /// </summary>
+    private List<ImportScoreEntry> ReadTableFile(string filePath)
+    {
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+
+        return extension switch
+        {
+            ".csv" => ReadCsvFile(filePath),
+            ".xlsx" or ".xls" => ReadExcelFile(filePath),
+            _ => throw new NotSupportedException($"不支持的文件格式: {extension}，请使用 xlsx/xls/csv 文件")
+        };
+    }
+
+    /// <summary>
+    /// 读取 CSV 文件
+    /// </summary>
+    private List<ImportScoreEntry> ReadCsvFile(string filePath)
+    {
+        var entries = new List<ImportScoreEntry>();
+        var lines = File.ReadAllLines(filePath);
+
+        if (lines.Length == 0) return entries;
+
+        // 解析表头，确定列索引
+        var header = ParseCsvLine(lines[0]);
+        var nameIdx = FindColumnIndex(header, "姓名", "学生", "名字", "Name");
+        var numberIdx = FindColumnIndex(header, "学号", "编号", "StudentNumber");
+        var scoreIdx = FindColumnIndex(header, "积分", "分数", "变动", "分值", "Score", "Change");
+        var reasonIdx = FindColumnIndex(header, "原因", "理由", "备注", "说明", "Reason");
+
+        if (nameIdx < 0 && scoreIdx < 0)
+        {
+            throw new InvalidDataException("CSV文件缺少必要列：需要至少包含\"姓名\"和\"积分\"列");
+        }
+
+        for (var i = 1; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            if (string.IsNullOrEmpty(line)) continue;
+
+            var fields = ParseCsvLine(line);
+
+            var entry = new ImportScoreEntry
+            {
+                StudentName = nameIdx >= 0 && nameIdx < fields.Count ? fields[nameIdx].Trim() : "",
+                StudentNumber = numberIdx >= 0 && numberIdx < fields.Count ? fields[numberIdx].Trim() : null,
+                Reason = reasonIdx >= 0 && reasonIdx < fields.Count ? fields[reasonIdx].Trim() : null
+            };
+
+            if (scoreIdx >= 0 && scoreIdx < fields.Count && double.TryParse(fields[scoreIdx].Trim(), out var score))
+            {
+                entry.ScoreChange = score;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.StudentName) || entry.ScoreChange != 0)
+            {
+                entries.Add(entry);
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// 解析CSV行，支持引号包裹的字段
+    /// </summary>
+    private static List<string> ParseCsvLine(string line)
+    {
+        var fields = new List<string>();
+        var current = new System.Text.StringBuilder();
+        var inQuotes = false;
+
+        foreach (var ch in line)
+        {
+            if (ch == '"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (ch == ',' && !inQuotes)
+            {
+                fields.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(ch);
+            }
+        }
+
+        fields.Add(current.ToString());
+        return fields;
+    }
+
+    /// <summary>
+    /// 读取 Excel 文件
+    /// </summary>
+    private List<ImportScoreEntry> ReadExcelFile(string filePath)
+    {
+        var entries = new List<ImportScoreEntry>();
+
+        using var workbook = new ClosedXML.Excel.XLWorkbook(filePath);
+        var worksheet = workbook.Worksheets.FirstOrDefault();
+        if (worksheet == null) return entries;
+
+        // 解析表头
+        var headerRow = worksheet.Row(1);
+        var nameCol = FindExcelColumn(headerRow, "姓名", "学生", "名字", "Name");
+        var numberCol = FindExcelColumn(headerRow, "学号", "编号", "StudentNumber");
+        var scoreCol = FindExcelColumn(headerRow, "积分", "分数", "变动", "分值", "Score", "Change");
+        var reasonCol = FindExcelColumn(headerRow, "原因", "理由", "备注", "说明", "Reason");
+
+        if (nameCol == null && scoreCol == null)
+        {
+            throw new InvalidDataException("Excel文件缺少必要列：需要至少包含\"姓名\"和\"积分\"列");
+        }
+
+        var lastRow = worksheet.LastRowUsed();
+        var maxRow = lastRow != null ? lastRow.RowNumber() : 1;
+
+        for (var row = 2; row <= maxRow; row++)
+        {
+            var entry = new ImportScoreEntry
+            {
+                StudentName = nameCol != null ? worksheet.Cell(row, nameCol.Address.ColumnNumber).GetString().Trim() : "",
+                StudentNumber = numberCol != null ? worksheet.Cell(row, numberCol.Address.ColumnNumber).GetString().Trim() : null,
+                Reason = reasonCol != null ? worksheet.Cell(row, reasonCol.Address.ColumnNumber).GetString().Trim() : null
+            };
+
+            if (scoreCol != null)
+            {
+                var scoreCell = worksheet.Cell(row, scoreCol.Address.ColumnNumber);
+                entry.ScoreChange = scoreCell.TryGetValue(out double scoreVal) ? scoreVal : 0;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.StudentName) || entry.ScoreChange != 0)
+            {
+                entries.Add(entry);
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// 在表头中查找匹配的列索引
+    /// </summary>
+    private static int FindColumnIndex(List<string> headers, params string[] names)
+    {
+        for (var i = 0; i < headers.Count; i++)
+        {
+            var header = headers[i].Trim();
+            foreach (var name in names)
+            {
+                if (header.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// 在 Excel 表头行中查找匹配的列
+    /// </summary>
+    private static ClosedXML.Excel.IXLCell? FindExcelColumn(ClosedXML.Excel.IXLRow headerRow, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var cell = headerRow.CellsUsed().FirstOrDefault(c =>
+                c.GetString().Trim().Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (cell != null) return cell;
+        }
+        return null;
+    }
 }

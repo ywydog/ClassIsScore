@@ -205,7 +205,7 @@
                                    FontSize="13" />
                         <TextBox Grid.Column="3"
                                  Text="{Binding Reason}"
-                                 Watermark="请输入原因" />
+                                 Watermark="可选" />
                         <Button Grid.Column="4"
                                 Content="加分"
                                 Command="{Binding AddScoreCommand}"
@@ -281,7 +281,94 @@
                     <Button Content="清除"
                             Command="{Binding ClearFilterCommand}"
                             Padding="12,4" />
+                    <Border Width="1"
+                            Height="20"
+                            Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                            VerticalAlignment="Center"
+                            Margin="8,0" />
+                    <Button x:Name="ImportScoresButton"
+                            Content="导入评价"
+                            Command="{Binding ImportScoresCommand}"
+                            Padding="12,4" />
                 </StackPanel>
+            </Border>
+
+            <!-- 导入预览面板 -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource AccentControlElevationBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    IsVisible="{Binding IsImportPreviewVisible}">
+                <DockPanel>
+                    <!-- 预览标题和操作按钮 -->
+                    <Border DockPanel.Dock="Top"
+                            Padding="0,0,0,12"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="导入预览"
+                                           FontSize="16"
+                                           FontWeight="SemiBold" />
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="共 {0} 条，匹配 {1} 条，未匹配 {2} 条">
+                                            <Binding Path="ImportPreviewResult.TotalCount" />
+                                            <Binding Path="ImportPreviewResult.SuccessCount" />
+                                            <Binding Path="ImportPreviewResult.SkipCount" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Content="确认导入"
+                                    Command="{Binding ConfirmImportCommand}"
+                                    Background="{DynamicResource AccentButtonBackground}"
+                                    Foreground="{DynamicResource AccentButtonForeground}"
+                                    Padding="16,6"
+                                    Margin="0,0,8,0" />
+                            <Button Grid.Column="2"
+                                    Content="取消"
+                                    Command="{Binding CancelImportCommand}"
+                                    Padding="16,6" />
+                        </Grid>
+                    </Border>
+
+                    <!-- 错误信息 -->
+                    <ItemsControl DockPanel.Dock="Bottom"
+                                  ItemsSource="{Binding ImportPreviewResult.Errors}"
+                                  Margin="0,8,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           FontSize="12"
+                                           Foreground="#FF6B6B"
+                                           Margin="0,2" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 预览数据表格 -->
+                    <DataGrid ItemsSource="{Binding ImportPreviewEntries}"
+                              IsReadOnly="True"
+                              AutoGenerateColumns="False"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True"
+                              MaxHeight="300"
+                              Margin="0,8,0,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="学生姓名" Binding="{Binding StudentName}" Width="120" />
+                            <DataGridTextColumn Header="学号" Binding="{Binding StudentNumber}" Width="100" />
+                            <DataGridTextColumn Header="积分变动" Binding="{Binding ScoreChange}" Width="80" />
+                            <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="*" />
+                            <DataGridTextColumn Header="匹配状态" Binding="{Binding MatchStatus}" Width="80" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
             </Border>
 
             <!-- 右侧下方：历史记录列表 -->
@@ -291,7 +378,8 @@
                       AutoGenerateColumns="False"
                       CanUserResizeColumns="True"
                       CanUserSortColumns="True"
-                      Margin="8,4">
+                      Margin="8,4"
+                      IsVisible="{Binding !IsImportPreviewVisible}">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="120" />
                     <DataGridTextColumn Header="学生" Binding="{Binding StudentName}" Width="80" />
