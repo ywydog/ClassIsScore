@@ -3,6 +3,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using ClassIsScore.Models;
 using ClassIsScore.ViewModels;
 
@@ -43,8 +45,8 @@ public partial class PetDisplayControl : UserControl
         var hasPet = item.HasPet;
         var isGraduated = item.IsGraduated;
 
-        // 更新宠物emoji
-        PetEmojiText.Text = item.PetEmoji;
+        // 更新宠物图片
+        UpdatePetImage(item.PetType, petLevel, hasPet);
 
         // 更新宠物图片区域背景（等级渐变色）
         var gradient = PetSystem.GetLevelGradient(petLevel);
@@ -111,6 +113,41 @@ public partial class PetDisplayControl : UserControl
 
         // 更新等级称号
         LevelTitleText.Text = hasPet ? item.LevelTitle : "";
+    }
+
+    /// <summary>
+    /// 更新宠物图片，根据宠物类型和等级加载对应图片
+    /// </summary>
+    private void UpdatePetImage(string? petType, int level, bool hasPet)
+    {
+        try
+        {
+            var imagePath = hasPet
+                ? PetSystem.GetPetImagePath(petType, level)
+                : PetSystem.GetDefaultPetImagePath();
+
+            if (!string.IsNullOrEmpty(imagePath))
+            {
+                var uri = new Uri(imagePath);
+                PetImage.Source = new Bitmap(AssetLoader.Open(uri));
+            }
+        }
+        catch (Exception)
+        {
+            // 图片加载失败时使用默认图片
+            try
+            {
+                var defaultUri = new Uri(PetSystem.GetDefaultPetImagePath());
+                PetImage.Source = new Bitmap(AssetLoader.Open(defaultUri));
+            }
+            catch
+            {
+                PetImage.Source = null;
+            }
+        }
+
+        // 未领养时降低透明度
+        PetImage.Opacity = hasPet ? 1.0 : 0.3;
     }
 
     /// <summary>

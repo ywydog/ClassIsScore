@@ -143,6 +143,23 @@ public static class PetSystem
     /// </summary>
     public static string GetPetEmoji(string? petTypeId)
         => GetPetTypeInfo(petTypeId ?? "")?.Emoji ?? "❓";
+
+    /// <summary>
+    /// 获取宠物图片路径（根据宠物类型和等级）
+    /// 图片存放在 Assets/Pets/{petTypeId}/lv{level}.png
+    /// </summary>
+    public static string GetPetImagePath(string? petTypeId, int level)
+    {
+        if (string.IsNullOrEmpty(petTypeId)) return "";
+        var validLevel = Math.Clamp(level, 1, MaxLevel);
+        return $"avares://ClassIsScore/Assets/Pets/{petTypeId}/lv{validLevel}.png";
+    }
+
+    /// <summary>
+    /// 获取未领养宠物的默认图片路径
+    /// </summary>
+    public static string GetDefaultPetImagePath()
+        => "avares://ClassIsScore/Assets/Pets/cat/lv1.png";
 }
 
 /// <summary>

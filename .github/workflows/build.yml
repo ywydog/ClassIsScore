@@ -12,6 +12,11 @@ on:
         description: '发布标签（如 v1.0.0）'
         required: false
         type: string
+      upload_to_release:
+        description: '是否上传产物到 Release'
+        required: false
+        type: boolean
+        default: false
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -77,7 +82,7 @@ jobs:
   release:
     name: Create Release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.upload_to_release == true) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -103,10 +108,25 @@ jobs:
             fi
           done
 
-      - name: Create GitHub Release
+      - name: Determine Tag
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          elif [[ -n "${{ inputs.release_tag }}" ]]; then
+            echo "tag=${{ inputs.release_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=v0.0.0-dev.$(date +%Y%m%d%H%M)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or Update GitHub Release
         uses: ncipollo/release-action@v1
         with:
+          tag: ${{ steps.tag.outputs.tag }}
+          name: ClassIsScore ${{ steps.tag.outputs.tag }}
           artifacts: "./release/*"
           draft: true
           generateReleaseNotes: true
+          allowUpdates: true
+          replacesExistingArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
