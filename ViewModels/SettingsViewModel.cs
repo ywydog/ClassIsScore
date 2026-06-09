@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using ClassIsScore.Helpers;
+using ClassIsScore.Models;
 using ClassIsScore.Services.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -39,6 +40,12 @@ public partial class SettingsViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _isFloatingWindowEnabled;
+
+    /// <summary>
+    /// 悬浮窗样式
+    /// </summary>
+    [ObservableProperty]
+    private FloatingWindowStyle _floatingWindowStyle = FloatingWindowStyle.Classic;
 
     /// <summary>
     /// 是否显示托盘图标
@@ -81,6 +88,16 @@ public partial class SettingsViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string _floatingWindowAccentColor = string.Empty;
+
+    /// <summary>
+    /// 是否为经典模式（用于UI绑定）
+    /// </summary>
+    public bool IsClassicStyle => FloatingWindowStyle == FloatingWindowStyle.Classic;
+
+    partial void OnFloatingWindowStyleChanged(FloatingWindowStyle value)
+    {
+        OnPropertyChanged(nameof(IsClassicStyle));
+    }
 
     /// <summary>
     /// 应用版本号
@@ -178,6 +195,7 @@ public partial class SettingsViewModel : ObservableObject
         // 加载悬浮窗设置
         var floatingSettings = _floatingWindowService.Settings;
         IsFloatingWindowEnabled = floatingSettings.IsEnabled;
+        FloatingWindowStyle = floatingSettings.Style;
         FloatingWindowOpacity = floatingSettings.Opacity;
         FloatingWindowSize = floatingSettings.Size;
         FloatingWindowDisplayText = floatingSettings.DisplayText;
@@ -269,6 +287,7 @@ public partial class SettingsViewModel : ObservableObject
             // 保存悬浮窗设置
             var floatingSettings = _floatingWindowService.Settings;
             floatingSettings.IsEnabled = IsFloatingWindowEnabled;
+            floatingSettings.Style = FloatingWindowStyle;
             floatingSettings.Opacity = FloatingWindowOpacity;
             floatingSettings.Size = FloatingWindowSize;
             floatingSettings.DisplayText = FloatingWindowDisplayText;

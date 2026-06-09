@@ -2,7 +2,8 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Threading;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using ClassIsScore.Models;
 
 namespace ClassIsScore.Views;
@@ -80,13 +81,33 @@ public partial class FloatingWindow : Window
     }
 
     /// <summary>
-    /// 应用外观相关设置（大小、文本、标签、颜色）
+    /// 应用外观相关设置
     /// </summary>
     private void ApplyAppearanceSettings(FloatingWindowSettings settings)
     {
-        // 计算按钮大小，限制范围40-80
         var buttonSize = Math.Clamp(settings.Size, 40, 80);
         var cornerRadius = buttonSize / 2.0;
+
+        // 根据样式切换布局可见性
+        var isClassic = settings.Style == FloatingWindowStyle.Classic;
+        ClassicLayout.IsVisible = isClassic;
+        PureIconLayout.IsVisible = !isClassic;
+
+        if (isClassic)
+        {
+            ApplyClassicStyle(settings, buttonSize, cornerRadius);
+        }
+        else
+        {
+            ApplyPureIconStyle(settings, buttonSize, cornerRadius);
+        }
+    }
+
+    /// <summary>
+    /// 应用经典模式样式
+    /// </summary>
+    private void ApplyClassicStyle(FloatingWindowSettings settings, double buttonSize, double cornerRadius)
+    {
         var iconSize = buttonSize * 0.58;
 
         // 更新窗口大小（按钮大小 + 上下边距 + 标签空间）
@@ -104,6 +125,9 @@ public partial class FloatingWindow : Window
         AppLogoImage.Width = iconSize;
         AppLogoImage.Height = iconSize;
 
+        // 加载自定义图标
+        LoadImageSource(AppLogoImage, settings.CustomIconPath);
+
         // 更新显示文本
         DisplayTextLabel.Text = settings.DisplayText;
         DisplayTextLabel.IsVisible = settings.ShowLabel;
@@ -114,13 +138,11 @@ public partial class FloatingWindow : Window
             try
             {
                 var color = Avalonia.Media.Color.Parse(settings.AccentColor);
-                // 带透明度的背景色
                 FloatingBorder.Background = new Avalonia.Media.SolidColorBrush(
                     Avalonia.Media.Color.FromArgb(0xCC, color.R, color.G, color.B));
             }
             catch
             {
-                // 颜色解析失败，使用默认色
                 FloatingBorder.Background = Avalonia.Media.Brush.Parse("#CC4CC2FF");
             }
         }
@@ -128,6 +150,52 @@ public partial class FloatingWindow : Window
         {
             FloatingBorder.Background = Avalonia.Media.Brush.Parse("#CC4CC2FF");
         }
+    }
+
+    /// <summary>
+    /// 应用纯图标模式样式
+    /// </summary>
+    private void ApplyPureIconStyle(FloatingWindowSettings settings, double buttonSize, double cornerRadius)
+    {
+        // 窗口大小 = 图片大小
+        Width = buttonSize;
+        Height = buttonSize;
+
+        // 更新纯图标布局大小
+        PureIconLayout.Width = buttonSize;
+        PureIconLayout.Height = buttonSize;
+        PureIconLayout.CornerRadius = new CornerRadius(cornerRadius);
+
+        // 加载自定义图标
+        LoadImageSource(PureIconImage, settings.CustomIconPath);
+    }
+
+    /// <summary>
+    /// 加载图片源（自定义路径或默认 AppLogo）
+    /// </summary>
+    private void LoadImageSource(Image imageControl, string? customIconPath)
+    {
+        if (!string.IsNullOrEmpty(customIconPath))
+        {
+            try
+            {
+                // 尝试加载自定义图片
+                if (System.IO.File.Exists(customIconPath))
+                {
+                    using var stream = System.IO.File.OpenRead(customIconPath);
+                    imageControl.Source = new Bitmap(stream);
+                    return;
+                }
+            }
+            catch
+            {
+                // 自定义图片加载失败，回退到默认
+            }
+        }
+
+        // 使用默认 AppLogo
+        using var defaultStream = AssetLoader.Open(new Uri("avares://ClassIsScore/Assets/AppLogo.png"));
+        imageControl.Source = new Bitmap(defaultStream);
     }
 
     /// <summary>
@@ -148,20 +216,16 @@ public partial class FloatingWindow : Window
     /// </summary>
     public void NotifyScoreChange()
     {
-        // 使用 Avalonia 动画播放脉冲效果
+        // 仅经典模式支持脉冲动画
+        if (_settings.Style != FloatingWindowStyle.Classic) return;
+
         Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
         {
             try
             {
-                // 移除之前的 pulse 类以重新触发动画
                 FloatingBorder.Classes.Remove("pulse");
-
-                // 等待一帧确保移除生效
                 await System.Threading.Tasks.Task.Delay(16);
-
                 FloatingBorder.Classes.Add("pulse");
-
-                // 动画完成后移除类
                 await System.Threading.Tasks.Task.Delay(600);
                 FloatingBorder.Classes.Remove("pulse");
             }

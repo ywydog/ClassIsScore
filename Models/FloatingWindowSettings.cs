@@ -17,6 +17,22 @@ public enum FloatingWindowIconType
 }
 
 /// <summary>
+/// 悬浮窗样式枚举
+/// </summary>
+public enum FloatingWindowStyle
+{
+    /// <summary>
+    /// 经典模式：圆形按钮+图标+文字标签
+    /// </summary>
+    Classic,
+
+    /// <summary>
+    /// 纯图标模式：圆形裁切图片直接作为悬浮体
+    /// </summary>
+    PureIcon
+}
+
+/// <summary>
 /// 悬浮窗设置模型
 /// </summary>
 public class FloatingWindowSettings
@@ -25,6 +41,11 @@ public class FloatingWindowSettings
     /// 是否启用悬浮窗
     /// </summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// 悬浮窗样式，默认为经典模式
+    /// </summary>
+    public FloatingWindowStyle Style { get; set; } = FloatingWindowStyle.Classic;
 
     /// <summary>
     /// 图标类型，默认为默认图标

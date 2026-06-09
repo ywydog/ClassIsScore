@@ -17,7 +17,7 @@
         WindowStartupLocation="Manual">
 
     <Window.Styles>
-        <!-- 脉冲动画样式 -->
+        <!-- 脉冲动画样式（仅经典模式使用） -->
         <Style Selector="Border#FloatingBorder.pulse">
             <Setter Property="RenderTransform" Value="scale(1.0)"/>
             <Style.Animations>
@@ -39,54 +39,86 @@
         </Style>
     </Window.Styles>
 
-    <!-- 悬浮窗内容：圆形图标按钮 + 文本标签 -->
-    <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="2">
-
+    <Panel>
         <ToolTip.Tip>
             <TextBlock Text="ClassIsScore - 点击打开，拖拽移动" />
         </ToolTip.Tip>
 
-        <!-- 圆形图标按钮 -->
-        <Border x:Name="FloatingBorder"
+        <!-- 经典模式布局：圆形按钮 + 图标 + 文字标签 -->
+        <StackPanel x:Name="ClassicLayout"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="2"
+                    IsVisible="True">
+
+            <!-- 圆形图标按钮 -->
+            <Border x:Name="FloatingBorder"
+                    Width="48"
+                    Height="48"
+                    CornerRadius="24"
+                    Background="#CC4CC2FF"
+                    BoxShadow="0 2 8 0 #33000000"
+                    RenderTransformOrigin="0.5,0.5"
+                    PointerPressed="OnPointerPressed"
+                    PointerMoved="OnPointerMoved"
+                    PointerReleased="OnPointerReleased"
+                    Cursor="Hand">
+
+                <Border.Transitions>
+                    <Transitions>
+                        <BrushTransition Property="Background" Duration="0:0:0.2" />
+                        <DoubleTransition Property="Width" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                        <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                        <CornerRadiusTransition Property="CornerRadius" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                    </Transitions>
+                </Border.Transitions>
+
+                <!-- 应用图标 -->
+                <Image x:Name="AppLogoImage"
+                       Source="avares://ClassIsScore/Assets/AppLogo.png"
+                       Width="28"
+                       Height="28"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Stretch="Uniform" />
+            </Border>
+
+            <!-- 文本标签 -->
+            <TextBlock x:Name="DisplayTextLabel"
+                       Text="CS"
+                       FontSize="9"
+                       FontWeight="SemiBold"
+                       Foreground="White"
+                       HorizontalAlignment="Center"
+                       Opacity="0.9" />
+        </StackPanel>
+
+        <!-- 纯图标模式布局：圆形裁切图片直接作为悬浮体 -->
+        <Border x:Name="PureIconLayout"
                 Width="48"
                 Height="48"
                 CornerRadius="24"
-                Background="#CC4CC2FF"
+                ClipToBounds="True"
                 BoxShadow="0 2 8 0 #33000000"
                 RenderTransformOrigin="0.5,0.5"
                 PointerPressed="OnPointerPressed"
                 PointerMoved="OnPointerMoved"
                 PointerReleased="OnPointerReleased"
-                Cursor="Hand">
+                Cursor="Hand"
+                IsVisible="False">
 
             <Border.Transitions>
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" />
                     <DoubleTransition Property="Width" Duration="0:0:0.15" Easing="CubicEaseOut" />
                     <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut" />
                     <CornerRadiusTransition Property="CornerRadius" Duration="0:0:0.15" Easing="CubicEaseOut" />
                 </Transitions>
             </Border.Transitions>
 
-            <!-- 应用图标 -->
-            <Image x:Name="AppLogoImage"
+            <!-- 图片填充整个圆形区域 -->
+            <Image x:Name="PureIconImage"
                    Source="avares://ClassIsScore/Assets/AppLogo.png"
-                   Width="28"
-                   Height="28"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Stretch="Uniform" />
+                   Stretch="UniformToFill" />
         </Border>
-
-        <!-- 文本标签 -->
-        <TextBlock x:Name="DisplayTextLabel"
-                   Text="CS"
-                   FontSize="9"
-                   FontWeight="SemiBold"
-                   Foreground="White"
-                   HorizontalAlignment="Center"
-                   Opacity="0.9" />
-    </StackPanel>
+    </Panel>
 </Window>

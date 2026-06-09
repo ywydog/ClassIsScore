@@ -107,6 +107,25 @@
                     <!-- 以下设置仅在悬浮窗启用时可见 -->
                     <StackPanel Spacing="16" IsVisible="{Binding IsFloatingWindowEnabled}">
 
+                        <!-- 悬浮窗样式选择 -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="悬浮窗样式" FontSize="14" />
+                            <ComboBox SelectedIndex="{Binding FloatingWindowStyle}"
+                                      HorizontalAlignment="Left"
+                                      MinWidth="180">
+                                <ComboBoxItem Content="经典模式" />
+                                <ComboBoxItem Content="纯图标模式" />
+                            </ComboBox>
+                            <TextBlock Text="经典模式：圆形按钮+图标+文字标签；纯图标模式：圆形裁切图片直接作为悬浮体"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Border Height="1"
+                                Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                Margin="0,4" />
+
                         <!-- 透明度滑块 -->
                         <StackPanel Spacing="8">
                             <TextBlock Text="透明度" FontSize="14" />
@@ -153,8 +172,8 @@
                                 Background="{DynamicResource ControlStrokeColorDefaultBrush}"
                                 Margin="0,4" />
 
-                        <!-- 显示文本 -->
-                        <StackPanel Spacing="8">
+                        <!-- 显示文本（仅经典模式） -->
+                        <StackPanel Spacing="8" IsVisible="{Binding IsClassicStyle}">
                             <TextBlock Text="显示文本" FontSize="14" />
                             <TextBox Text="{Binding FloatingWindowDisplayText}"
                                      MaxLength="4"
@@ -164,10 +183,11 @@
 
                         <Border Height="1"
                                 Background="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                Margin="0,4" />
+                                Margin="0,4"
+                                IsVisible="{Binding IsClassicStyle}" />
 
-                        <!-- 显示标签开关 -->
-                        <Grid ColumnDefinitions="*,Auto">
+                        <!-- 显示标签开关（仅经典模式） -->
+                        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsClassicStyle}">
                             <StackPanel Grid.Column="0" Spacing="4">
                                 <TextBlock Text="显示文本标签" FontSize="14" />
                                 <TextBlock Text="在图标下方显示文本标识"
@@ -182,10 +202,11 @@
 
                         <Border Height="1"
                                 Background="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                Margin="0,4" />
+                                Margin="0,4"
+                                IsVisible="{Binding IsClassicStyle}" />
 
-                        <!-- 悬浮窗主题色 -->
-                        <StackPanel Spacing="8">
+                        <!-- 悬浮窗主题色（仅经典模式） -->
+                        <StackPanel Spacing="8" IsVisible="{Binding IsClassicStyle}">
                             <TextBlock Text="悬浮窗主题色" FontSize="14" />
                             <TextBlock Text="选择悬浮窗按钮的颜色"
                                        FontSize="13"
