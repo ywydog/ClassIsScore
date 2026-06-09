@@ -15,7 +15,7 @@ on:
 
 env:
   DOTNET_VERSION: '8.0.x'
-  PROJECT_PATH: 'ClassIsScore/ClassIsScore.csproj'
+  PROJECT_PATH: 'ClassIsScore.csproj'
 
 jobs:
   build:
