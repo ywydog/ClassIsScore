@@ -71,18 +71,13 @@
             </Border.Transitions>
 
             <!-- 应用图标 -->
-            <Viewbox x:Name="IconViewbox"
-                     Width="28"
-                     Height="28"
-                     HorizontalAlignment="Center"
-                     VerticalAlignment="Center">
-                <Canvas Width="24"
-                        Height="24">
-                    <!-- 星形图标，代表积分 -->
-                    <Path Fill="White"
-                          Data="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z" />
-                </Canvas>
-            </Viewbox>
+            <Image x:Name="AppLogoImage"
+                   Source="avares://ClassIsScore/Assets/AppLogo.png"
+                   Width="28"
+                   Height="28"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Stretch="Uniform" />
         </Border>
 
         <!-- 文本标签 -->

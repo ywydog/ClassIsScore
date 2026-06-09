@@ -101,8 +101,8 @@ public partial class FloatingWindow : Window
         FloatingBorder.CornerRadius = new CornerRadius(cornerRadius);
 
         // 更新图标大小
-        IconViewbox.Width = iconSize;
-        IconViewbox.Height = iconSize;
+        AppLogoImage.Width = iconSize;
+        AppLogoImage.Height = iconSize;
 
         // 更新显示文本
         DisplayTextLabel.Text = settings.DisplayText;
