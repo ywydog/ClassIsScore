@@ -1,0 +1,50 @@
+<Window x:Class="ClassIsScore.Views.FloatingWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="ClassIsScore"
+        Width="56"
+        Height="56"
+        ShowInTaskbar="False"
+        IsHitTestVisible="True"
+        Topmost="True"
+        ShowActivated="False"
+        Background="Transparent"
+        SystemDecorations="None"
+        ExtendClientAreaToDecorationsHint="True"
+        WindowStartupLocation="Manual">
+
+    <!-- 悬浮窗内容：圆形图标按钮 -->
+    <Border x:Name="FloatingBorder"
+            Width="48"
+            Height="48"
+            CornerRadius="24"
+            Background="#CC4CC2FF"
+            BoxShadow="0 2 8 0 #33000000"
+            PointerPressed="OnPointerPressed"
+            PointerMoved="OnPointerMoved"
+            PointerReleased="OnPointerReleased"
+            Cursor="Hand">
+
+        <Border.Transitions>
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.2" />
+            </Transitions>
+        </Border.Transitions>
+
+        <!-- 应用图标 -->
+        <Viewbox Width="28"
+                 Height="28"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center">
+            <Canvas Width="24"
+                    Height="24">
+                <!-- 星形图标，代表积分 -->
+                <Path Fill="White"
+                      Data="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z" />
+            </Canvas>
+        </Viewbox>
+    </Border>
+</Window>

@@ -1,0 +1,54 @@
+<fa:ContentDialog x:Class="ClassIsScore.Controls.AdminVerifyDialog"
+                   xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:fa="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+                   mc:Ignorable="d"
+                   Title="管理员验证"
+                   PrimaryButtonText="验证"
+                   CloseButtonText="取消"
+                   DefaultButton="Primary"
+                   PrimaryButtonClick="OnPrimaryButtonClick">
+
+    <StackPanel Spacing="16" MinWidth="320" Margin="0,8,0,0">
+
+        <!-- 提示信息 -->
+        <TextBlock Text="请输入管理员密码以继续操作"
+                   FontSize="14"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   TextWrapping="Wrap" />
+
+        <!-- 密码输入框 -->
+        <TextBox x:Name="PasswordBox"
+                 PasswordChar="*"
+                 Watermark="请输入管理员密码"
+                 IsVisible="True" />
+
+        <!-- U盘验证提示 -->
+        <StackPanel x:Name="UsbVerifyPanel"
+                    IsVisible="False"
+                    Spacing="8">
+            <TextBlock Text="请插入管理员U盘后点击验证"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- 人脸验证提示 -->
+        <StackPanel x:Name="FaceVerifyPanel"
+                    IsVisible="False"
+                    Spacing="8">
+            <TextBlock Text="人脸验证功能尚未实现"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- 错误提示 -->
+        <TextBlock x:Name="ErrorText"
+                   Text=""
+                   FontSize="13"
+                   Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                   IsVisible="False" />
+
+    </StackPanel>
+</fa:ContentDialog>

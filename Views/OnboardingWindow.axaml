@@ -1,0 +1,360 @@
+<Window x:Class="ClassIsScore.Views.OnboardingWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+        mc:Ignorable="d"
+        Title="ClassIsScore - 初始设置向导"
+        Width="600"
+        Height="500"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        x:DataType="vm:OnboardingViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- 顶部步骤指示器 -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="24,16">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding StepIndicator}"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource SystemControlHighlightAltBrush}" />
+                <!-- 进度条 -->
+                <ProgressBar Minimum="0"
+                             Maximum="5"
+                             Value="{Binding CurrentStep}"
+                             Height="4"
+                             CornerRadius="2" />
+            </StackPanel>
+        </Border>
+
+        <!-- 中间内容区域 -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto">
+            <Grid Margin="32,24">
+
+                <!-- 步骤1：欢迎 -->
+                <StackPanel IsVisible="{Binding IsWelcomeStep}"
+                            Spacing="16"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <!-- 应用图标 -->
+                    <Border Width="80"
+                            Height="80"
+                            CornerRadius="20"
+                            Background="#4CC2FF"
+                            HorizontalAlignment="Center">
+                        <Viewbox Width="48"
+                                 Height="48"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center">
+                            <Canvas Width="24"
+                                    Height="24">
+                                <Path Fill="White"
+                                      Data="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z" />
+                            </Canvas>
+                        </Viewbox>
+                    </Border>
+
+                    <TextBlock Text="欢迎使用 ClassIsScore"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+
+                    <TextBlock Text="班级积分管理系统"
+                               FontSize="18"
+                               Foreground="{DynamicResource SystemControlDisabledTextBrush}"
+                               HorizontalAlignment="Center" />
+
+                    <TextBlock Text="这款应用将帮助您轻松管理班级学生积分，&#x0a;支持积分记录、排行榜、自动评价等功能。&#x0a;接下来我们将引导您完成初始设置。"
+                               FontSize="14"
+                               Foreground="{DynamicResource SystemControlDisabledTextBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               LineHeight="22" />
+
+                    <StackPanel Spacing="8"
+                                Margin="0,16,0,0"
+                                HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#4CC2FF" />
+                            <TextBlock Text="学生积分管理" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#4CC2FF" />
+                            <TextBlock Text="多种评价方式" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#4CC2FF" />
+                            <TextBlock Text="排行榜与结算" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#4CC2FF" />
+                            <TextBlock Text="插件扩展支持" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 步骤2：基本设置 -->
+                <StackPanel IsVisible="{Binding IsSetupStep}"
+                            Spacing="20">
+                    <TextBlock Text="基本设置"
+                               FontSize="24"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock Text="选择您喜欢的主题外观，让应用更符合您的使用习惯。"
+                               FontSize="14"
+                               Foreground="{DynamicResource SystemControlDisabledTextBrush}"
+                               TextWrapping="Wrap" />
+
+                    <!-- 深浅模式 -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="外观模式"
+                                   FontSize="14"
+                                   FontWeight="SemiBold" />
+                        <ToggleSwitch IsChecked="{Binding IsDarkMode}"
+                                      OnContent="深色模式"
+                                      OffContent="浅色模式"
+                                      Command="{Binding ToggleDarkModePreviewCommand}" />
+                    </StackPanel>
+
+                    <!-- 主题色选择 -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="主题色"
+                                   FontSize="14"
+                                   FontWeight="SemiBold" />
+                        <ItemsControl ItemsSource="{Binding PresetAccentColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"
+                                               ItemWidth="48"
+                                               ItemHeight="48" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="40"
+                                            Height="40"
+                                            CornerRadius="20"
+                                            Background="{Binding}"
+                                            Cursor="Hand"
+                                            PointerPressed="OnAccentColorClick">
+                                        <Border.Transitions>
+                                            <Transitions>
+                                                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                                            </Transitions>
+                                        </Border.Transitions>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 步骤3：导入学生 -->
+                <StackPanel IsVisible="{Binding IsImportStep}"
+                            Spacing="20">
+                    <TextBlock Text="导入学生"
+                               FontSize="24"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock Text="您可以选择现在导入学生数据，也可以稍后在应用中添加。"
+                               FontSize="14"
+                               Foreground="{DynamicResource SystemControlDisabledTextBrush}"
+                               TextWrapping="Wrap" />
+
+                    <!-- 导入选项 -->
+                    <StackPanel Spacing="12"
+                                Margin="0,8,0,0">
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="16"
+                                Cursor="Hand"
+                                PointerPressed="OnImportExcelClick">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="📊 从 Excel/CSV 导入"
+                                           FontSize="16"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="支持 .xlsx 和 .csv 格式的学生名单文件"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource SystemControlDisabledTextBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="16"
+                                Cursor="Hand"
+                                PointerPressed="OnManualAddClick">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="✏️ 手动添加"
+                                           FontSize="16"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="在应用中逐个添加学生信息"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource SystemControlDisabledTextBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="16"
+                                Cursor="Hand"
+                                PointerPressed="OnSkipImportClick">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="⏭️ 稍后设置"
+                                           FontSize="16"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="跳过此步骤，稍后在学生管理页面中添加"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource SystemControlDisabledTextBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 步骤4：管理员设置 -->
+                <StackPanel IsVisible="{Binding IsAdminStep}"
+                            Spacing="20">
+                    <TextBlock Text="管理员设置"
+                               FontSize="24"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock Text="设置管理员密码可以保护敏感操作，防止未授权修改。此步骤可选，您可以跳过。"
+                               FontSize="14"
+                               Foreground="{DynamicResource SystemControlDisabledTextBrush}"
+                               TextWrapping="Wrap" />
+
+                    <ToggleSwitch IsChecked="{Binding IsAdminPasswordEnabled}"
+                                  OnContent="启用管理员密码"
+                                  OffContent="不启用管理员密码" />
+
+                    <!-- 密码输入区域 -->
+                    <StackPanel IsVisible="{Binding IsAdminPasswordEnabled}"
+                                Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="管理员密码" FontSize="13" />
+                            <TextBox PasswordChar="●"
+                                     Text="{Binding AdminPassword}"
+                                     Watermark="请输入管理员密码" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="确认密码" FontSize="13" />
+                            <TextBox PasswordChar="●"
+                                     Text="{Binding ConfirmAdminPassword}"
+                                     Watermark="请再次输入管理员密码" />
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding PasswordError}"
+                                   FontSize="12"
+                                   Foreground="Red"
+                                   IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 步骤5：完成 -->
+                <StackPanel IsVisible="{Binding IsCompleteStep}"
+                            Spacing="16"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <!-- 完成图标 -->
+                    <Border Width="80"
+                            Height="80"
+                            CornerRadius="20"
+                            Background="#00CC6A"
+                            HorizontalAlignment="Center">
+                        <Viewbox Width="48"
+                                 Height="48"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center">
+                            <Canvas Width="24"
+                                    Height="24">
+                                <Path Fill="White"
+                                      Data="M9,16.17L4.83,12L3.41,13.41L9,19L21,7L19.59,5.59L9,16.17Z" />
+                            </Canvas>
+                        </Viewbox>
+                    </Border>
+
+                    <TextBlock Text="设置完成！"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+
+                    <TextBlock Text="您已完成所有初始设置，&#x0a;现在可以开始使用 ClassIsScore 了！"
+                               FontSize="14"
+                               Foreground="{DynamicResource SystemControlDisabledTextBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               LineHeight="22" />
+
+                    <StackPanel Spacing="8"
+                                Margin="0,16,0,0"
+                                HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#00CC6A" />
+                            <TextBlock Text="主题外观已配置" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#00CC6A" />
+                            <TextBlock Text="学生数据可随时添加" FontSize="13" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="#00CC6A" />
+                            <TextBlock Text="管理员保护已就绪" FontSize="13" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+            </Grid>
+        </ScrollViewer>
+
+        <!-- 底部按钮区域 -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="24,12">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <!-- 左侧：跳过按钮 -->
+                <Button Grid.Column="0"
+                        Content="跳过"
+                        Command="{Binding SkipCommand}"
+                        HorizontalAlignment="Left"
+                        IsVisible="{Binding !IsLastStep}" />
+
+                <!-- 中间：上一步按钮 -->
+                <Button Grid.Column="1"
+                        Content="上一步"
+                        Command="{Binding BackCommand}"
+                        Margin="0,0,8,0"
+                        IsVisible="{Binding CanGoBack}" />
+
+                <!-- 右侧：下一步按钮 -->
+                <Button Grid.Column="2"
+                        Content="下一步"
+                        Command="{Binding NextCommand}"
+                        IsVisible="{Binding !IsLastStep}" />
+
+                <!-- 右侧：完成按钮 -->
+                <Button Grid.Column="2"
+                        Content="完成"
+                        Command="{Binding FinishCommand}"
+                        IsVisible="{Binding IsLastStep}" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

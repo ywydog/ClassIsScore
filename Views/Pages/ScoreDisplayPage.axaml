@@ -1,0 +1,98 @@
+<UserControl x:Class="ClassIsScore.Views.Pages.ScoreDisplayPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:fa="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+             xmlns:controls="clr-namespace:ClassIsScore.Controls"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             mc:Ignorable="d"
+             x:DataType="vm:ScoreDisplayViewModel">
+
+    <DockPanel>
+        <!-- 顶部工具栏 -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                Padding="16,10"
+                BoxShadow="0 1 4 0 #11000000">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <!-- 显示模式切换按钮组 -->
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="CardModeButton"
+                            Content="卡片"
+                            Click="OnCardModeClick"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center" />
+                    <Button x:Name="CircleModeButton"
+                            Content="圆形"
+                            Click="OnCircleModeClick"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center" />
+                    <Button x:Name="PetModeButton"
+                            Content="宠物"
+                            Click="OnPetModeClick"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- 状态消息 -->
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusMessage}"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                <!-- 快捷加减分值设置 -->
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center"
+                            Margin="0,0,16,0">
+                    <TextBlock Text="分值:"
+                               FontSize="13"
+                               VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding QuickScoreValue}"
+                                   Minimum="0.5"
+                                   Maximum="100"
+                                   Increment="0.5"
+                                   Width="100" />
+                </StackPanel>
+
+                <!-- 刷新按钮 -->
+                <Button Grid.Column="3"
+                        x:Name="RefreshButton"
+                        Click="OnRefreshClick"
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <fa:SymbolIcon Symbol="Refresh" FontSize="14" />
+                        <TextBlock Text="刷新" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- 主体区域：根据显示模式动态切换 -->
+        <ScrollViewer>
+            <Panel x:Name="DisplayPanel">
+                <!-- 卡片模式 -->
+                <UniformGrid x:Name="CardGrid"
+                             Rows="0"
+                             Columns="5"
+                             IsVisible="True" />
+
+                <!-- 圆形模式 -->
+                <UniformGrid x:Name="CircleGrid"
+                             Rows="0"
+                             Columns="6"
+                             IsVisible="False" />
+
+                <!-- 宠物模式 -->
+                <UniformGrid x:Name="PetGrid"
+                             Rows="0"
+                             Columns="4"
+                             IsVisible="False" />
+            </Panel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

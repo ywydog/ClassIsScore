@@ -1,0 +1,71 @@
+<UserControl x:Class="ClassIsScore.Controls.PetDisplayControl"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             x:DataType="vm:StudentDisplayItem"
+             mc:Ignorable="d"
+             Width="180"
+             Height="220"
+             Margin="8">
+
+    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            CornerRadius="12"
+            BoxShadow="0 2 8 0 #33000000"
+            PointerPressed="OnPetPointerPressed">
+        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="6"
+                    Margin="12">
+
+            <!-- 宠物图像区域 -->
+            <Border Width="80"
+                    Height="80"
+                    CornerRadius="40"
+                    Background="{DynamicResource AccentFillColorDefaultBrush}"
+                    ClipToBounds="True">
+                <TextBlock x:Name="PetEmoji"
+                           Text="🐱"
+                           FontSize="40"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Border>
+
+            <!-- 宠物等级显示（星星图标） -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="2"
+                        x:Name="LevelStarsPanel">
+            </StackPanel>
+
+            <!-- 经验条 -->
+            <Grid Width="120"
+                  Height="8"
+                  Margin="0,2,0,0">
+                <Border Background="#33808080"
+                        CornerRadius="4" />
+                <Border x:Name="ExperienceBar"
+                        Background="{DynamicResource AccentFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        HorizontalAlignment="Left"
+                        Width="60" />
+            </Grid>
+
+            <!-- 学生姓名 -->
+            <TextBlock Text="{Binding Name}"
+                       FontSize="14"
+                       FontWeight="Medium"
+                       HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       MaxWidth="150" />
+
+            <!-- 积分显示 -->
+            <TextBlock Text="{Binding ScoreText}"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
+    </Border>
+</UserControl>

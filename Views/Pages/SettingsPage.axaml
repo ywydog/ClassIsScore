@@ -1,0 +1,299 @@
+<UserControl x:Class="ClassIsScore.Views.Pages.SettingsPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             x:DataType="vm:SettingsViewModel"
+             mc:Ignorable="d"
+             d:DesignWidth="800"
+             d:DesignHeight="700">
+
+    <ScrollViewer>
+        <StackPanel Margin="32,24" Spacing="20" MaxWidth="700">
+
+            <!-- 页面标题 -->
+            <TextBlock Text="设置"
+                       FontSize="28"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,8" />
+
+            <TextBlock Text="管理应用外观、功能和行为偏好"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Margin="0,0,0,16" />
+
+            <!-- 基本设置区域 - 主题色 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="外观" FontWeight="SemiBold" FontSize="18" />
+
+                    <!-- 深色/浅色模式切换 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="深色模式" FontWeight="SemiBold" FontSize="15" />
+                            <TextBlock Text="在深色和浅色主题之间切换"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1"
+                                      IsChecked="{Binding IsDarkMode}"
+                                      OnContent="深色"
+                                      OffContent="浅色"
+                                      IsCheckedChanged="OnDarkModeToggled" />
+                    </Grid>
+
+                    <!-- 主题色选择 -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="主题色" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock Text="选择应用的主题色"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ItemsControl ItemsSource="{Binding PresetAccentColors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" ItemWidth="44" ItemHeight="44" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Button Padding="0"
+                                            Margin="4"
+                                            CornerRadius="20"
+                                            Width="36"
+                                            Height="36"
+                                            Click="OnAccentColorClicked"
+                                            Tag="{Binding}">
+                                        <Button.Content>
+                                            <Border CornerRadius="18"
+                                                    Width="36"
+                                                    Height="36">
+                                                <Border.Background>
+                                                    <SolidColorBrush Color="{Binding}" />
+                                                </Border.Background>
+                                            </Border>
+                                        </Button.Content>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 悬浮窗设置区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="悬浮窗" FontWeight="SemiBold" FontSize="18" />
+
+                    <!-- 启用/禁用悬浮窗 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="启用悬浮窗" FontWeight="SemiBold" FontSize="15" />
+                            <TextBlock Text="在桌面上显示悬浮窗，快速查看积分信息"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1"
+                                      IsChecked="{Binding IsFloatingWindowEnabled}"
+                                      OnContent="启用"
+                                      OffContent="禁用" />
+                    </Grid>
+
+                    <!-- 透明度滑块 -->
+                    <StackPanel Spacing="8" IsVisible="{Binding IsFloatingWindowEnabled}">
+                        <TextBlock Text="透明度" FontSize="14" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Slider Grid.Column="0"
+                                    Minimum="0.1"
+                                    Maximum="1.0"
+                                    Value="{Binding FloatingWindowOpacity}"
+                                    TickFrequency="0.1"
+                                    IsSnapToTickEnabled="True" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding FloatingWindowOpacity, StringFormat={}{0:P0}}"
+                                       FontSize="13"
+                                       VerticalAlignment="Center"
+                                       Width="48"
+                                       TextAlignment="Right" />
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 管理员设置区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="管理员设置" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock Text="配置管理员验证方式和权限"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Content="前往设置"
+                            Command="{Binding NavigateToAdminSettingsCommand}"
+                            HorizontalAlignment="Right" />
+                </Grid>
+            </Border>
+
+            <!-- 自动评价设置区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="自动评价设置" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock Text="配置自动评价规则和触发条件"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Content="前往设置"
+                            Command="{Binding NavigateToAutoEvaluationCommand}"
+                            HorizontalAlignment="Right" />
+                </Grid>
+            </Border>
+
+            <!-- 数据管理区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="数据管理" FontWeight="SemiBold" FontSize="18" />
+
+                    <!-- 数据目录路径 -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="数据目录" FontSize="14" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding DataFolderPath}"
+                                     IsReadOnly="True"
+                                     FontSize="13" />
+                            <Button Grid.Column="1"
+                                    Content="打开"
+                                    Command="{Binding OpenDataFolderCommand}" />
+                        </Grid>
+                    </StackPanel>
+
+                    <Border Height="1"
+                            Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            Margin="0,4" />
+
+                    <!-- 数据导出/导入 -->
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="数据导出与导入" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock Text="导出所有应用数据为zip备份文件，或从zip文件恢复数据"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <Button Grid.Column="0"
+                                    Content="导出所有数据"
+                                    Command="{Binding ExportDataCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center" />
+                            <Button Grid.Column="1"
+                                    Content="导入数据"
+                                    Command="{Binding ImportDataCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+
+                    <Border Height="1"
+                            Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            Margin="0,4" />
+
+                    <!-- 学生数据导出/导入 -->
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="学生数据导出与导入" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock Text="仅导出或导入学生数据（支持Excel/CSV/zip格式）"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <Button Grid.Column="0"
+                                    Content="导出学生数据"
+                                    Command="{Binding ExportStudentsCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center" />
+                            <Button Grid.Column="1"
+                                    Content="导入学生数据"
+                                    Command="{Binding ImportStudentsCommand}"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- 传输进度 -->
+                    <StackPanel Spacing="8" IsVisible="{Binding IsTransferring}">
+                        <ProgressBar Minimum="0"
+                                     Maximum="100"
+                                     Value="{Binding TransferProgress}"
+                                     IsIndeterminate="False" />
+                        <TextBlock Text="{Binding TransferStatus}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 关于区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="关于" FontWeight="SemiBold" FontSize="18" />
+
+                    <StackPanel Spacing="4">
+                        <TextBlock FontSize="16" FontWeight="SemiBold">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}ClassIsScore v{0}">
+                                    <Binding Path="AppVersion" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Text="班级积分管理系统"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <Border Height="1"
+                            Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            Margin="0,4" />
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="技术栈"
+                                   FontSize="14"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Avalonia UI · FluentAvalonia · .NET 8"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="CommunityToolkit.Mvvm · Microsoft.Extensions.Hosting"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 保存按钮 -->
+            <Button Content="保存设置"
+                    Command="{Binding SaveSettingsCommand}"
+                    HorizontalAlignment="Left"
+                    Padding="24,8" />
+
+            <!-- 状态消息 -->
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

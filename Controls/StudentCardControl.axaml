@@ -1,0 +1,61 @@
+<UserControl x:Class="ClassIsScore.Controls.StudentCardControl"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             x:DataType="vm:StudentDisplayItem"
+             mc:Ignorable="d"
+             Width="160"
+             Height="180"
+             Margin="8">
+
+    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            CornerRadius="8"
+            BoxShadow="0 2 8 0 #33000000"
+            PointerPressed="OnCardPointerPressed">
+        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="8"
+                    Margin="12">
+
+            <!-- 头像区域：圆形裁切，默认显示姓名首字 -->
+            <Border Width="64"
+                    Height="64"
+                    CornerRadius="32"
+                    ClipToBounds="True"
+                    Background="{DynamicResource AccentFillColorDefaultBrush}">
+                <Panel>
+                    <Image x:Name="AvatarImage"
+                           Source="{Binding Avatar}"
+                           Stretch="UniformToFill"
+                           IsVisible="False" />
+                    <TextBlock x:Name="InitialText"
+                               Text="{Binding Initial}"
+                               FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Panel>
+            </Border>
+
+            <!-- 姓名和积分并排显示 -->
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Name}"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ScoreText}"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

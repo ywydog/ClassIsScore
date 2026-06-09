@@ -1,0 +1,388 @@
+using System;
+using System.Linq;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using ClassIsScore.Services;
+using ClassIsScore.Services.Abstractions;
+using ClassIsScore.ViewModels;
+using ClassIsScore.Views.Pages;
+using FluentAvalonia.UI.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace ClassIsScore;
+
+/// <summary>
+/// 主窗口代码逻辑
+/// </summary>
+public partial class MainWindow : Window
+{
+    private readonly ILogger<MainWindow>? _logger;
+    private readonly IUriNavigationService? _uriNavigationService;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        SetupNavigationItems();
+    }
+
+    public MainWindow(
+        ILogger<MainWindow> logger,
+        IUriNavigationService uriNavigationService)
+    {
+        _logger = logger;
+        _uriNavigationService = uriNavigationService;
+
+        InitializeComponent();
+        SetupNavigationItems();
+    }
+
+    /// <summary>
+    /// 设置导航项图标和事件
+    /// </summary>
+    private void SetupNavigationItems()
+    {
+        // 为每个导航项设置图标
+        var menuItems = NavView.MenuItemsSource?.Cast<NavigationViewItem>().ToList();
+        if (menuItems != null)
+        {
+            foreach (var item in menuItems)
+            {
+                if (item.Tag is string tag)
+                {
+                    item.IconSource = new SymbolIconSource { Symbol = GetSymbolForTag(tag) };
+                }
+            }
+        }
+
+        // 为底部导航项设置图标
+        var footerItems = NavView.FooterMenuItemsSource?.Cast<NavigationViewItem>().ToList();
+        if (footerItems != null)
+        {
+            foreach (var item in footerItems)
+            {
+                if (item.Tag is string tag)
+                {
+                    item.IconSource = new SymbolIconSource { Symbol = GetSymbolForTag(tag) };
+                }
+            }
+        }
+
+        // 注册选择变更事件
+        NavView.SelectionChanged += OnNavViewSelectionChanged;
+    }
+
+    /// <summary>
+    /// 导航视图加载完成时，默认选中主页
+    /// </summary>
+    private void NavView_Loaded(object? sender, RoutedEventArgs e)
+    {
+        // 默认选中主页
+        var menuItems = NavView.MenuItemsSource?.Cast<object>().ToList();
+        if (menuItems is { Count: > 0 })
+        {
+            NavView.SelectedItem = menuItems[0];
+        }
+    }
+
+    /// <summary>
+    /// 导航项选择变更时，切换页面内容
+    /// </summary>
+    private void OnNavViewSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (args.SelectedItem is NavigationViewItem item && item.Tag is string tag)
+        {
+            NavigateToPage(tag);
+        }
+    }
+
+    /// <summary>
+    /// 根据标签导航到对应页面
+    /// </summary>
+    public void NavigateToPage(string tag)
+    {
+        _logger?.LogDebug("导航到页面: {Tag}", tag);
+
+        // 清空当前内容
+        ContentPanel.Children.Clear();
+
+        // 根据标签创建对应页面
+        Control? pageContent = tag switch
+        {
+            "Home" => CreateScoreDisplayPage(),
+            "ScoreDisplay" => CreateScoreDisplayPage(),
+            "StudentManagement" => CreateStudentManagementPage(),
+            "ScoreManagement" => CreateScoreManagementPage(),
+            "Settlement" => CreateSettlementPage(),
+            "Leaderboard" => CreateLeaderboardPage(),
+            "Settings" => CreateSettingsPage(),
+            "AdminSettings" => CreateAdminSettingsPage(),
+            "AutoEvaluation" => CreateAutoEvaluationPage(),
+            _ => new TextBlock
+            {
+                Text = GetPageTitle(tag),
+                FontSize = 28,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Margin = new Avalonia.Thickness(0, 100, 0, 0)
+            }
+        };
+
+        if (pageContent != null)
+        {
+            ContentPanel.Children.Add(pageContent);
+        }
+    }
+
+    /// <summary>
+    /// 创建学生管理页面
+    /// </summary>
+    private StudentManagementPage? CreateStudentManagementPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<StudentManagementPage>();
+            var viewModel = appHost.GetService<StudentManagementViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建学生管理页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 创建积分管理页面
+    /// </summary>
+    private ScoreManagementPage? CreateScoreManagementPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<ScoreManagementPage>();
+            var viewModel = appHost.GetService<ScoreManagementViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建积分管理页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 创建结算页面
+    /// </summary>
+    private SettlementPage? CreateSettlementPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<SettlementPage>();
+            var viewModel = appHost.GetService<SettlementViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建结算页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 创建积分显示页面
+    /// </summary>
+    private ScoreDisplayPage? CreateScoreDisplayPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<ScoreDisplayPage>();
+            var viewModel = appHost.GetService<ScoreDisplayViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建积分显示页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 创建排行榜页面
+    /// </summary>
+    private LeaderboardPage? CreateLeaderboardPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<LeaderboardPage>();
+            var viewModel = appHost.GetService<LeaderboardViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建排行榜页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 创建设置页面
+    /// </summary>
+    private SettingsPage? CreateSettingsPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<SettingsPage>();
+            var viewModel = appHost.GetService<SettingsViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+
+                // 订阅设置页面的导航请求事件
+                viewModel.NavigateToAdminSettingsRequested += () => NavigateToPage("AdminSettings");
+                viewModel.NavigateToAutoEvaluationRequested += () => NavigateToPage("AutoEvaluation");
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建设置页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 创建管理员设置页面
+    /// </summary>
+    private AdminSettingsPage? CreateAdminSettingsPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<AdminSettingsPage>();
+            var viewModel = appHost.GetService<AdminSettingsViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建管理员设置页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 创建自动评价页面
+    /// </summary>
+    private AutoEvaluationPage? CreateAutoEvaluationPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<AutoEvaluationPage>();
+            var viewModel = appHost.GetService<AutoEvaluationViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建自动评价页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 根据标签获取对应的图标符号
+    /// </summary>
+    private static Symbol GetSymbolForTag(string tag) => tag switch
+    {
+        "Home" => Symbol.Home,
+        "ScoreDisplay" => Symbol.View,
+        "StudentManagement" => Symbol.People,
+        "ScoreManagement" => Symbol.Star,
+        "Settlement" => Symbol.Calculator,
+        "Leaderboard" => Symbol.SolidStar,
+        "History" => Symbol.Clock,
+        "Settings" => Symbol.Settings,
+        _ => Symbol.Help
+    };
+
+    /// <summary>
+    /// 获取页面标题
+    /// </summary>
+    private static string GetPageTitle(string tag) => tag switch
+    {
+        "Home" => "主页",
+        "ScoreDisplay" => "积分显示",
+        "StudentManagement" => "学生管理",
+        "ScoreManagement" => "积分管理",
+        "Settlement" => "结算",
+        "Leaderboard" => "排行榜",
+        "History" => "历史记录",
+        "Settings" => "设置",
+        _ => tag
+    };
+}

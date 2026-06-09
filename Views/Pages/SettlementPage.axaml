@@ -1,0 +1,192 @@
+<UserControl x:Class="ClassIsScore.Views.Pages.SettlementPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             xmlns:models="clr-namespace:ClassIsScore.Models"
+             x:DataType="vm:SettlementViewModel"
+             mc:Ignorable="d"
+             d:DesignWidth="900"
+             d:DesignHeight="600">
+
+    <UserControl.Styles>
+        <!-- 结算按钮醒目红色样式 -->
+        <Style Selector="Button.SettleButton">
+            <Setter Property="Background" Value="#D32F2F" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="40,14" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <!-- 撤销按钮样式 -->
+        <Style Selector="Button.RevertButton">
+            <Setter Property="Background" Value="#FF9800" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <!-- 导出按钮样式 -->
+        <Style Selector="Button.ExportButton">
+            <Setter Property="Padding" Value="20,8" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Margin="24,16" Spacing="20">
+
+            <!-- 顶部：结算按钮区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="24,20">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <TextBlock Text="积分结算"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="结算将清空所有学生积分和历史记录，并自动创建备份文件"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               MaxWidth="500" />
+                    <Button Classes="SettleButton"
+                            Content="执行结算"
+                            Command="{Binding SettleCommand}"
+                            IsEnabled="{Binding CanSettle}" />
+                    <TextBlock Text="{Binding StatusMessage}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               MaxWidth="500" />
+                </StackPanel>
+            </Border>
+
+            <!-- 中部：导出区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="24,16">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="数据导出"
+                               FontSize="16"
+                               FontWeight="SemiBold" />
+
+                    <!-- 导出格式选择 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="导出格式："
+                                   VerticalAlignment="Center"
+                                   FontSize="13" />
+                        <ComboBox SelectedIndex="{Binding SelectedExportFormat}"
+                                  MinWidth="100">
+                            <ComboBoxItem Content="月度" />
+                            <ComboBoxItem Content="周度" />
+                            <ComboBoxItem Content="日度" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- 日期选择区域 -->
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="选择月份："
+                                       VerticalAlignment="Center"
+                                       FontSize="13" />
+                            <CalendarDatePicker SelectedDate="{Binding SelectedMonth}"
+                                                MinWidth="140" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="选择周起始日："
+                                       VerticalAlignment="Center"
+                                       FontSize="13" />
+                            <CalendarDatePicker SelectedDate="{Binding SelectedWeekStart}"
+                                                MinWidth="140" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="选择日期："
+                                       VerticalAlignment="Center"
+                                       FontSize="13" />
+                            <CalendarDatePicker SelectedDate="{Binding SelectedDate}"
+                                                MinWidth="140" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ExportButton"
+                                Content="导出表格"
+                                Command="{Binding ExportCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding ExportedFilePath}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- 下方：结算历史列表 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="24,16">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="结算历史"
+                               FontSize="16"
+                               FontWeight="SemiBold" />
+
+                    <DataGrid ItemsSource="{Binding SettlementHistory}"
+                              IsReadOnly="True"
+                              AutoGenerateColumns="False"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True"
+                              MinHeight="200">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="结算时间" Binding="{Binding SettledAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="160" />
+                            <DataGridTextColumn Header="学生数量" Binding="{Binding StudentCount}" Width="80" />
+                            <DataGridTextColumn Header="总积分" Binding="{Binding TotalScore}" Width="80" />
+                            <DataGridTextColumn Header="备份文件" Binding="{Binding BackupFilePath}" Width="*" />
+                            <DataGridTemplateColumn Header="状态" Width="80">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="models:SettlementRecord">
+                                        <Panel>
+                                            <TextBlock Text="已撤销"
+                                                       Foreground="#FF9800"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
+                                                       IsVisible="{Binding IsReverted}" />
+                                            <TextBlock Text="正常"
+                                                       Foreground="#4CAF50"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
+                                                       IsVisible="{Binding !IsReverted}" />
+                                        </Panel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="操作" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="models:SettlementRecord">
+                                        <Button Content="撤销"
+                                                Classes="RevertButton"
+                                                IsVisible="{Binding !IsReverted}"
+                                                Command="{Binding $parent[UserControl].((vm:SettlementViewModel)DataContext).RevertSettlementCommand}"
+                                                CommandParameter="{Binding Id}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

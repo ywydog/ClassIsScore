@@ -1,0 +1,16 @@
+<Application x:Class="ClassIsScore.App"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:styling="clr-namespace:FluentAvalonia.Styling;assembly=FluentAvalonia"
+             RequestedThemeVariant="Default">
+    <Application.Styles>
+        <styling:FluentAvaloniaTheme CustomAccentColor="#4CC2FF" />
+    </Application.Styles>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- 全局字体 -->
+            <FontFamily x:Key="ContentControlThemeFontFamily">avares://Avalonia.Fonts.Inter/Inter#Inter</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

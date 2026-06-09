@@ -1,0 +1,228 @@
+<UserControl x:Class="ClassIsScore.Views.Pages.ScoreManagementPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             xmlns:models="clr-namespace:ClassIsScore.Models"
+             x:DataType="vm:ScoreManagementViewModel"
+             mc:Ignorable="d"
+             d:DesignWidth="900"
+             d:DesignHeight="600">
+
+    <UserControl.Styles>
+        <!-- 快捷评价项按钮样式 -->
+        <Style Selector="Button.EvalButton">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="4,2" />
+            <Setter Property="MinWidth" Value="80" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <!-- 撤销按钮绿色（3分钟内） -->
+        <Style Selector="Button.RevertGreen">
+            <Setter Property="Background" Value="#4CAF50" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <!-- 撤销按钮橙色（超时需管理员验证） -->
+        <Style Selector="Button.RevertOrange">
+            <Setter Property="Background" Value="#FF9800" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="260,*">
+
+        <!-- 左侧：学生列表 -->
+        <Border Grid.Column="0"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+                <!-- 搜索标题 -->
+                <Border DockPanel.Dock="Top"
+                        Padding="12,8"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="0,0,0,1">
+                    <TextBlock Text="学生列表"
+                               FontSize="14"
+                               FontWeight="SemiBold" />
+                </Border>
+
+                <!-- 学生列表 -->
+                <ListBox ItemsSource="{Binding Students}"
+                         SelectedItem="{Binding SelectedStudent}"
+                         Margin="0,4">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:Student">
+                            <Grid ColumnDefinitions="*,Auto"
+                                  Margin="4,4">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="13" />
+                                    <TextBlock Text="{Binding StudentNumber}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        CornerRadius="4"
+                                        Padding="8,2"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Score}"
+                                               FontSize="13"
+                                               FontWeight="SemiBold" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- 右侧内容区 -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*">
+
+            <!-- 右侧上方：加减分操作区 -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="16,12">
+                <StackPanel Spacing="10">
+                    <!-- 选中学生显示 -->
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="当前学生："
+                                   VerticalAlignment="Center"
+                                   FontSize="13" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding SelectedStudent.Name, FallbackValue='未选择'}"
+                                   FontWeight="SemiBold"
+                                   FontSize="14"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- 分数和原因输入 -->
+                    <Grid ColumnDefinitions="Auto,80,Auto,*,Auto,Auto">
+                        <TextBlock Text="分数："
+                                   VerticalAlignment="Center"
+                                   FontSize="13" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding ScoreChange}"
+                                 MinWidth="60" />
+                        <TextBlock Grid.Column="2"
+                                   Text="  原因："
+                                   VerticalAlignment="Center"
+                                   FontSize="13" />
+                        <TextBox Grid.Column="3"
+                                 Text="{Binding Reason}"
+                                 Watermark="请输入原因" />
+                        <Button Grid.Column="4"
+                                Content="加分"
+                                Command="{Binding AddScoreCommand}"
+                                Margin="8,0,0,0"
+                                Padding="16,6" />
+                        <Button Grid.Column="5"
+                                Content="减分"
+                                Command="{Binding SubtractScoreCommand}"
+                                Margin="4,0,0,0"
+                                Padding="16,6" />
+                    </Grid>
+
+                    <!-- 常用评价项快捷按钮 -->
+                    <StackPanel Orientation="Horizontal" Spacing="0">
+                        <TextBlock Text="快捷："
+                                   VerticalAlignment="Center"
+                                   FontSize="13"
+                                   Margin="0,0,4,0" />
+                        <ItemsControl ItemsSource="{Binding EvaluationItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:EvaluationItem">
+                                    <Button Classes="EvalButton"
+                                            Content="{Binding Name}"
+                                            Command="{Binding $parent[UserControl].((vm:ScoreManagementViewModel)DataContext).QuickScoreCommand}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- 状态消息 -->
+                    <TextBlock Text="{Binding StatusMessage}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </Border>
+
+            <!-- 筛选控件 -->
+            <Border Grid.Row="1"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="16,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="筛选："
+                               VerticalAlignment="Center"
+                               FontSize="13" />
+                    <TextBlock Text="学生"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                    <ComboBox ItemsSource="{Binding Students}"
+                              SelectedItem="{Binding FilterStudent}"
+                              MinWidth="100"
+                              DisplayMemberBinding="{Binding Name}" />
+                    <TextBlock Text="从"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                    <CalendarDatePicker SelectedDate="{Binding FilterStartDate}"
+                                        MinWidth="120" />
+                    <TextBlock Text="到"
+                               VerticalAlignment="Center"
+                               FontSize="12" />
+                    <CalendarDatePicker SelectedDate="{Binding FilterEndDate}"
+                                        MinWidth="120" />
+                    <Button Content="筛选"
+                            Command="{Binding ApplyFilterCommand}"
+                            Padding="12,4" />
+                    <Button Content="清除"
+                            Command="{Binding ClearFilterCommand}"
+                            Padding="12,4" />
+                </StackPanel>
+            </Border>
+
+            <!-- 右侧下方：历史记录列表 -->
+            <DataGrid Grid.Row="2"
+                      ItemsSource="{Binding HistoryRecords}"
+                      IsReadOnly="True"
+                      AutoGenerateColumns="False"
+                      CanUserResizeColumns="True"
+                      CanUserSortColumns="True"
+                      Margin="8,4">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="120" />
+                    <DataGridTextColumn Header="学生" Binding="{Binding StudentName}" Width="80" />
+                    <DataGridTextColumn Header="变动" Binding="{Binding ScoreChange}" Width="60" />
+                    <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="*" />
+                    <DataGridTemplateColumn Header="撤销" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="models:ScoreRecord">
+                                <Button Content="撤销"
+                                        IsVisible="{Binding !IsReverted}"
+                                        Command="{Binding $parent[UserControl].((vm:ScoreManagementViewModel)DataContext).RevertScoreCommand}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Grid>
+</UserControl>
