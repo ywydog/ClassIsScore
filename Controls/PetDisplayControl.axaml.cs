@@ -4,7 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using ClassIsScore.Models;
-using FluentAvalonia.UI.Controls;
+using ClassIsScore.ViewModels;
 
 namespace ClassIsScore.Controls;
 
@@ -18,57 +18,10 @@ public partial class PetDisplayControl : UserControl
     /// </summary>
     public event EventHandler<Student>? StudentClicked;
 
-    /// <summary>
-    /// 宠物等级依赖属性
-    /// </summary>
-    public static readonly StyledProperty<int> PetLevelProperty =
-        AvaloniaProperty.Register<PetDisplayControl, int>(nameof(PetLevel), 1);
-
-    /// <summary>
-    /// 宠物等级
-    /// </summary>
-    public int PetLevel
-    {
-        get => GetValue(PetLevelProperty);
-        set => SetValue(PetLevelProperty, value);
-    }
-
-    /// <summary>
-    /// 宠物经验值依赖属性
-    /// </summary>
-    public static readonly StyledProperty<double> PetExperienceProperty =
-        AvaloniaProperty.Register<PetDisplayControl, double>(nameof(PetExperience));
-
-    /// <summary>
-    /// 宠物经验值
-    /// </summary>
-    public double PetExperience
-    {
-        get => GetValue(PetExperienceProperty);
-        set => SetValue(PetExperienceProperty, value);
-    }
-
-    /// <summary>
-    /// 宠物样式标识依赖属性（预留接口）
-    /// </summary>
-    public static readonly StyledProperty<string?> PetStyleProperty =
-        AvaloniaProperty.Register<PetDisplayControl, string?>(nameof(PetStyle));
-
-    /// <summary>
-    /// 宠物样式标识
-    /// </summary>
-    public string? PetStyle
-    {
-        get => GetValue(PetStyleProperty);
-        set => SetValue(PetStyleProperty, value);
-    }
-
     public PetDisplayControl()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        PetLevelProperty.Changed.AddClassHandler<PetDisplayControl>(OnPetLevelChanged);
-        PetExperienceProperty.Changed.AddClassHandler<PetDisplayControl>(OnPetExperienceChanged);
     }
 
     /// <summary>
@@ -76,77 +29,88 @@ public partial class PetDisplayControl : UserControl
     /// </summary>
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        UpdateLevelStars();
-        UpdateExperienceBar();
-        UpdatePetEmoji();
+        UpdateDisplay();
     }
 
     /// <summary>
-    /// 宠物等级变更时更新星星显示
+    /// 根据绑定数据更新所有显示元素
     /// </summary>
-    private void OnPetLevelChanged(PetDisplayControl control, AvaloniaPropertyChangedEventArgs e)
+    private void UpdateDisplay()
     {
-        control.UpdateLevelStars();
-    }
+        if (DataContext is not StudentDisplayItem item) return;
 
-    /// <summary>
-    /// 宠物经验值变更时更新经验条
-    /// </summary>
-    private void OnPetExperienceChanged(PetDisplayControl control, AvaloniaPropertyChangedEventArgs e)
-    {
-        control.UpdateExperienceBar();
-    }
+        var petLevel = item.PetLevel;
+        var hasPet = item.HasPet;
+        var isGraduated = item.IsGraduated;
 
-    /// <summary>
-    /// 更新等级星星图标显示
-    /// </summary>
-    private void UpdateLevelStars()
-    {
-        if (LevelStarsPanel == null) return;
+        // 更新宠物emoji
+        PetEmojiText.Text = item.PetEmoji;
 
-        LevelStarsPanel.Children.Clear();
-        var level = Math.Min(PetLevel, 5); // 最多显示5颗星
-        for (int i = 0; i < level; i++)
+        // 更新宠物图片区域背景（等级渐变色）
+        var gradient = PetSystem.GetLevelGradient(petLevel);
+        PetImageBorder.Background = new LinearGradientBrush
         {
-            var icon = new SymbolIcon
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+            GradientStops =
             {
-                Symbol = Symbol.StarFilled,
-                FontSize = 14,
-                Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xC1, 0x07))
-            };
-            LevelStarsPanel.Children.Add(icon);
-        }
-    }
-
-    /// <summary>
-    /// 更新经验条宽度
-    /// </summary>
-    private void UpdateExperienceBar()
-    {
-        if (ExperienceBar == null) return;
-
-        // 经验值范围 0~100，映射到经验条宽度（总宽120）
-        var ratio = Math.Clamp(PetExperience / 100.0, 0, 1);
-        ExperienceBar.Width = 120 * ratio;
-    }
-
-    /// <summary>
-    /// 根据宠物样式更新宠物 emoji（预留接口）
-    /// </summary>
-    private void UpdatePetEmoji()
-    {
-        if (PetEmoji == null) return;
-
-        // 根据宠物样式标识选择不同 emoji，预留自定义接口
-        PetEmoji.Text = PetStyle switch
-        {
-            "cat" => "🐱",
-            "dog" => "🐶",
-            "rabbit" => "🐰",
-            "panda" => "🐼",
-            "fox" => "🦊",
-            _ => "🐱" // 默认猫咪
+                new GradientStop(Color.Parse(gradient.Start), 0),
+                new GradientStop(Color.Parse(gradient.End), 1)
+            }
         };
+
+        // 未领养时灰色背景
+        if (!hasPet)
+        {
+            PetImageBorder.Background = new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA));
+        }
+
+        // 更新等级徽章
+        LevelBadgeText.Text = $"Lv.{petLevel}";
+        var borderColor = PetSystem.GetLevelBorderColor(petLevel);
+        LevelBadge.Background = new SolidColorBrush(Color.Parse(borderColor));
+
+        // 更新卡片边框颜色
+        CardBorder.BorderBrush = new SolidColorBrush(Color.Parse(borderColor));
+
+        // 更新毕业标记
+        GraduatedMark.IsVisible = isGraduated;
+
+        // 更新经验进度条
+        var progress = item.LevelProgress;
+        var barWidth = 140.0;
+        if (progress.IsMaxLevel)
+        {
+            ExperienceBar.Width = barWidth;
+        }
+        else
+        {
+            var ratio = Math.Clamp(progress.Percentage / 100.0, 0, 1);
+            ExperienceBar.Width = barWidth * ratio;
+        }
+
+        // 更新经验条渐变色
+        ExperienceBar.Background = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(Color.Parse(gradient.Start), 0),
+                new GradientStop(Color.Parse(gradient.End), 1)
+            }
+        };
+
+        // 更新经验文本
+        ExpText.Text = progress.IsMaxLevel
+            ? "MAX"
+            : $"{progress.Current}/{progress.Required}";
+
+        // 更新宠物名称
+        PetNameText.Text = hasPet ? item.PetName : "未领养";
+
+        // 更新等级称号
+        LevelTitleText.Text = hasPet ? item.LevelTitle : "";
     }
 
     /// <summary>
@@ -154,9 +118,9 @@ public partial class PetDisplayControl : UserControl
     /// </summary>
     private void OnPetPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is Student student)
+        if (DataContext is StudentDisplayItem item)
         {
-            StudentClicked?.Invoke(this, student);
+            StudentClicked?.Invoke(this, item.Student);
         }
     }
 }

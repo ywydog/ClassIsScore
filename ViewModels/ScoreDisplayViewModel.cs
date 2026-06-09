@@ -68,6 +68,36 @@ public class StudentDisplayItem : ObservableObject
             }
         }
     }
+
+    /// <summary>宠物类型ID</summary>
+    public string? PetType => _student.PetType;
+
+    /// <summary>宠物经验值</summary>
+    public double PetExp => _student.PetExp;
+
+    /// <summary>宠物等级（根据经验值计算）</summary>
+    public int PetLevel => PetSystem.CalculateLevel(_student.PetExp);
+
+    /// <summary>宠物emoji</summary>
+    public string PetEmoji => PetSystem.GetPetEmoji(_student.PetType);
+
+    /// <summary>宠物名称</summary>
+    public string PetName => PetSystem.GetPetTypeInfo(_student.PetType ?? "")?.Name ?? "未领养";
+
+    /// <summary>等级进度</summary>
+    public LevelProgress LevelProgress => PetSystem.GetLevelProgress(_student.PetExp);
+
+    /// <summary>等级边框颜色</summary>
+    public string LevelBorderColor => PetSystem.GetLevelBorderColor(PetLevel);
+
+    /// <summary>等级称号</summary>
+    public string LevelTitle => PetSystem.GetLevelTitle(PetLevel);
+
+    /// <summary>是否已领养宠物</summary>
+    public bool HasPet => !string.IsNullOrEmpty(_student.PetType);
+
+    /// <summary>是否已毕业</summary>
+    public bool IsGraduated => PetLevel >= PetSystem.MaxLevel;
 }
 
 /// <summary>
@@ -119,6 +149,23 @@ public partial class ScoreDisplayViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string _statusMessage = string.Empty;
+
+    /// <summary>
+    /// 所有可用宠物类型列表
+    /// </summary>
+    public PetTypeInfo[] PetTypes => PetSystem.AllPetTypes;
+
+    /// <summary>
+    /// 是否显示宠物选择对话框
+    /// </summary>
+    [ObservableProperty]
+    private bool _showPetSelection;
+
+    /// <summary>
+    /// 当前选择宠物的学生
+    /// </summary>
+    [ObservableProperty]
+    private StudentDisplayItem? _petSelectingStudent;
 
     public ScoreDisplayViewModel(
         IScoreService scoreService,
@@ -245,5 +292,31 @@ public partial class ScoreDisplayViewModel : ObservableObject
     partial void OnSelectedStudentChanged(StudentDisplayItem? value)
     {
         // 可扩展：选中学生时触发额外操作
+    }
+
+    /// <summary>
+    /// 选择宠物命令
+    /// </summary>
+    [RelayCommand]
+    private async Task SelectPetAsync(string? petTypeId)
+    {
+        if (PetSelectingStudent == null || string.IsNullOrEmpty(petTypeId)) return;
+
+        try
+        {
+            var student = PetSelectingStudent.Student;
+            student.PetType = petTypeId;
+            await _studentService.UpdateStudentAsync(student);
+            StatusMessage = $"已为 {student.Name} 领养 {PetSystem.GetPetEmoji(petTypeId)} {PetSystem.GetPetTypeInfo(petTypeId)?.Name}";
+            ShowPetSelection = false;
+
+            // 刷新列表
+            await LoadStudentsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "选择宠物失败");
+            StatusMessage = "选择宠物失败";
+        }
     }
 }

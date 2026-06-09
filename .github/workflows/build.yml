@@ -1,0 +1,120 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: '发布标签（如 v1.0.0）'
+        required: false
+        type: string
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  PROJECT_PATH: 'ClassIsScore/ClassIsScore.csproj'
+
+jobs:
+  build:
+    name: Build_${{ matrix.os }}_${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - os: windows
+            arch: x64
+            runner: windows-2022
+            rid: win-x64
+          - os: windows
+            arch: arm64
+            runner: windows-2022
+            rid: win-arm64
+          - os: linux
+            arch: x64
+            runner: ubuntu-22.04
+            rid: linux-x64
+          - os: linux
+            arch: arm64
+            runner: ubuntu-22.04
+            rid: linux-arm64
+          - os: macos
+            arch: x64
+            runner: macos-14
+            rid: osx-x64
+          - os: macos
+            arch: arm64
+            runner: macos-14
+            rid: osx-arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+
+      - name: Publish (Self-contained)
+        run: |
+          dotnet publish ${{ env.PROJECT_PATH }} \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o ./publish/${{ matrix.rid }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClassIsScore-${{ matrix.rid }}
+          path: ./publish/${{ matrix.rid }}/
+
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create Release Archives
+        run: |
+          mkdir -p ./release
+          cd ./artifacts
+          for dir in */; do
+            name=$(basename "$dir")
+            if [ "$name" = "win-x64" ] || [ "$name" = "win-arm64" ]; then
+              7z a -tzip "../release/ClassIsScore-${name}.zip" "./$dir/*"
+            else
+              tar czf "../release/ClassIsScore-${name}.tar.gz" -C "./$dir" .
+            fi
+          done
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "./release/*"
+          draft: true
+          generateReleaseNotes: true
+          token: ${{ secrets.GITHUB_TOKEN }}

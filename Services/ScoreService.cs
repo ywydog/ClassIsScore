@@ -172,6 +172,13 @@ public class ScoreService : IScoreService
 
         // 更新学生积分
         student.Score += scoreChange;
+
+        // 积分增加时，宠物经验值同步增加（扣分不影响宠物成长）
+        if (scoreChange > 0)
+        {
+            student.PetExp += scoreChange;
+        }
+
         await _studentService.UpdateStudentAsync(student);
 
         // 触发积分变动事件

@@ -173,6 +173,17 @@
                         <ComboBoxItem Content="女" />
                     </ComboBox>
 
+                    <!-- 宠物类型 -->
+                    <TextBlock Text="宠物类型" Margin="0,0,0,4" />
+                    <ComboBox x:Name="PetTypeComboBox"
+                              MinWidth="200"
+                              HorizontalAlignment="Stretch"
+                              Margin="0,0,0,12"
+                              SelectedIndex="0"
+                              SelectionChanged="OnPetTypeSelectionChanged">
+                        <ComboBoxItem Content="未领养" Tag="" />
+                    </ComboBox>
+
                     <!-- 按钮区域 -->
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right"

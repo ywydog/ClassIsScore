@@ -7,65 +7,127 @@
              x:DataType="vm:StudentDisplayItem"
              mc:Ignorable="d"
              Width="180"
-             Height="220"
+             Height="240"
              Margin="8">
 
-    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+    <Border x:Name="CardBorder"
+            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
             CornerRadius="12"
+            BorderThickness="2"
+            BorderBrush="#FFE0E0E0"
             BoxShadow="0 2 8 0 #33000000"
             PointerPressed="OnPetPointerPressed">
-        <StackPanel HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Spacing="6"
-                    Margin="12">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+              Margin="12,10">
 
-            <!-- 宠物图像区域 -->
-            <Border Width="80"
-                    Height="80"
-                    CornerRadius="40"
-                    Background="{DynamicResource AccentFillColorDefaultBrush}"
-                    ClipToBounds="True">
-                <TextBlock x:Name="PetEmoji"
-                           Text="🐱"
-                           FontSize="40"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
-            </Border>
+            <!-- 顶部：宠物图片区域 + 等级徽章 -->
+            <Grid Grid.Row="0"
+                  ColumnDefinitions="*,Auto">
+                <!-- 宠物图片区域 -->
+                <Border x:Name="PetImageBorder"
+                        Width="80"
+                        Height="80"
+                        CornerRadius="40"
+                        Background="#FFAAAAAA"
+                        ClipToBounds="True"
+                        HorizontalAlignment="Center">
+                    <TextBlock x:Name="PetEmojiText"
+                               Text="❓"
+                               FontSize="40"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
 
-            <!-- 宠物等级显示（星星图标） -->
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Spacing="2"
-                        x:Name="LevelStarsPanel">
-            </StackPanel>
-
-            <!-- 经验条 -->
-            <Grid Width="120"
-                  Height="8"
-                  Margin="0,2,0,0">
-                <Border Background="#33808080"
-                        CornerRadius="4" />
-                <Border x:Name="ExperienceBar"
-                        Background="{DynamicResource AccentFillColorDefaultBrush}"
-                        CornerRadius="4"
-                        HorizontalAlignment="Left"
-                        Width="60" />
+                <!-- 等级徽章 -->
+                <Border x:Name="LevelBadge"
+                        Grid.Column="1"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Right"
+                        Background="#FF4488FF"
+                        CornerRadius="8"
+                        Padding="6,2">
+                    <TextBlock x:Name="LevelBadgeText"
+                               Text="Lv.1"
+                               FontSize="11"
+                               FontWeight="Bold"
+                               Foreground="White" />
+                </Border>
             </Grid>
 
-            <!-- 学生姓名 -->
-            <TextBlock Text="{Binding Name}"
-                       FontSize="14"
-                       FontWeight="Medium"
-                       HorizontalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"
-                       MaxWidth="150" />
+            <!-- 毕业标记 -->
+            <Border x:Name="GraduatedMark"
+                    Grid.Row="1"
+                    IsVisible="False"
+                    HorizontalAlignment="Center"
+                    Background="#FFFFCC00"
+                    CornerRadius="4"
+                    Padding="8,2"
+                    Margin="0,4,0,0">
+                <TextBlock Text="🎓 已毕业"
+                           FontSize="11"
+                           FontWeight="Bold"
+                           Foreground="#FF333333" />
+            </Border>
 
-            <!-- 积分显示 -->
-            <TextBlock Text="{Binding ScoreText}"
-                       FontSize="18"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
-                       HorizontalAlignment="Center" />
-        </StackPanel>
+            <!-- 经验进度条 -->
+            <StackPanel Grid.Row="2"
+                        Margin="0,6,0,0"
+                        HorizontalAlignment="Center">
+                <Grid Width="140"
+                      Height="8">
+                    <Border Background="#33808080"
+                            CornerRadius="4" />
+                    <Border x:Name="ExperienceBar"
+                            CornerRadius="4"
+                            HorizontalAlignment="Left"
+                            Width="0">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                <GradientStop Color="#FF4488FF" Offset="0" />
+                                <GradientStop Color="#FF00C8FF" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                </Grid>
+                <TextBlock x:Name="ExpText"
+                           Text="0/40"
+                           FontSize="10"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,2,0,0" />
+            </StackPanel>
+
+            <!-- 底部：学生姓名 + 积分 -->
+            <StackPanel Grid.Row="3"
+                        HorizontalAlignment="Center"
+                        Margin="0,4,0,0">
+                <TextBlock Text="{Binding Name}"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="150" />
+
+                <TextBlock Text="{Binding ScoreText}"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                           HorizontalAlignment="Center" />
+
+                <!-- 宠物名称和称号 -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Spacing="4">
+                    <TextBlock x:Name="PetNameText"
+                               Text="未领养"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <TextBlock x:Name="LevelTitleText"
+                               Text=""
+                               FontSize="11"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
     </Border>
 </UserControl>

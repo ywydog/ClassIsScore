@@ -128,6 +128,8 @@ dotnet publish -c Release -r linux-x64 --self-contained
 
 命令行使用：`ClassIsScore --uri classisscore://app/scores`
 
+详细的 URI 调用文档请参阅 [docs/URI.md](docs/URI.md)，包含各语言调用示例、协议注册方法和 ClassIsland 联动说明。
+
 ## 数据存储
 
 所有数据以 JSON 格式存储在 `data/Data/` 目录下：

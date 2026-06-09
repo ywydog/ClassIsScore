@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using ClassIsScore.Controls;
 using ClassIsScore.Models;
 using ClassIsScore.ViewModels;
@@ -48,6 +50,17 @@ public partial class ScoreDisplayPage : UserControl
             if (DataContext is ScoreDisplayViewModel vm)
             {
                 SwitchDisplayMode(vm.DisplayMode);
+            }
+        }
+        else if (e.PropertyName == nameof(ScoreDisplayViewModel.ShowPetSelection))
+        {
+            if (DataContext is ScoreDisplayViewModel vm)
+            {
+                PetSelectionOverlay.IsVisible = vm.ShowPetSelection;
+                if (vm.ShowPetSelection)
+                {
+                    PopulatePetSelectionPanel(vm);
+                }
             }
         }
     }
@@ -226,10 +239,7 @@ public partial class ScoreDisplayPage : UserControl
         {
             var control = new PetDisplayControl
             {
-                DataContext = item,
-                PetLevel = vm.DisplaySettings.PetLevel,
-                PetExperience = vm.DisplaySettings.PetExperience,
-                PetStyle = vm.DisplaySettings.PetStyle
+                DataContext = item
             };
             control.StudentClicked += OnStudentClicked;
             PetGrid.Children.Add(control);
@@ -245,6 +255,15 @@ public partial class ScoreDisplayPage : UserControl
 
         var item = vm.Students.FirstOrDefault(s => s.Id == student.Id);
         if (item == null) return;
+
+        // 宠物模式下，未领养宠物时弹出宠物选择对话框
+        if (_currentMode == DisplayMode.Pet && !item.HasPet)
+        {
+            vm.PetSelectingStudent = item;
+            PetSelectionTitle.Text = $"为 {student.Name} 选择宠物";
+            vm.ShowPetSelection = true;
+            return;
+        }
 
         // 创建快捷加减分对话框
         var dialog = new ContentDialog
@@ -263,7 +282,7 @@ public partial class ScoreDisplayPage : UserControl
                     {
                         Text = $"当前积分: {student.Score:F1}",
                         FontSize = 16,
-                        FontWeight = Avalonia.Media.FontWeight.Bold
+                        FontWeight = FontWeight.Bold
                     },
                     new TextBlock
                     {
@@ -282,6 +301,80 @@ public partial class ScoreDisplayPage : UserControl
         else if (result == ContentDialogResult.Secondary)
         {
             await vm.QuickSubtractScoreCommand.ExecuteAsync(item);
+        }
+    }
+
+    /// <summary>
+    /// 填充宠物选择面板
+    /// </summary>
+    private void PopulatePetSelectionPanel(ScoreDisplayViewModel vm)
+    {
+        NormalPetPanel.Children.Clear();
+        MythicalPetPanel.Children.Clear();
+
+        foreach (var petType in vm.PetTypes)
+        {
+            var button = new Button
+            {
+                Margin = new Avalonia.Thickness(4),
+                Padding = new Avalonia.Thickness(8, 4),
+                Tag = petType.Id,
+                Content = new StackPanel
+                {
+                    Spacing = 2,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = petType.Emoji,
+                            FontSize = 24,
+                            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                        },
+                        new TextBlock
+                        {
+                            Text = petType.Name,
+                            FontSize = 11,
+                            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                        }
+                    }
+                }
+            };
+
+            button.Click += OnPetTypeSelected;
+
+            if (petType.Category == PetCategory.Normal)
+            {
+                NormalPetPanel.Children.Add(button);
+            }
+            else
+            {
+                MythicalPetPanel.Children.Add(button);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 宠物类型选择事件处理
+    /// </summary>
+    private async void OnPetTypeSelected(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is string petTypeId)
+        {
+            if (DataContext is ScoreDisplayViewModel vm)
+            {
+                await vm.SelectPetCommand.ExecuteAsync(petTypeId);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 宠物选择对话框取消按钮
+    /// </summary>
+    private void OnPetSelectionCancel(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ScoreDisplayViewModel vm)
+        {
+            vm.ShowPetSelection = false;
         }
     }
 }

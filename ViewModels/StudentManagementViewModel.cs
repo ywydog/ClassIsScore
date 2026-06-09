@@ -59,6 +59,17 @@ public partial class StudentManagementViewModel : ObservableObject
     [ObservableProperty]
     private string _editDialogTitle = string.Empty;
 
+    /// <summary>
+    /// 所有可用宠物类型
+    /// </summary>
+    public PetTypeInfo[] PetTypes => PetSystem.AllPetTypes;
+
+    /// <summary>
+    /// 编辑中学生选中的宠物类型ID
+    /// </summary>
+    [ObservableProperty]
+    private string? _editingPetType;
+
     public StudentManagementViewModel(
         IStudentService studentService,
         ILogger<StudentManagementViewModel> logger)
@@ -101,6 +112,7 @@ public partial class StudentManagementViewModel : ObservableObject
     private void AddStudent()
     {
         EditingStudent = new Student();
+        EditingPetType = null;
         EditDialogTitle = "添加学生";
         IsEditDialogOpen = true;
     }
@@ -122,9 +134,12 @@ public partial class StudentManagementViewModel : ObservableObject
             Avatar = student.Avatar,
             Score = student.Score,
             GroupId = student.GroupId,
+            PetType = student.PetType,
+            PetExp = student.PetExp,
             CreatedAt = student.CreatedAt,
             UpdatedAt = student.UpdatedAt
         };
+        EditingPetType = student.PetType;
         EditDialogTitle = "编辑学生";
         IsEditDialogOpen = true;
     }
@@ -140,6 +155,9 @@ public partial class StudentManagementViewModel : ObservableObject
 
         try
         {
+            // 同步宠物类型选择
+            EditingStudent.PetType = EditingPetType;
+
             // 判断是新增还是更新
             var existing = await _studentService.GetStudentByIdAsync(EditingStudent.Id);
             if (existing != null)

@@ -43,6 +43,16 @@ public class Student
     public Guid? GroupId { get; set; }
 
     /// <summary>
+    /// 宠物类型ID（如 "cat", "dog" 等）
+    /// </summary>
+    public string? PetType { get; set; }
+
+    /// <summary>
+    /// 宠物经验值（与积分关联，积分增加=宠物成长）
+    /// </summary>
+    public double PetExp { get; set; }
+
+    /// <summary>
     /// 创建时间
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.Now;
