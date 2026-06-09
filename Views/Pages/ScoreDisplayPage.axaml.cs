@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -62,6 +64,11 @@ public partial class ScoreDisplayPage : UserControl
                     PopulatePetSelectionPanel(vm);
                 }
             }
+        }
+        else if (e.PropertyName == nameof(ScoreDisplayViewModel.IsMultiSelectMode))
+        {
+            UpdateMultiSelectButtonStyle();
+            RefreshDisplay();
         }
     }
 
@@ -127,6 +134,32 @@ public partial class ScoreDisplayPage : UserControl
         if (DataContext is ScoreDisplayViewModel vm)
         {
             vm.SwitchToPetModeCommand.Execute(null);
+        }
+    }
+
+    /// <summary>
+    /// 多选按钮点击
+    /// </summary>
+    private void OnMultiSelectClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ScoreDisplayViewModel vm)
+        {
+            vm.ToggleMultiSelectCommand.Execute(null);
+        }
+    }
+
+    /// <summary>
+    /// 更新多选按钮样式
+    /// </summary>
+    private void UpdateMultiSelectButtonStyle()
+    {
+        if (DataContext is ScoreDisplayViewModel vm)
+        {
+            MultiSelectButton.Classes.Clear();
+            if (vm.IsMultiSelectMode)
+            {
+                MultiSelectButton.Classes.Add("accent");
+            }
         }
     }
 
@@ -209,6 +242,12 @@ public partial class ScoreDisplayPage : UserControl
             };
             control.StudentClicked += OnStudentClicked;
             CardGrid.Children.Add(control);
+
+            // 多选模式下设置选中视觉状态
+            if (vm.IsMultiSelectMode && item.IsSelected)
+            {
+                ApplySelectionHighlight(control);
+            }
         }
     }
 
@@ -226,6 +265,12 @@ public partial class ScoreDisplayPage : UserControl
             };
             control.StudentClicked += OnStudentClicked;
             CircleGrid.Children.Add(control);
+
+            // 多选模式下设置选中视觉状态
+            if (vm.IsMultiSelectMode && item.IsSelected)
+            {
+                ApplySelectionHighlight(control);
+            }
         }
     }
 
@@ -243,11 +288,33 @@ public partial class ScoreDisplayPage : UserControl
             };
             control.StudentClicked += OnStudentClicked;
             PetGrid.Children.Add(control);
+
+            // 多选模式下设置选中视觉状态
+            if (vm.IsMultiSelectMode && item.IsSelected)
+            {
+                ApplySelectionHighlight(control);
+            }
         }
     }
 
     /// <summary>
-    /// 学生控件点击事件处理，弹出快捷加减分对话框
+    /// 为控件应用选中高亮样式
+    /// </summary>
+    private void ApplySelectionHighlight(UserControl control)
+    {
+        control.Opacity = 0.6;
+    }
+
+    /// <summary>
+    /// 移除控件选中高亮样式
+    /// </summary>
+    private void RemoveSelectionHighlight(UserControl control)
+    {
+        control.Opacity = 1.0;
+    }
+
+    /// <summary>
+    /// 学生控件点击事件处理
     /// </summary>
     private async void OnStudentClicked(object? sender, Student student)
     {
@@ -255,6 +322,26 @@ public partial class ScoreDisplayPage : UserControl
 
         var item = vm.Students.FirstOrDefault(s => s.Id == student.Id);
         if (item == null) return;
+
+        // 多选模式下，切换选中状态
+        if (vm.IsMultiSelectMode)
+        {
+            vm.ToggleStudentSelection(item);
+
+            // 更新视觉状态
+            if (sender is UserControl control)
+            {
+                if (item.IsSelected)
+                {
+                    ApplySelectionHighlight(control);
+                }
+                else
+                {
+                    RemoveSelectionHighlight(control);
+                }
+            }
+            return;
+        }
 
         // 宠物模式下，未领养宠物时弹出宠物选择对话框
         if (_currentMode == DisplayMode.Pet && !item.HasPet)
@@ -266,6 +353,15 @@ public partial class ScoreDisplayPage : UserControl
         }
 
         // 创建快捷加减分对话框
+        var viewProfileButton = new Button
+        {
+            Content = "查看详情",
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left,
+            Padding = new Thickness(12, 4),
+            Tag = student.Id
+        };
+        viewProfileButton.Click += OnViewProfileFromDialog;
+
         var dialog = new ContentDialog
         {
             Title = $"{student.Name} - 快捷加减分",
@@ -287,7 +383,8 @@ public partial class ScoreDisplayPage : UserControl
                     new TextBlock
                     {
                         Text = $"加减分值: {vm.QuickScoreValue}"
-                    }
+                    },
+                    viewProfileButton
                 }
             }
         };
@@ -376,5 +473,47 @@ public partial class ScoreDisplayPage : UserControl
         {
             vm.ShowPetSelection = false;
         }
+    }
+
+    /// <summary>
+    /// 对话框中"查看详情"按钮点击事件
+    /// </summary>
+    private async void OnViewProfileFromDialog(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is Guid studentId)
+        {
+            await ShowStudentProfileAsync(studentId);
+        }
+    }
+
+    /// <summary>
+    /// 显示学生详情对话框
+    /// </summary>
+    private async Task ShowStudentProfileAsync(Guid studentId)
+    {
+        var appHost = Services.AppHost.Instance;
+        if (appHost == null) return;
+
+        var profileViewModel = appHost.GetService<StudentProfileViewModel>();
+        var profilePage = appHost.GetService<StudentProfilePage>();
+
+        if (profileViewModel == null || profilePage == null) return;
+
+        profilePage.DataContext = profileViewModel;
+
+        // 加载学生数据
+        await profileViewModel.LoadStudentCommand.ExecuteAsync(studentId);
+        await profileViewModel.LoadScoreHistoryCommand.ExecuteAsync(null);
+        await profileViewModel.CalculateTrendCommand.ExecuteAsync(null);
+
+        var profileDialog = new ContentDialog
+        {
+            Title = $"学生详情 - {profileViewModel.StudentName}",
+            CloseButtonText = "关闭",
+            Content = profilePage,
+            MinWidth = 640
+        };
+
+        await profileDialog.ShowAsync();
     }
 }

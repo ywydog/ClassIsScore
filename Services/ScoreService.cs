@@ -364,6 +364,18 @@ public class ScoreService : IScoreService
     }
 
     /// <inheritdoc/>
+    public async Task AddScoreToMultipleStudentsAsync(List<Guid> studentIds, double scoreChange, string reason, string? operatorName = null)
+    {
+        foreach (var studentId in studentIds)
+        {
+            await AddScoreAsync(studentId, scoreChange, reason, operatorName);
+        }
+
+        _logger.LogInformation("批量积分变动: {Change}，原因: {Reason}，人数: {Count}",
+            scoreChange, reason, studentIds.Count);
+    }
+
+    /// <inheritdoc/>
     public double GetStudentScore(Guid studentId)
     {
         var student = _studentService.GetStudentByIdAsync(studentId).Result;

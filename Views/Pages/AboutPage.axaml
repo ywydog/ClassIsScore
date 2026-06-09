@@ -1,0 +1,313 @@
+<UserControl x:Class="ClassIsScore.Views.Pages.AboutPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             xmlns:models="clr-namespace:ClassIsScore.Models"
+             x:DataType="vm:AboutViewModel"
+             mc:Ignorable="d"
+             d:DesignWidth="800"
+             d:DesignHeight="900">
+
+    <ScrollViewer>
+        <StackPanel Margin="32,24" Spacing="20" MaxWidth="700">
+
+            <!-- 页面标题 -->
+            <TextBlock Text="关于"
+                       FontSize="28"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,8" />
+
+            <TextBlock Text="了解 ClassIsScore 的版本信息和开源许可"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Margin="0,0,0,16" />
+
+            <!-- 第1区 - 应用信息 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="24">
+                <StackPanel Spacing="16">
+                    <!-- 应用图标与基本信息 -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
+                        <Border Grid.Column="0"
+                                Width="64"
+                                Height="64"
+                                CornerRadius="12"
+                                Background="{DynamicResource AccentFillColorDefaultBrush}">
+                            <TextBlock Text="CS"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock FontSize="22" FontWeight="SemiBold">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} v{1}">
+                                        <Binding Path="AppName" />
+                                        <Binding Path="AppVersion" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <TextBlock Text="{Binding Description}"
+                                       FontSize="14"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Height="1"
+                            Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+
+                    <!-- 版权与许可证 -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <TextBlock Text="版权"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Copyright}"
+                                   FontSize="13"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <TextBlock Text="许可证"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding License}"
+                                   FontSize="13"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Border Height="1"
+                            Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+
+                    <!-- 链接按钮行 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="GitHub 仓库"
+                                Command="{Binding OpenLinkCommand}"
+                                CommandParameter="https://github.com/ywydog/ClassIsScore"
+                                Padding="12,6" />
+                        <Button Content="问题反馈"
+                                Command="{Binding OpenLinkCommand}"
+                                CommandParameter="https://github.com/ywydog/ClassIsScore/issues"
+                                Padding="12,6" />
+                        <Button Content="开发文档"
+                                Command="{Binding OpenLinkCommand}"
+                                CommandParameter="https://github.com/ywydog/ClassIsScore/blob/main/docs/DEVELOPMENT.md"
+                                Padding="12,6" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 第2区 - 常用链接 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="常用链接" FontWeight="SemiBold" FontSize="18" />
+
+                    <ItemsControl ItemsSource="{Binding ProjectLinks}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ProjectLink">
+                                <Button HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left"
+                                        Padding="8,8"
+                                        CornerRadius="6"
+                                        Command="{Binding $parent[UserControl].((vm:AboutViewModel)DataContext).OpenLinkCommand}"
+                                        CommandParameter="{Binding Url}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding IconGlyph}"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="16"
+                                                   VerticalAlignment="Center"
+                                                   Width="24"
+                                                   TextAlignment="Center" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Title}"
+                                                   FontSize="14"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="&#xE76C;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- 第3区 - 第三方库 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="第三方库" FontWeight="SemiBold" FontSize="18" />
+                    <TextBlock Text="ClassIsScore 使用了以下开源库，感谢它们的贡献者"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                    <ItemsControl ItemsSource="{Binding ThirdPartyLibs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ThirdPartyLibInfo">
+                                <Border Padding="0,8"
+                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                        BorderThickness="0,0,0,1">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Spacing="2">
+                                            <Button Content="{Binding Name}"
+                                                    FontSize="14"
+                                                    FontWeight="SemiBold"
+                                                    Padding="0"
+                                                    Command="{Binding $parent[UserControl].((vm:AboutViewModel)DataContext).OpenLinkCommand}"
+                                                    CommandParameter="{Binding Url}"
+                                                    Background="Transparent"
+                                                    BorderThickness="0" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        <StackPanel VerticalAlignment="Center" Spacing="2" HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding Version}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                       HorizontalAlignment="Right" />
+                                            <TextBlock Text="{Binding License}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                       HorizontalAlignment="Right" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- 第4区 - 鸣谢 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="鸣谢" FontWeight="SemiBold" FontSize="18" />
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="感谢以下项目和社区对 ClassIsScore 的帮助与支持："
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+
+                        <Border Padding="12,8"
+                                CornerRadius="6"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                            <StackPanel Spacing="6">
+                                <TextBlock TextWrapping="Wrap" FontSize="13">
+                                    <Run Text="● ClassIsland" FontWeight="SemiBold" />
+                                    <Run Text=" — 提供技术栈参考和设计灵感" />
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="13">
+                                    <Run Text="● class-pet-garden" FontWeight="SemiBold" />
+                                    <Run Text=" — 提供宠物图片资源 (MIT License)" />
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="13">
+                                    <Run Text="● SecScore" FontWeight="SemiBold" />
+                                    <Run Text=" — 功能参考" />
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="13">
+                                    <Run Text="● SystemTools" FontWeight="SemiBold" />
+                                    <Run Text=" — 人脸验证参考" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 第5区 - 诊断信息 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="诊断信息"
+                                   FontWeight="SemiBold"
+                                   FontSize="18"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1"
+                                Content="复制诊断信息"
+                                Command="{Binding CopyDiagnosticInfoCommand}"
+                                Padding="12,6" />
+                    </Grid>
+
+                    <Border Padding="12"
+                            CornerRadius="6"
+                            Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                        <TextBlock Text="{Binding DiagnosticInfo}"
+                                   FontSize="12"
+                                   FontFamily="Consolas,Courier New,monospace"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 第6区 - 开源许可证 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="开源许可证"
+                                   FontWeight="SemiBold"
+                                   FontSize="18"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1"
+                                Command="{Binding ShowLicenseCommand}"
+                                Padding="12,6">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="展开许可证" IsVisible="{Binding !IsLicenseExpanded}" />
+                                <TextBlock Text="收起许可证" IsVisible="{Binding IsLicenseExpanded}" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Text="本项目基于 MIT License 开源"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                    <Border IsVisible="{Binding IsLicenseExpanded}"
+                            Padding="12"
+                            CornerRadius="6"
+                            Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                        <TextBlock Text="{Binding LicenseText}"
+                                   FontSize="12"
+                                   FontFamily="Consolas,Courier New,monospace"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 底部寄语 -->
+            <TextBlock Text="让每一分都精彩 ✨"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       Margin="0,8,0,24" />
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

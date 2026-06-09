@@ -1,8 +1,11 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ClassIsScore.Models;
 using ClassIsScore.ViewModels;
+using FluentAvalonia.UI.Controls;
 
 namespace ClassIsScore.Views.Pages;
 
@@ -28,6 +31,107 @@ public partial class ScoreManagementPage : UserControl
             vm.LoadStudentsCommand.Execute(null);
             vm.LoadEvaluationItemsCommand.Execute(null);
             vm.LoadHistoryCommand.Execute(null);
+
+            // 监听多选模式变更以更新列表选择模式
+            vm.PropertyChanged += OnViewModelPropertyChanged;
+        }
+
+        // 监听列表选择变更
+        StudentListBox.SelectionChanged += OnStudentListBoxSelectionChanged;
+
+        // 监听查看详情按钮点击
+        ViewProfileButton.Click += OnViewProfileClick;
+    }
+
+    /// <summary>
+    /// 查看详情按钮点击事件
+    /// </summary>
+    private async void OnViewProfileClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ScoreManagementViewModel vm && vm.SelectedStudent != null)
+        {
+            await ShowStudentProfileAsync(vm.SelectedStudent.Id);
+        }
+    }
+
+    /// <summary>
+    /// 显示学生详情对话框
+    /// </summary>
+    private async Task ShowStudentProfileAsync(Guid studentId)
+    {
+        var appHost = Services.AppHost.Instance;
+        if (appHost == null) return;
+
+        var profileViewModel = appHost.GetService<StudentProfileViewModel>();
+        var profilePage = appHost.GetService<StudentProfilePage>();
+
+        if (profileViewModel == null || profilePage == null) return;
+
+        profilePage.DataContext = profileViewModel;
+
+        // 加载学生数据
+        await profileViewModel.LoadStudentCommand.ExecuteAsync(studentId);
+        await profileViewModel.LoadScoreHistoryCommand.ExecuteAsync(null);
+        await profileViewModel.CalculateTrendCommand.ExecuteAsync(null);
+
+        var profileDialog = new ContentDialog
+        {
+            Title = $"学生详情 - {profileViewModel.StudentName}",
+            CloseButtonText = "关闭",
+            Content = profilePage,
+            MinWidth = 640
+        };
+
+        await profileDialog.ShowAsync();
+    }
+
+    /// <summary>
+    /// ViewModel属性变更处理
+    /// </summary>
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ScoreManagementViewModel.IsMultiSelectMode))
+        {
+            if (DataContext is ScoreManagementViewModel vm)
+            {
+                if (vm.IsMultiSelectMode)
+                {
+                    // 切换到多选模式
+                    StudentListBox.SelectionMode = SelectionMode.Multiple;
+                    StudentListBox.SelectedItem = null;
+                }
+                else
+                {
+                    // 切换回单选模式
+                    StudentListBox.SelectionMode = SelectionMode.Single;
+                    StudentListBox.SelectedItems!.Clear();
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 学生列表选择变更处理，同步多选集合
+    /// </summary>
+    private void OnStudentListBoxSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is not ScoreManagementViewModel vm || !vm.IsMultiSelectMode) return;
+
+        // 同步选中项到ViewModel的SelectedStudents集合
+        foreach (var item in e.AddedItems)
+        {
+            if (item is Student student && !vm.SelectedStudents.Contains(student))
+            {
+                vm.SelectedStudents.Add(student);
+            }
+        }
+
+        foreach (var item in e.RemovedItems)
+        {
+            if (item is Student student)
+            {
+                vm.SelectedStudents.Remove(student);
+            }
         }
     }
 }

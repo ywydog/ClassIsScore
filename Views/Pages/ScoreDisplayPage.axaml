@@ -16,7 +16,7 @@
                     Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                     Padding="16,10"
                     BoxShadow="0 1 4 0 #11000000">
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                     <!-- 显示模式切换按钮组 -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <Button x:Name="CardModeButton"
@@ -44,8 +44,16 @@
                                Margin="16,0,0,0"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
+                    <!-- 多选按钮 -->
+                    <Button Grid.Column="2"
+                            x:Name="MultiSelectButton"
+                            Content="多选"
+                            Click="OnMultiSelectClick"
+                            VerticalAlignment="Center"
+                            Margin="0,0,8,0" />
+
                     <!-- 快捷加减分值设置 -->
-                    <StackPanel Grid.Column="2"
+                    <StackPanel Grid.Column="3"
                                 Orientation="Horizontal"
                                 Spacing="8"
                                 VerticalAlignment="Center"
@@ -61,7 +69,7 @@
                     </StackPanel>
 
                     <!-- 刷新按钮 -->
-                    <Button Grid.Column="3"
+                    <Button Grid.Column="4"
                             x:Name="RefreshButton"
                             Click="OnRefreshClick"
                             VerticalAlignment="Center">
@@ -70,6 +78,47 @@
                             <TextBlock Text="刷新" />
                         </StackPanel>
                     </Button>
+                </Grid>
+            </Border>
+
+            <!-- 底部批量操作栏 -->
+            <Border DockPanel.Dock="Bottom"
+                    x:Name="BatchActionBar"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    Padding="16,10"
+                    BoxShadow="0 -1 4 0 #11000000"
+                    IsVisible="{Binding IsMultiSelectMode}">
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+                    <TextBlock Text="已选择"
+                               FontSize="13"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding SelectedStudentCount}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                               VerticalAlignment="Center"
+                               Margin="4,0,0,0" />
+                    <TextBlock Grid.Column="2"
+                               Text="名学生"
+                               FontSize="13"
+                               VerticalAlignment="Center"
+                               Margin="0,0,0,0" />
+                    <Button Grid.Column="3"
+                            Content="全选"
+                            Command="{Binding SelectAllCommand}"
+                            Margin="8,0,0,0"
+                            Padding="12,6" />
+                    <Button Grid.Column="4"
+                            Content="批量加分"
+                            Command="{Binding BatchAddScoreCommand}"
+                            Margin="8,0,0,0"
+                            Padding="12,6" />
+                    <Button Grid.Column="5"
+                            Content="批量减分"
+                            Command="{Binding BatchSubtractScoreCommand}"
+                            Margin="8,0,0,0"
+                            Padding="12,6" />
                 </Grid>
             </Border>
 

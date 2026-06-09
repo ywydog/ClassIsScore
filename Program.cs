@@ -118,6 +118,7 @@ public static class Program
         services.AddSingleton<IFloatingWindowService, FloatingWindowService>();
         services.AddSingleton<IAutoEvaluationService, AutoEvaluationService>();
         services.AddSingleton<IDataTransferService, DataTransferService>();
+        services.AddSingleton<ITrayIconService, TrayIconService>();
 
         // 注册 ViewModel
         services.AddTransient<OnboardingViewModel>();
@@ -128,6 +129,8 @@ public static class Program
         services.AddTransient<AutoEvaluationViewModel>();
         services.AddTransient<AdminSettingsViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<AboutViewModel>();
+        services.AddTransient<StudentProfileViewModel>();
 
         // 注册页面
         services.AddTransient<StudentManagementPage>();
@@ -137,6 +140,8 @@ public static class Program
         services.AddTransient<AutoEvaluationPage>();
         services.AddTransient<AdminSettingsPage>();
         services.AddTransient<SettingsPage>();
+        services.AddTransient<AboutPage>();
+        services.AddTransient<StudentProfilePage>();
 
         // 注册主窗口
         services.AddTransient<MainWindow>();

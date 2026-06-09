@@ -43,3 +43,21 @@ public class BoolToTextConverter : IValueConverter
         throw new NotSupportedException();
     }
 }
+
+/// <summary>
+/// 非空对象转布尔值转换器（非null为true）
+/// </summary>
+public class NotNullToBoolConverter : IValueConverter
+{
+    public static readonly NotNullToBoolConverter Instance = new();
+
+    public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+    {
+        return value != null;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}

@@ -41,6 +41,17 @@ public partial class ScoreManagementViewModel : ObservableObject
     private Student? _selectedStudent;
 
     /// <summary>
+    /// 多选模式下选中的学生集合
+    /// </summary>
+    public ObservableCollection<Student> SelectedStudents { get; } = new();
+
+    /// <summary>
+    /// 是否处于多选模式
+    /// </summary>
+    [ObservableProperty]
+    private bool _isMultiSelectMode;
+
+    /// <summary>
     /// 要加减的分数
     /// </summary>
     [ObservableProperty]
@@ -82,6 +93,12 @@ public partial class ScoreManagementViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    /// <summary>
+    /// 已选择的学生数量
+    /// </summary>
+    [ObservableProperty]
+    private int _selectedStudentCount;
+
     public ScoreManagementViewModel(
         IScoreService scoreService,
         IStudentService studentService,
@@ -93,6 +110,12 @@ public partial class ScoreManagementViewModel : ObservableObject
 
         // 订阅积分变动事件
         _scoreService.ScoreChanged += OnScoreChanged;
+
+        // 监听多选集合变更
+        SelectedStudents.CollectionChanged += (_, _) =>
+        {
+            SelectedStudentCount = SelectedStudents.Count;
+        };
     }
 
     /// <summary>
@@ -105,6 +128,18 @@ public partial class ScoreManagementViewModel : ObservableObject
         if (student != null)
         {
             student.Score = e.NewScore;
+        }
+    }
+
+    /// <summary>
+    /// 多选模式变更时处理
+    /// </summary>
+    partial void OnIsMultiSelectModeChanged(bool value)
+    {
+        if (!value)
+        {
+            // 退出多选模式时清空已选列表
+            SelectedStudents.Clear();
         }
     }
 
@@ -188,6 +223,42 @@ public partial class ScoreManagementViewModel : ObservableObject
     [RelayCommand]
     private async Task AddScoreAsync()
     {
+        if (IsMultiSelectMode)
+        {
+            if (SelectedStudents.Count == 0)
+            {
+                StatusMessage = "请先选择学生";
+                return;
+            }
+
+            if (ScoreChange <= 0)
+            {
+                StatusMessage = "加分分数必须大于0";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Reason))
+            {
+                StatusMessage = "请输入原因";
+                return;
+            }
+
+            try
+            {
+                var ids = SelectedStudents.Select(s => s.Id).ToList();
+                await _scoreService.AddScoreToMultipleStudentsAsync(ids, ScoreChange, Reason);
+                StatusMessage = $"已为 {SelectedStudents.Count} 名学生加 {ScoreChange} 分";
+                Reason = string.Empty;
+                await LoadHistoryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "批量加分失败");
+                StatusMessage = "批量加分失败";
+            }
+            return;
+        }
+
         if (SelectedStudent == null)
         {
             StatusMessage = "请先选择学生";
@@ -226,6 +297,42 @@ public partial class ScoreManagementViewModel : ObservableObject
     [RelayCommand]
     private async Task SubtractScoreAsync()
     {
+        if (IsMultiSelectMode)
+        {
+            if (SelectedStudents.Count == 0)
+            {
+                StatusMessage = "请先选择学生";
+                return;
+            }
+
+            if (ScoreChange <= 0)
+            {
+                StatusMessage = "减分分数必须大于0";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Reason))
+            {
+                StatusMessage = "请输入原因";
+                return;
+            }
+
+            try
+            {
+                var ids = SelectedStudents.Select(s => s.Id).ToList();
+                await _scoreService.AddScoreToMultipleStudentsAsync(ids, -ScoreChange, Reason);
+                StatusMessage = $"已为 {SelectedStudents.Count} 名学生减 {ScoreChange} 分";
+                Reason = string.Empty;
+                await LoadHistoryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "批量减分失败");
+                StatusMessage = "批量减分失败";
+            }
+            return;
+        }
+
         if (SelectedStudent == null)
         {
             StatusMessage = "请先选择学生";
@@ -265,6 +372,30 @@ public partial class ScoreManagementViewModel : ObservableObject
     private async Task QuickScoreAsync(EvaluationItem? item)
     {
         if (item == null) return;
+
+        if (IsMultiSelectMode)
+        {
+            if (SelectedStudents.Count == 0)
+            {
+                StatusMessage = "请先选择学生";
+                return;
+            }
+
+            try
+            {
+                var ids = SelectedStudents.Select(s => s.Id).ToList();
+                await _scoreService.AddScoreToMultipleStudentsAsync(ids, item.ScoreChange, item.Name);
+                StatusMessage = $"已为 {SelectedStudents.Count} 名学生{(item.IsPositive ? "加" : "减")} {Math.Abs(item.ScoreChange)} 分（{item.Name}）";
+                await LoadHistoryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "批量快捷加减分失败");
+                StatusMessage = "批量快捷加减分失败";
+            }
+            return;
+        }
+
         if (SelectedStudent == null)
         {
             StatusMessage = "请先选择学生";
@@ -282,6 +413,37 @@ public partial class ScoreManagementViewModel : ObservableObject
             _logger.LogError(ex, "快捷加减分失败");
             StatusMessage = "快捷加减分失败";
         }
+    }
+
+    /// <summary>
+    /// 切换多选模式
+    /// </summary>
+    [RelayCommand]
+    private void ToggleMultiSelect()
+    {
+        IsMultiSelectMode = !IsMultiSelectMode;
+    }
+
+    /// <summary>
+    /// 全选学生
+    /// </summary>
+    [RelayCommand]
+    private void SelectAll()
+    {
+        SelectedStudents.Clear();
+        foreach (var student in Students)
+        {
+            SelectedStudents.Add(student);
+        }
+    }
+
+    /// <summary>
+    /// 清除选择
+    /// </summary>
+    [RelayCommand]
+    private void ClearSelection()
+    {
+        SelectedStudents.Clear();
     }
 
     /// <summary>

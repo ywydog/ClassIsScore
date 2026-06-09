@@ -58,6 +58,20 @@ public partial class SettingsPage : UserControl
     }
 
     /// <summary>
+    /// 悬浮窗主题色按钮点击事件
+    /// </summary>
+    private void OnFloatingAccentColorClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is string colorHex)
+        {
+            if (DataContext is SettingsViewModel vm)
+            {
+                vm.FloatingWindowAccentColor = colorHex;
+            }
+        }
+    }
+
+    /// <summary>
     /// 处理导出所有数据文件选择请求
     /// </summary>
     private async Task<string?> OnExportDataRequested()

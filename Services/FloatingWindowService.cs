@@ -18,6 +18,7 @@ namespace ClassIsScore.Services;
 public class FloatingWindowService : IFloatingWindowService
 {
     private readonly ILogger<FloatingWindowService> _logger;
+    private readonly IScoreService _scoreService;
     private readonly string _settingsFilePath;
     private FloatingWindowSettings _settings;
     private FloatingWindow? _floatingWindow;
@@ -38,11 +39,15 @@ public class FloatingWindowService : IFloatingWindowService
     /// </summary>
     public FloatingWindowSettings Settings => _settings;
 
-    public FloatingWindowService(ILogger<FloatingWindowService> logger)
+    public FloatingWindowService(ILogger<FloatingWindowService> logger, IScoreService scoreService)
     {
         _logger = logger;
+        _scoreService = scoreService;
         _settingsFilePath = Path.Combine(AppPaths.DataFolderPath, "floating_window.json");
         _settings = LoadSettings();
+
+        // 订阅积分变动事件，触发脉冲动画
+        _scoreService.ScoreChanged += OnScoreChanged;
     }
 
     /// <summary>
@@ -64,6 +69,7 @@ public class FloatingWindowService : IFloatingWindowService
                 {
                     _floatingWindow = new FloatingWindow(_settings);
                     _floatingWindow.FloatingPositionChanged += OnFloatingWindowPositionChanged;
+                    _floatingWindow.FloatingClicked += OnFloatingWindowClicked;
                     _floatingWindow.Closed += OnFloatingWindowClosed;
                 }
 
@@ -149,15 +155,67 @@ public class FloatingWindowService : IFloatingWindowService
         await SaveSettingsAsync();
         _logger.LogInformation("悬浮窗设置已更新");
 
-        // 如果悬浮窗正在显示，需要重新创建以应用新设置
+        // 如果悬浮窗正在显示，更新外观而无需重建窗口
         if (_floatingWindow != null && _floatingWindow.IsVisible)
         {
             Dispatcher.UIThread.Post(() =>
             {
-                _floatingWindow.Close();
-                _floatingWindow = null;
-                Show();
+                try
+                {
+                    _floatingWindow.UpdateFromSettings(_settings);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "更新悬浮窗外观失败");
+                }
             });
+        }
+    }
+
+    /// <summary>
+    /// 通知积分变动，触发悬浮窗脉冲动画
+    /// </summary>
+    public void NotifyScoreChange()
+    {
+        if (_floatingWindow != null && _floatingWindow.IsVisible)
+        {
+            _floatingWindow.NotifyScoreChange();
+        }
+    }
+
+    /// <summary>
+    /// 积分变动事件回调，触发脉冲动画
+    /// </summary>
+    private void OnScoreChanged(object? sender, ScoreChangedEventArgs e)
+    {
+        NotifyScoreChange();
+    }
+
+    /// <summary>
+    /// 悬浮窗点击回调，打开主窗口
+    /// </summary>
+    private void OnFloatingWindowClicked()
+    {
+        try
+        {
+            // 激活主窗口
+            if (App.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var mainWindow = desktop.MainWindow;
+                if (mainWindow != null)
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        mainWindow.Show();
+                        mainWindow.Activate();
+                        mainWindow.Focus();
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "激活主窗口失败");
         }
     }
 
@@ -179,6 +237,7 @@ public class FloatingWindowService : IFloatingWindowService
         if (_floatingWindow != null)
         {
             _floatingWindow.FloatingPositionChanged -= OnFloatingWindowPositionChanged;
+            _floatingWindow.FloatingClicked -= OnFloatingWindowClicked;
             _floatingWindow.Closed -= OnFloatingWindowClosed;
             _floatingWindow = null;
         }

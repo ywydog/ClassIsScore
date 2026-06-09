@@ -33,6 +33,7 @@
         <!-- 底部导航项 -->
         <fa:NavigationView.FooterMenuItems>
             <fa:NavigationViewItem Content="设置" Tag="Settings" />
+            <fa:NavigationViewItem Content="关于" Tag="About" />
         </fa:NavigationView.FooterMenuItems>
 
         <!-- 页面内容区域 -->

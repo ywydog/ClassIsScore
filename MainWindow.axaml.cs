@@ -19,6 +19,7 @@ public partial class MainWindow : Window
 {
     private readonly ILogger<MainWindow>? _logger;
     private readonly IUriNavigationService? _uriNavigationService;
+    private bool _forceClose;
 
     public MainWindow()
     {
@@ -35,6 +36,43 @@ public partial class MainWindow : Window
 
         InitializeComponent();
         SetupNavigationItems();
+    }
+
+    /// <summary>
+    /// 强制关闭窗口（不最小化到托盘）
+    /// </summary>
+    public void ForceClose()
+    {
+        _forceClose = true;
+        Close();
+    }
+
+    /// <summary>
+    /// 显示并激活窗口（从托盘恢复）
+    /// </summary>
+    public void ShowAndActivate()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+        Topmost = true;
+        Topmost = false;
+    }
+
+    /// <summary>
+    /// 窗口关闭时，根据设置决定是最小化到托盘还是真正关闭
+    /// </summary>
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (!_forceClose)
+        {
+            // 取消关闭，隐藏到托盘
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+
+        base.OnClosing(e);
     }
 
     /// <summary>
@@ -118,6 +156,7 @@ public partial class MainWindow : Window
             "Settings" => CreateSettingsPage(),
             "AdminSettings" => CreateAdminSettingsPage(),
             "AutoEvaluation" => CreateAutoEvaluationPage(),
+            "About" => CreateAboutPage(),
             _ => new TextBlock
             {
                 Text = GetPageTitle(tag),
@@ -289,6 +328,7 @@ public partial class MainWindow : Window
                 // 订阅设置页面的导航请求事件
                 viewModel.NavigateToAdminSettingsRequested += () => NavigateToPage("AdminSettings");
                 viewModel.NavigateToAutoEvaluationRequested += () => NavigateToPage("AutoEvaluation");
+                viewModel.NavigateToAboutRequested += () => NavigateToPage("About");
             }
 
             return page;
@@ -355,6 +395,33 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// 创建关于页面
+    /// </summary>
+    private AboutPage? CreateAboutPage()
+    {
+        try
+        {
+            var appHost = AppHost.Instance;
+            if (appHost == null) return null;
+
+            var page = appHost.GetService<AboutPage>();
+            var viewModel = appHost.GetService<AboutViewModel>();
+
+            if (page != null && viewModel != null)
+            {
+                page.DataContext = viewModel;
+            }
+
+            return page;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "创建关于页面失败");
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 根据标签获取对应的图标符号
     /// </summary>
     private static Symbol GetSymbolForTag(string tag) => tag switch
@@ -367,6 +434,7 @@ public partial class MainWindow : Window
         "Leaderboard" => Symbol.SolidStar,
         "History" => Symbol.Clock,
         "Settings" => Symbol.Settings,
+        "About" => Symbol.Help,
         _ => Symbol.Help
     };
 
@@ -383,6 +451,7 @@ public partial class MainWindow : Window
         "Leaderboard" => "排行榜",
         "History" => "历史记录",
         "Settings" => "设置",
+        "About" => "关于",
         _ => tag
     };
 }

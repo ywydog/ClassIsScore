@@ -55,4 +55,24 @@ public class FloatingWindowSettings
     /// 透明度，默认为1.0
     /// </summary>
     public double Opacity { get; set; } = 1.0;
+
+    /// <summary>
+    /// 悬浮按钮大小，默认56，范围40-80
+    /// </summary>
+    public double Size { get; set; } = 56;
+
+    /// <summary>
+    /// 悬浮按钮显示文本，默认"CS"
+    /// </summary>
+    public string DisplayText { get; set; } = "CS";
+
+    /// <summary>
+    /// 是否显示文本标签，默认true
+    /// </summary>
+    public bool ShowLabel { get; set; } = true;
+
+    /// <summary>
+    /// 自定义主题色（十六进制字符串，null表示使用系统主题色）
+    /// </summary>
+    public string? AccentColor { get; set; }
 }

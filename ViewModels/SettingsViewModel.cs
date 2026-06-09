@@ -19,6 +19,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IThemeService _themeService;
     private readonly IFloatingWindowService _floatingWindowService;
     private readonly IDataTransferService _dataTransferService;
+    private readonly ITrayIconService _trayIconService;
     private readonly ILogger<SettingsViewModel> _logger;
 
     /// <summary>
@@ -40,10 +41,46 @@ public partial class SettingsViewModel : ObservableObject
     private bool _isFloatingWindowEnabled;
 
     /// <summary>
+    /// 是否显示托盘图标
+    /// </summary>
+    [ObservableProperty]
+    private bool _showTrayIcon = true;
+
+    /// <summary>
+    /// 是否关闭时最小化到托盘
+    /// </summary>
+    [ObservableProperty]
+    private bool _closeToTray = true;
+
+    /// <summary>
     /// 悬浮窗透明度
     /// </summary>
     [ObservableProperty]
     private double _floatingWindowOpacity = 1.0;
+
+    /// <summary>
+    /// 悬浮窗大小
+    /// </summary>
+    [ObservableProperty]
+    private double _floatingWindowSize = 56;
+
+    /// <summary>
+    /// 悬浮窗显示文本
+    /// </summary>
+    [ObservableProperty]
+    private string _floatingWindowDisplayText = "CS";
+
+    /// <summary>
+    /// 是否显示悬浮窗文本标签
+    /// </summary>
+    [ObservableProperty]
+    private bool _floatingWindowShowLabel = true;
+
+    /// <summary>
+    /// 悬浮窗主题色（十六进制字符串，空表示使用系统主题色）
+    /// </summary>
+    [ObservableProperty]
+    private string _floatingWindowAccentColor = string.Empty;
 
     /// <summary>
     /// 应用版本号
@@ -97,15 +134,31 @@ public partial class SettingsViewModel : ObservableObject
         "#767676", // 灰色
     ];
 
+    /// <summary>
+    /// 悬浮窗预设主题色列表
+    /// </summary>
+    public string[] FloatingPresetAccentColors { get; } =
+    [
+        "#4CC2FF", // 默认蓝
+        "#0078D4", // 微软蓝
+        "#744DA9", // 紫色
+        "#E74856", // 红色
+        "#FF8C00", // 橙色
+        "#00CC6A", // 绿色
+        "#767676", // 灰色
+    ];
+
     public SettingsViewModel(
         IThemeService themeService,
         IFloatingWindowService floatingWindowService,
         IDataTransferService dataTransferService,
+        ITrayIconService trayIconService,
         ILogger<SettingsViewModel> logger)
     {
         _themeService = themeService;
         _floatingWindowService = floatingWindowService;
         _dataTransferService = dataTransferService;
+        _trayIconService = trayIconService;
         _logger = logger;
 
         // 订阅数据传输进度事件
@@ -126,6 +179,10 @@ public partial class SettingsViewModel : ObservableObject
         var floatingSettings = _floatingWindowService.Settings;
         IsFloatingWindowEnabled = floatingSettings.IsEnabled;
         FloatingWindowOpacity = floatingSettings.Opacity;
+        FloatingWindowSize = floatingSettings.Size;
+        FloatingWindowDisplayText = floatingSettings.DisplayText;
+        FloatingWindowShowLabel = floatingSettings.ShowLabel;
+        FloatingWindowAccentColor = floatingSettings.AccentColor ?? string.Empty;
 
         // 加载版本号
         AppVersion = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "未知";
@@ -213,6 +270,10 @@ public partial class SettingsViewModel : ObservableObject
             var floatingSettings = _floatingWindowService.Settings;
             floatingSettings.IsEnabled = IsFloatingWindowEnabled;
             floatingSettings.Opacity = FloatingWindowOpacity;
+            floatingSettings.Size = FloatingWindowSize;
+            floatingSettings.DisplayText = FloatingWindowDisplayText;
+            floatingSettings.ShowLabel = FloatingWindowShowLabel;
+            floatingSettings.AccentColor = string.IsNullOrEmpty(FloatingWindowAccentColor) ? null : FloatingWindowAccentColor;
             await ((Services.FloatingWindowService)_floatingWindowService).UpdateSettingsAsync(floatingSettings);
 
             StatusMessage = "设置已保存";
@@ -235,6 +296,11 @@ public partial class SettingsViewModel : ObservableObject
     public event Action? NavigateToAutoEvaluationRequested;
 
     /// <summary>
+    /// 导航到关于页面
+    /// </summary>
+    public event Action? NavigateToAboutRequested;
+
+    /// <summary>
     /// 请求导航到管理员设置页面
     /// </summary>
     [RelayCommand]
@@ -250,6 +316,15 @@ public partial class SettingsViewModel : ObservableObject
     private void NavigateToAutoEvaluation()
     {
         NavigateToAutoEvaluationRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// 请求导航到关于页面
+    /// </summary>
+    [RelayCommand]
+    private void NavigateToAbout()
+    {
+        NavigateToAboutRequested?.Invoke();
     }
 
     /// <summary>

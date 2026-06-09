@@ -13,7 +13,7 @@ namespace ClassIsScore.ViewModels;
 /// <summary>
 /// 学生显示项，封装学生数据并提供显示用属性
 /// </summary>
-public class StudentDisplayItem : ObservableObject
+public partial class StudentDisplayItem : ObservableObject
 {
     private readonly Student _student;
 
@@ -98,6 +98,12 @@ public class StudentDisplayItem : ObservableObject
 
     /// <summary>是否已毕业</summary>
     public bool IsGraduated => PetLevel >= PetSystem.MaxLevel;
+
+    /// <summary>
+    /// 是否被选中（多选模式用）
+    /// </summary>
+    [ObservableProperty]
+    private bool _isSelected;
 }
 
 /// <summary>
@@ -113,6 +119,11 @@ public partial class ScoreDisplayViewModel : ObservableObject
     /// 学生显示项列表
     /// </summary>
     public ObservableCollection<StudentDisplayItem> Students { get; } = new();
+
+    /// <summary>
+    /// 多选模式下选中的学生集合
+    /// </summary>
+    public ObservableCollection<StudentDisplayItem> SelectedStudents { get; } = new();
 
     /// <summary>
     /// 当前显示模式
@@ -151,6 +162,18 @@ public partial class ScoreDisplayViewModel : ObservableObject
     private string _statusMessage = string.Empty;
 
     /// <summary>
+    /// 是否处于多选模式
+    /// </summary>
+    [ObservableProperty]
+    private bool _isMultiSelectMode;
+
+    /// <summary>
+    /// 已选择的学生数量
+    /// </summary>
+    [ObservableProperty]
+    private int _selectedStudentCount;
+
+    /// <summary>
     /// 所有可用宠物类型列表
     /// </summary>
     public PetTypeInfo[] PetTypes => PetSystem.AllPetTypes;
@@ -178,6 +201,12 @@ public partial class ScoreDisplayViewModel : ObservableObject
 
         // 订阅积分变动事件
         _scoreService.ScoreChanged += OnScoreChanged;
+
+        // 监听多选集合变更
+        SelectedStudents.CollectionChanged += (_, _) =>
+        {
+            SelectedStudentCount = SelectedStudents.Count;
+        };
     }
 
     /// <summary>
@@ -189,6 +218,22 @@ public partial class ScoreDisplayViewModel : ObservableObject
         if (item != null)
         {
             item.Score = e.NewScore;
+        }
+    }
+
+    /// <summary>
+    /// 多选模式变更时处理
+    /// </summary>
+    partial void OnIsMultiSelectModeChanged(bool value)
+    {
+        if (!value)
+        {
+            // 退出多选模式时清空已选列表和选中状态
+            foreach (var item in SelectedStudents)
+            {
+                item.IsSelected = false;
+            }
+            SelectedStudents.Clear();
         }
     }
 
@@ -283,6 +328,109 @@ public partial class ScoreDisplayViewModel : ObservableObject
         {
             _logger.LogError(ex, "快捷减分失败");
             StatusMessage = "快捷减分失败";
+        }
+    }
+
+    /// <summary>
+    /// 批量加分
+    /// </summary>
+    [RelayCommand]
+    private async Task BatchAddScoreAsync()
+    {
+        if (SelectedStudents.Count == 0)
+        {
+            StatusMessage = "请先选择学生";
+            return;
+        }
+
+        try
+        {
+            var ids = SelectedStudents.Select(s => s.Id).ToList();
+            await _scoreService.AddScoreToMultipleStudentsAsync(ids, QuickScoreValue, "批量加分");
+            StatusMessage = $"已为 {SelectedStudents.Count} 名学生加 {QuickScoreValue} 分";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "批量加分失败");
+            StatusMessage = "批量加分失败";
+        }
+    }
+
+    /// <summary>
+    /// 批量减分
+    /// </summary>
+    [RelayCommand]
+    private async Task BatchSubtractScoreAsync()
+    {
+        if (SelectedStudents.Count == 0)
+        {
+            StatusMessage = "请先选择学生";
+            return;
+        }
+
+        try
+        {
+            var ids = SelectedStudents.Select(s => s.Id).ToList();
+            await _scoreService.AddScoreToMultipleStudentsAsync(ids, -QuickScoreValue, "批量减分");
+            StatusMessage = $"已为 {SelectedStudents.Count} 名学生减 {QuickScoreValue} 分";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "批量减分失败");
+            StatusMessage = "批量减分失败";
+        }
+    }
+
+    /// <summary>
+    /// 切换多选模式
+    /// </summary>
+    [RelayCommand]
+    private void ToggleMultiSelect()
+    {
+        IsMultiSelectMode = !IsMultiSelectMode;
+    }
+
+    /// <summary>
+    /// 全选学生
+    /// </summary>
+    [RelayCommand]
+    private void SelectAll()
+    {
+        SelectedStudents.Clear();
+        foreach (var item in Students)
+        {
+            item.IsSelected = true;
+            SelectedStudents.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// 清除选择
+    /// </summary>
+    [RelayCommand]
+    private void ClearSelection()
+    {
+        foreach (var item in SelectedStudents)
+        {
+            item.IsSelected = false;
+        }
+        SelectedStudents.Clear();
+    }
+
+    /// <summary>
+    /// 切换学生选中状态
+    /// </summary>
+    public void ToggleStudentSelection(StudentDisplayItem item)
+    {
+        if (item.IsSelected)
+        {
+            item.IsSelected = false;
+            SelectedStudents.Remove(item);
+        }
+        else
+        {
+            item.IsSelected = true;
+            SelectedStudents.Add(item);
         }
     }
 

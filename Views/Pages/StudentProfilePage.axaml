@@ -1,0 +1,213 @@
+<UserControl x:Class="ClassIsScore.Views.Pages.StudentProfilePage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:fa="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+             xmlns:controls="clr-namespace:ClassIsScore.Controls"
+             xmlns:vm="clr-namespace:ClassIsScore.ViewModels"
+             xmlns:models="clr-namespace:ClassIsScore.Models"
+             xmlns:converters="clr-namespace:ClassIsScore.Converters"
+             mc:Ignorable="d"
+             x:DataType="vm:StudentProfileViewModel"
+             MinWidth="600"
+             MaxWidth="700">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16"
+                    Margin="20">
+
+            <!-- 学生信息卡片 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <Grid ColumnDefinitions="Auto,*">
+                    <!-- 头像区域 -->
+                    <Border Width="64"
+                            Height="64"
+                            CornerRadius="32"
+                            ClipToBounds="True"
+                            Background="{DynamicResource AccentFillColorDefaultBrush}"
+                            Margin="0,0,16,0">
+                        <TextBlock x:Name="AvatarInitialText"
+                                   FontSize="28"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- 学生详细信息 -->
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Spacing="4">
+                        <TextBlock Text="{Binding StudentName}"
+                                   FontSize="20"
+                                   FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <TextBlock FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}学号: {0}">
+                                        <Binding Path="StudentNumber" FallbackValue="无" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <TextBlock FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}当前积分: {0:F1}">
+                                        <Binding Path="CurrentScore" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <!-- 宠物信息 -->
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    IsVisible="{Binding HasPet}">
+                            <TextBlock FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} {1} Lv.{2} ({3})">
+                                        <Binding Path="PetEmoji" />
+                                        <Binding Path="PetName" />
+                                        <Binding Path="PetLevel" />
+                                        <Binding Path="LevelTitle" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 积分统计卡片 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="积分统计"
+                               FontSize="16"
+                               FontWeight="SemiBold" />
+
+                    <Grid ColumnDefinitions="*,*,*,*">
+                        <!-- 总变动次数 -->
+                        <StackPanel HorizontalAlignment="Center" Spacing="4">
+                            <TextBlock Text="{Binding TotalScoreChanges}"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="总变动"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+
+                        <!-- 加分次数 -->
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="4">
+                            <TextBlock Text="{Binding PositiveChanges}"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="#FF4CAF50" />
+                            <TextBlock Text="加分"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+
+                        <!-- 减分次数 -->
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="4">
+                            <TextBlock Text="{Binding NegativeChanges}"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="#FFFF5722" />
+                            <TextBlock Text="减分"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+
+                        <!-- 净变动 -->
+                        <StackPanel Grid.Column="3" HorizontalAlignment="Center" Spacing="4">
+                            <TextBlock Text="{Binding NetChange, StringFormat='{}{0:F1}'}"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="净变动"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 积分趋势图卡片 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="积分趋势"
+                               FontSize="16"
+                               FontWeight="SemiBold" />
+
+                    <controls:ScoreTrendChart ItemsSource="{Binding ScoreTrendData}"
+                                              AccentColor="#4CC2FF"
+                                              Height="200" />
+                </StackPanel>
+            </Border>
+
+            <!-- 最近积分记录卡片 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="最近记录"
+                               FontSize="16"
+                               FontWeight="SemiBold" />
+
+                    <ItemsControl ItemsSource="{Binding RecentRecords}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ScoreRecord">
+                                <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="0,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <!-- 变动值 -->
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding ScoreChange, StringFormat='{}{0:+0.0;-0.0;0}'}"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Width="60"
+                                                   Foreground="{Binding ScoreChange, Converter={x:Static converters:ScoreChangeColorConverter.Instance}}" />
+
+                                        <!-- 原因 -->
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Reason}"
+                                                   FontSize="13"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="8,0,0,0" />
+
+                                        <!-- 时间 -->
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding CreatedAt, StringFormat='{}{0:MM/dd HH:mm}'}"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Margin="12,0,0,0" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

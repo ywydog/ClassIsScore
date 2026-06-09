@@ -38,4 +38,9 @@ public interface IFloatingWindowService
     /// <param name="x">X坐标</param>
     /// <param name="y">Y坐标</param>
     void UpdatePosition(double x, double y);
+
+    /// <summary>
+    /// 通知积分变动，触发悬浮窗脉冲动画
+    /// </summary>
+    void NotifyScoreChange();
 }

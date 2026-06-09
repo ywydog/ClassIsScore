@@ -66,6 +66,15 @@ public interface IScoreService
     Task DeleteEvaluationItemAsync(Guid id);
 
     /// <summary>
+    /// 批量加减分
+    /// </summary>
+    /// <param name="studentIds">学生ID列表</param>
+    /// <param name="scoreChange">积分变动，正为加，负为减</param>
+    /// <param name="reason">变动原因</param>
+    /// <param name="operatorName">操作人</param>
+    Task AddScoreToMultipleStudentsAsync(List<Guid> studentIds, double scoreChange, string reason, string? operatorName = null);
+
+    /// <summary>
     /// 获取学生当前积分
     /// </summary>
     /// <param name="studentId">学生ID</param>

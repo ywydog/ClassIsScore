@@ -104,24 +104,160 @@
                                       OffContent="禁用" />
                     </Grid>
 
-                    <!-- 透明度滑块 -->
-                    <StackPanel Spacing="8" IsVisible="{Binding IsFloatingWindowEnabled}">
-                        <TextBlock Text="透明度" FontSize="14" />
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <Slider Grid.Column="0"
-                                    Minimum="0.1"
-                                    Maximum="1.0"
-                                    Value="{Binding FloatingWindowOpacity}"
-                                    TickFrequency="0.1"
-                                    IsSnapToTickEnabled="True" />
-                            <TextBlock Grid.Column="1"
-                                       Text="{Binding FloatingWindowOpacity, StringFormat={}{0:P0}}"
-                                       FontSize="13"
-                                       VerticalAlignment="Center"
-                                       Width="48"
-                                       TextAlignment="Right" />
+                    <!-- 以下设置仅在悬浮窗启用时可见 -->
+                    <StackPanel Spacing="16" IsVisible="{Binding IsFloatingWindowEnabled}">
+
+                        <!-- 透明度滑块 -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="透明度" FontSize="14" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Slider Grid.Column="0"
+                                        Minimum="0.1"
+                                        Maximum="1.0"
+                                        Value="{Binding FloatingWindowOpacity}"
+                                        TickFrequency="0.1"
+                                        IsSnapToTickEnabled="True" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding FloatingWindowOpacity, StringFormat={}{0:P0}}"
+                                           FontSize="13"
+                                           VerticalAlignment="Center"
+                                           Width="48"
+                                           TextAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+
+                        <Border Height="1"
+                                Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                Margin="0,4" />
+
+                        <!-- 大小滑块 -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="按钮大小" FontSize="14" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Slider Grid.Column="0"
+                                        Minimum="40"
+                                        Maximum="80"
+                                        Value="{Binding FloatingWindowSize}"
+                                        TickFrequency="4"
+                                        IsSnapToTickEnabled="True" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding FloatingWindowSize, StringFormat={}{0:0}}"
+                                           FontSize="13"
+                                           VerticalAlignment="Center"
+                                           Width="48"
+                                           TextAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+
+                        <Border Height="1"
+                                Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                Margin="0,4" />
+
+                        <!-- 显示文本 -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="显示文本" FontSize="14" />
+                            <TextBox Text="{Binding FloatingWindowDisplayText}"
+                                     MaxLength="4"
+                                     Width="120"
+                                     HorizontalAlignment="Left" />
+                        </StackPanel>
+
+                        <Border Height="1"
+                                Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                Margin="0,4" />
+
+                        <!-- 显示标签开关 -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="显示文本标签" FontSize="14" />
+                                <TextBlock Text="在图标下方显示文本标识"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1"
+                                          IsChecked="{Binding FloatingWindowShowLabel}"
+                                          OnContent="显示"
+                                          OffContent="隐藏" />
                         </Grid>
+
+                        <Border Height="1"
+                                Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                Margin="0,4" />
+
+                        <!-- 悬浮窗主题色 -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="悬浮窗主题色" FontSize="14" />
+                            <TextBlock Text="选择悬浮窗按钮的颜色"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <ItemsControl ItemsSource="{Binding FloatingPresetAccentColors}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" ItemWidth="44" ItemHeight="44" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Button Padding="0"
+                                                Margin="4"
+                                                CornerRadius="20"
+                                                Width="36"
+                                                Height="36"
+                                                Click="OnFloatingAccentColorClicked"
+                                                Tag="{Binding}">
+                                            <Button.Content>
+                                                <Border CornerRadius="18"
+                                                        Width="36"
+                                                        Height="36">
+                                                    <Border.Background>
+                                                        <SolidColorBrush Color="{Binding}" />
+                                                    </Border.Background>
+                                                </Border>
+                                            </Button.Content>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
                     </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 系统托盘设置区域 -->
+            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="系统托盘" FontWeight="SemiBold" FontSize="18" />
+
+                    <!-- 显示托盘图标 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="显示托盘图标" FontWeight="SemiBold" FontSize="15" />
+                            <TextBlock Text="在系统托盘区显示应用图标，方便快速访问"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1"
+                                      IsChecked="{Binding ShowTrayIcon}"
+                                      OnContent="显示"
+                                      OffContent="隐藏" />
+                    </Grid>
+
+                    <!-- 关闭时最小化到托盘 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="关闭时最小化到托盘" FontWeight="SemiBold" FontSize="15" />
+                            <TextBlock Text="关闭窗口时最小化到系统托盘而不是退出应用"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1"
+                                      IsChecked="{Binding CloseToTray}"
+                                      OnContent="启用"
+                                      OffContent="禁用" />
+                    </Grid>
                 </StackPanel>
             </Border>
 
@@ -280,6 +416,16 @@
                                    FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
+
+                    <Border Height="1"
+                            Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            Margin="0,4" />
+
+                    <!-- 查看详细关于页面按钮 -->
+                    <Button Content="查看详细关于页面"
+                            Command="{Binding NavigateToAboutCommand}"
+                            HorizontalAlignment="Left"
+                            Padding="12,6" />
                 </StackPanel>
             </Border>
 

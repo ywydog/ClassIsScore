@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="ClassIsScore"
-        Width="56"
-        Height="56"
+        Width="64"
+        Height="64"
         ShowInTaskbar="False"
         IsHitTestVisible="True"
         Topmost="True"
@@ -16,35 +16,82 @@
         ExtendClientAreaToDecorationsHint="True"
         WindowStartupLocation="Manual">
 
-    <!-- 悬浮窗内容：圆形图标按钮 -->
-    <Border x:Name="FloatingBorder"
-            Width="48"
-            Height="48"
-            CornerRadius="24"
-            Background="#CC4CC2FF"
-            BoxShadow="0 2 8 0 #33000000"
-            PointerPressed="OnPointerPressed"
-            PointerMoved="OnPointerMoved"
-            PointerReleased="OnPointerReleased"
-            Cursor="Hand">
+    <Window.Styles>
+        <!-- 脉冲动画样式 -->
+        <Style Selector="Border#FloatingBorder.pulse">
+            <Setter Property="RenderTransform" Value="scale(1.0)"/>
+            <Style.Animations>
+                <Animation Duration="0:0:0.6" FillMode="Forward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="RenderTransform" Value="scale(1.0)"/>
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="40%">
+                        <Setter Property="RenderTransform" Value="scale(1.15)"/>
+                        <Setter Property="Opacity" Value="0.85"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="RenderTransform" Value="scale(1.0)"/>
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </Window.Styles>
 
-        <Border.Transitions>
-            <Transitions>
-                <BrushTransition Property="Background" Duration="0:0:0.2" />
-            </Transitions>
-        </Border.Transitions>
+    <!-- 悬浮窗内容：圆形图标按钮 + 文本标签 -->
+    <StackPanel HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="2">
 
-        <!-- 应用图标 -->
-        <Viewbox Width="28"
-                 Height="28"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center">
-            <Canvas Width="24"
-                    Height="24">
-                <!-- 星形图标，代表积分 -->
-                <Path Fill="White"
-                      Data="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z" />
-            </Canvas>
-        </Viewbox>
-    </Border>
+        <ToolTip.Tip>
+            <TextBlock Text="ClassIsScore - 点击打开，拖拽移动" />
+        </ToolTip.Tip>
+
+        <!-- 圆形图标按钮 -->
+        <Border x:Name="FloatingBorder"
+                Width="48"
+                Height="48"
+                CornerRadius="24"
+                Background="#CC4CC2FF"
+                BoxShadow="0 2 8 0 #33000000"
+                RenderTransformOrigin="0.5,0.5"
+                PointerPressed="OnPointerPressed"
+                PointerMoved="OnPointerMoved"
+                PointerReleased="OnPointerReleased"
+                Cursor="Hand">
+
+            <Border.Transitions>
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" />
+                    <DoubleTransition Property="Width" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                    <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                    <CornerRadiusTransition Property="CornerRadius" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                </Transitions>
+            </Border.Transitions>
+
+            <!-- 应用图标 -->
+            <Viewbox x:Name="IconViewbox"
+                     Width="28"
+                     Height="28"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center">
+                <Canvas Width="24"
+                        Height="24">
+                    <!-- 星形图标，代表积分 -->
+                    <Path Fill="White"
+                          Data="M12,2L15.09,8.26L22,9.27L17,14.14L18.18,21.02L12,17.77L5.82,21.02L7,14.14L2,9.27L8.91,8.26L12,2Z" />
+                </Canvas>
+            </Viewbox>
+        </Border>
+
+        <!-- 文本标签 -->
+        <TextBlock x:Name="DisplayTextLabel"
+                   Text="CS"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   Foreground="White"
+                   HorizontalAlignment="Center"
+                   Opacity="0.9" />
+    </StackPanel>
 </Window>

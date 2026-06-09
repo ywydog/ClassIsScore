@@ -85,6 +85,10 @@ public partial class App : Application
             floatingWindowService.Show();
         }
 
+        // 初始化系统托盘图标
+        var trayIconService = AppHost.Instance?.GetService<ITrayIconService>();
+        trayIconService?.Initialize();
+
         // 注册 URI 路由
         RegisterUriRoutes();
 
