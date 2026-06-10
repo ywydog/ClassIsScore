@@ -1,9 +1,13 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Styling;
 using ClassIsScore.ViewModels;
 
 namespace ClassIsScore.Views.Pages;
@@ -16,6 +20,88 @@ public partial class SettingsPage : UserControl
     public SettingsPage()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+    }
+
+    /// <summary>
+    /// 页面加载完成后播放入场动画
+    /// </summary>
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        var cards = this.FindControl<TabControl>("SettingsTabControl");
+        if (cards == null) return;
+
+        // 为当前可见Tab的卡片播放入场动画
+        PlayEntranceAnimation(cards);
+    }
+
+    /// <summary>
+    /// 为当前Tab的设置卡片播放入场动画（依次淡入+上滑）
+    /// </summary>
+    private static void PlayEntranceAnimation(TabControl tabControl)
+    {
+        if (tabControl.SelectedItem is not TabItem selectedTab) return;
+        if (selectedTab.Content is not ScrollViewer sv) return;
+        if (sv.Content is not StackPanel panel) return;
+
+        var index = 0;
+        foreach (var child in panel.Children)
+        {
+            if (child is Border border)
+            {
+                // 初始状态：透明+下移12px
+                border.Opacity = 0;
+                border.RenderTransform = new TranslateTransform(0, 12);
+
+                var delay = index * 30;
+
+                // 淡入动画
+                var opacityAnim = new Animation
+                {
+                    Duration = TimeSpan.FromMilliseconds(250),
+                    Delay = TimeSpan.FromMilliseconds(delay),
+                    Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
+                    Children =
+                    {
+                        new KeyFrame
+                        {
+                            Cue = new Cue(0d),
+                            Setters = { new Setter(OpacityProperty, 0d) }
+                        },
+                        new KeyFrame
+                        {
+                            Cue = new Cue(1d),
+                            Setters = { new Setter(OpacityProperty, 1d) }
+                        }
+                    }
+                };
+
+                // 上滑动画
+                var slideAnim = new Animation
+                {
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    Delay = TimeSpan.FromMilliseconds(delay),
+                    Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
+                    Children =
+                    {
+                        new KeyFrame
+                        {
+                            Cue = new Cue(0d),
+                            Setters = { new Setter(TranslateTransform.YProperty, 12d) }
+                        },
+                        new KeyFrame
+                        {
+                            Cue = new Cue(1d),
+                            Setters = { new Setter(TranslateTransform.YProperty, 0d) }
+                        }
+                    }
+                };
+
+                opacityAnim.RunAsync(border);
+                slideAnim.RunAsync(border);
+                index++;
+            }
+        }
     }
 
     /// <summary>
