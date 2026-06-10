@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using Avalonia.Media;
 using ClassIsScore.Helpers;
 using ClassIsScore.Models;
 using ClassIsScore.Services.Abstractions;
@@ -22,6 +25,35 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IDataTransferService _dataTransferService;
     private readonly ITrayIconService _trayIconService;
     private readonly ILogger<SettingsViewModel> _logger;
+
+    /// <summary>
+    /// 默认字体（HarmonyOS Sans SC）
+    /// </summary>
+    public static readonly FontFamily DefaultFontFamily =
+        new("HarmonyOS Sans SC, Noto Sans CJK SC, Microsoft YaHei UI, SimHei, sans-serif");
+
+    /// <summary>
+    /// 系统字体列表 + 默认字体（参考ClassIsland）
+    /// </summary>
+    public ObservableCollection<FontFamily> FontFamilies { get; }
+
+    /// <summary>
+    /// 当前选中的字体
+    /// </summary>
+    [ObservableProperty]
+    private FontFamily _selectedFontFamily = DefaultFontFamily;
+
+    /// <summary>
+    /// 字体预览文本
+    /// </summary>
+    [ObservableProperty]
+    private string _fontPreviewText = "我要买一线希望\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789";
+
+    partial void OnSelectedFontFamilyChanged(FontFamily value)
+    {
+        // TODO: 应用字体到全局（通过主题服务或资源更新）
+        _logger.LogInformation("字体已切换为: {FontName}", value.Name);
+    }
 
     /// <summary>
     /// 主题色（十六进制字符串）
@@ -177,6 +209,10 @@ public partial class SettingsViewModel : ObservableObject
         _dataTransferService = dataTransferService;
         _trayIconService = trayIconService;
         _logger = logger;
+
+        // 初始化字体列表：系统字体 + 默认HarmonyOS Sans SC（参考ClassIsland）
+        FontFamilies = new ObservableCollection<FontFamily>(
+            [..FontManager.Current.SystemFonts, DefaultFontFamily]);
 
         // 订阅数据传输进度事件
         _dataTransferService.ProgressChanged += OnDataTransferProgressChanged;
