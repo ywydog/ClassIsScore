@@ -17,6 +17,12 @@
             <Setter Property="Margin" Value="0,0,8,0" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+        <Style Selector="Button.ToolbarButton:pointerover">
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+        </Style>
+        <Style Selector="Button.ToolbarButton:pressed">
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto">
@@ -70,59 +76,76 @@
         </Border>
 
         <!-- 学生列表 -->
-        <ListBox Grid.Row="1"
-                 ItemsSource="{Binding Students}"
-                 SelectedItem="{Binding SelectedStudent}"
-                 DoubleTapped="OnStudentDoubleTapped"
-                 Margin="8,4">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="models:Student">
-                    <Grid ColumnDefinitions="40,*,120,60,80"
-                          Margin="4,6">
-                        <!-- 头像占位 -->
-                        <Border Grid.Column="0"
-                                Width="32"
-                                Height="32"
-                                CornerRadius="16"
-                                Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Name}"
-                                       HorizontalAlignment="Center"
+        <Panel Grid.Row="1">
+            <ListBox ItemsSource="{Binding Students}"
+                     SelectedItem="{Binding SelectedStudent}"
+                     DoubleTapped="OnStudentDoubleTapped"
+                     Margin="8,4">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:Student">
+                        <Grid ColumnDefinitions="40,*,120,60,80"
+                              Margin="4,6">
+                            <!-- 头像占位 -->
+                            <Border Grid.Column="0"
+                                    Width="32"
+                                    Height="32"
+                                    CornerRadius="16"
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontSize="12" />
+                            </Border>
+
+                            <!-- 姓名 -->
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Name}"
                                        VerticalAlignment="Center"
-                                       FontSize="12" />
-                        </Border>
+                                       FontSize="14"
+                                       Margin="8,0,0,0"
+                                       TextTrimming="CharacterEllipsis" />
 
-                        <!-- 姓名 -->
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Name}"
-                                   VerticalAlignment="Center"
-                                   FontSize="14"
-                                   Margin="8,0,0,0" />
+                            <!-- 学号 -->
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding StudentNumber}"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       FontSize="13"
+                                       TextTrimming="CharacterEllipsis" />
 
-                        <!-- 学号 -->
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding StudentNumber}"
-                                   VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   FontSize="13" />
+                            <!-- 性别 -->
+                            <TextBlock Grid.Column="3"
+                                       Text="{Binding Gender}"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       FontSize="13" />
 
-                        <!-- 性别 -->
-                        <TextBlock Grid.Column="3"
-                                   Text="{Binding Gender}"
-                                   VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                   FontSize="13" />
-
-                        <!-- 当前积分 -->
-                        <TextBlock Grid.Column="4"
-                                   Text="{Binding Score}"
-                                   VerticalAlignment="Center"
-                                   FontSize="14"
-                                   FontWeight="SemiBold" />
-                    </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+                            <!-- 当前积分 -->
+                            <TextBlock Grid.Column="4"
+                                       Text="{Binding Score}"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       FontWeight="SemiBold" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <!-- 空状态提示 -->
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="8"
+                        IsVisible="{Binding Students.Count, Converter={x:Static models:CountToVisibilityConverter.InvertedInstance}}">
+                <TextBlock Text="暂无学生数据"
+                           FontSize="16"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="点击上方「添加学生」按钮开始"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+        </Panel>
 
         <!-- 底部状态栏 -->
         <Border Grid.Row="2"
@@ -136,15 +159,33 @@
         <!-- 编辑对话框遮罩 -->
         <Panel Grid.RowSpan="3"
                IsVisible="{Binding IsEditDialogOpen}">
-            <Border Background="#80000000" />
-            <Border HorizontalAlignment="Center"
+            <Border Background="{DynamicResource SystemControlPageBackgroundMediumAltBrush}"
+                    Opacity="0">
+                <Border.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut" />
+                    </Transitions>
+                </Border.Transitions>
+            </Border>
+            <Border x:Name="EditDialogBorder"
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
-                    CornerRadius="8"
+                    CornerRadius="12"
                     Padding="24"
-                    MinWidth="360">
+                    MinWidth="360"
+                    RenderTransformOrigin="0.5,0.5"
+                    Opacity="0"
+                    RenderTransform="scale(0.95)">
+                <Border.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
+                        <DoubleTransition Property="ScaleTransform.ScaleX" Duration="0:0:0.25" Easing="CubicEaseOut" />
+                        <DoubleTransition Property="ScaleTransform.ScaleY" Duration="0:0:0.25" Easing="CubicEaseOut" />
+                    </Transitions>
+                </Border.Transitions>
                 <StackPanel>
                     <TextBlock Text="{Binding EditDialogTitle}"
                                FontSize="18"

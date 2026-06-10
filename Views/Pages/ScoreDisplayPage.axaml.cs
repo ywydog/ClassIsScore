@@ -187,10 +187,10 @@ public partial class ScoreDisplayPage : UserControl
     /// </summary>
     private void UpdateModeButtonStyles(DisplayMode mode)
     {
-        // 重置所有按钮样式
-        CardModeButton.Classes.Clear();
-        CircleModeButton.Classes.Clear();
-        PetModeButton.Classes.Clear();
+        // 重置所有按钮：移除accent，确保保留ModeButton
+        CardModeButton.Classes.Remove("accent");
+        CircleModeButton.Classes.Remove("accent");
+        PetModeButton.Classes.Remove("accent");
 
         // 高亮当前选中模式按钮
         switch (mode)

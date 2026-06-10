@@ -9,6 +9,50 @@
              mc:Ignorable="d"
              x:DataType="vm:ScoreDisplayViewModel">
 
+    <UserControl.Styles>
+        <!-- 批量加分按钮样式 -->
+        <Style Selector="Button.BatchAddButton">
+            <Setter Property="Background" Value="#4CAF50" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.BatchAddButton:pointerover">
+            <Setter Property="Background" Value="#43A047" />
+        </Style>
+        <Style Selector="Button.BatchAddButton:pressed">
+            <Setter Property="Background" Value="#388E3C" />
+        </Style>
+
+        <!-- 批量减分按钮样式 -->
+        <Style Selector="Button.BatchSubtractButton">
+            <Setter Property="Background" Value="#E53935" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.BatchSubtractButton:pointerover">
+            <Setter Property="Background" Value="#D32F2F" />
+        </Style>
+        <Style Selector="Button.BatchSubtractButton:pressed">
+            <Setter Property="Background" Value="#C62828" />
+        </Style>
+
+        <!-- 工具栏模式按钮样式 -->
+        <Style Selector="Button.ModeButton">
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <Style Selector="Button.ModeButton:pointerover">
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+        </Style>
+        <Style Selector="Button.ModeButton:pressed">
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+        </Style>
+        <Style Selector="Button.ModeButton:selected">
+            <Setter Property="Background" Value="{DynamicResource AccentButtonBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentButtonForeground}" />
+        </Style>
+    </UserControl.Styles>
+
     <Panel>
         <DockPanel>
             <!-- 顶部工具栏 -->
@@ -20,16 +64,19 @@
                     <!-- 显示模式切换按钮组 -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <Button x:Name="CardModeButton"
+                                Classes="ModeButton"
                                 Content="卡片"
                                 Click="OnCardModeClick"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center" />
                         <Button x:Name="CircleModeButton"
+                                Classes="ModeButton"
                                 Content="圆形"
                                 Click="OnCircleModeClick"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center" />
                         <Button x:Name="PetModeButton"
+                                Classes="ModeButton"
                                 Content="宠物"
                                 Click="OnPetModeClick"
                                 HorizontalAlignment="Left"
@@ -110,11 +157,13 @@
                             Margin="8,0,0,0"
                             Padding="12,6" />
                     <Button Grid.Column="4"
+                            Classes="BatchAddButton"
                             Content="批量加分"
                             Command="{Binding BatchAddScoreCommand}"
                             Margin="8,0,0,0"
                             Padding="12,6" />
                     <Button Grid.Column="5"
+                            Classes="BatchSubtractButton"
                             Content="批量减分"
                             Command="{Binding BatchSubtractScoreCommand}"
                             Margin="8,0,0,0"
@@ -149,7 +198,7 @@
         <!-- 宠物选择对话框 -->
         <Panel x:Name="PetSelectionOverlay"
                IsVisible="False">
-            <Border Background="#80000000" />
+            <Border Background="{DynamicResource SystemControlPageBackgroundMediumAltBrush}" />
             <Border HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"

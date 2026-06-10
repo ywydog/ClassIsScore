@@ -46,4 +46,14 @@ public class ScoreRecord
     /// 是否已撤销
     /// </summary>
     public bool IsReverted { get; set; }
+
+    /// <summary>
+    /// 是否在3分钟内可撤销（无需管理员验证）
+    /// </summary>
+    public bool CanQuickRevert => !IsReverted && (DateTime.Now - CreatedAt).TotalMinutes <= 3;
+
+    /// <summary>
+    /// 是否需要管理员验证才能撤销（已超3分钟但未撤销）
+    /// </summary>
+    public bool NeedsAdminRevert => !IsReverted && !CanQuickRevert;
 }

@@ -27,6 +27,35 @@ public partial class StudentManagementPage : UserControl
     }
 
     /// <summary>
+    /// 对话框入场动画触发
+    /// </summary>
+    protected override void OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // 当DataContext的IsEditDialogOpen变为true时，触发对话框入场动画
+        if (change.Property == DataContextProperty && change.NewValue is StudentManagementViewModel vm)
+        {
+            vm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(StudentManagementViewModel.IsEditDialogOpen) && vm.IsEditDialogOpen)
+                {
+                    // 延迟一帧后设置目标值，触发Transitions
+                    Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        var maskBorder = this.FindControl<Border>("EditDialogBorder");
+                        if (maskBorder != null)
+                        {
+                            maskBorder.Opacity = 1;
+                            maskBorder.RenderTransform = new Avalonia.Media.ScaleTransform(1, 1);
+                        }
+                    });
+                }
+            };
+        }
+    }
+
+    /// <summary>
     /// 数据上下文变更时填充宠物类型下拉框
     /// </summary>
     private void OnDataContextChanged(object? sender, EventArgs e)

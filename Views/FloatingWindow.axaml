@@ -37,6 +37,18 @@
                 </Animation>
             </Style.Animations>
         </Style>
+
+        <!-- 经典模式悬停效果 -->
+        <Style Selector="Border#FloatingBorder:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.08)" />
+            <Setter Property="BoxShadow" Value="0 4 16 0 #44000000" />
+        </Style>
+
+        <!-- 纯图标模式悬停效果 -->
+        <Style Selector="Border#PureIconLayout:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.08)" />
+            <Setter Property="BoxShadow" Value="0 4 16 0 #44000000" />
+        </Style>
     </Window.Styles>
 
     <Panel>
