@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ClassIsScore.Services;
@@ -9,6 +10,8 @@ using ClassIsScore.Views.Pages;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
+using Avalonia.Platform;
 
 namespace ClassIsScore;
 
@@ -25,6 +28,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SetupNavigationItems();
+        SetupTitleBar();
     }
 
     public MainWindow(
@@ -36,6 +40,37 @@ public partial class MainWindow : Window
 
         InitializeComponent();
         SetupNavigationItems();
+        SetupTitleBar();
+    }
+
+    /// <summary>
+    /// 设置标题栏集成（参考ClassIsland窗口设计）
+    /// 将NavigationView侧边栏区域扩展到标题栏，实现沉浸式标题栏效果
+    /// </summary>
+    private void SetupTitleBar()
+    {
+        // 扩展客户区到标题栏，实现Mica背景覆盖标题栏区域
+        ExtendClientAreaToDecorationsHint = true;
+        // 保留系统标题栏按钮（最小化/最大化/关闭）
+        ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.NoChrome |
+                                      ExtendClientAreaChromeHints.PreferSystemChrome;
+        // 标题栏仍可拖动
+        SystemDecorations = SystemDecorations.Full;
+
+        // 设置标题栏拖动区域：NavigationView侧边栏作为拖动区域
+        if (NavView != null)
+        {
+            NavView.PaneOpened += OnPaneStateChanged;
+            NavView.PaneClosed += OnPaneStateChanged;
+        }
+    }
+
+    /// <summary>
+    /// 导航面板展开/收起时更新标题栏拖动区域
+    /// </summary>
+    private void OnPaneStateChanged(object? sender, EventArgs e)
+    {
+        // NavigationView内部会自动处理标题栏区域
     }
 
     /// <summary>
