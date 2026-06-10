@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using Avalonia;
 using ClassIsScore.Helpers;
@@ -32,6 +33,11 @@ public static class Program
     /// </summary>
     public static string? StartupUri { get; private set; }
 
+    /// <summary>
+    /// 全局日志文件路径
+    /// </summary>
+    private static string? _logFilePath;
+
     // Avalonia 配置，请勿删除此方法
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
@@ -58,7 +64,6 @@ public static class Program
             {
                 try
                 {
-                    // TODO: 通过 IPC 将 URI 发送给已运行实例
                     Console.WriteLine($"应用已在运行，尝试导航到: {StartupUri}");
                 }
                 catch
@@ -74,27 +79,95 @@ public static class Program
         // 确保应用目录存在
         AppPaths.EnsureDirectoriesExist();
 
-        // 构建 Host 并启动 Avalonia 应用
-        var host = Host.CreateDefaultBuilder(args)
-            .UseContentRoot(AppContext.BaseDirectory)
-            .ConfigureServices(ConfigureServices)
-            .ConfigureLogging(logging =>
+        // 初始化日志文件路径
+        _logFilePath = Path.Combine(AppPaths.LogFolderPath, $"app_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+
+        // 全局未捕获异常处理
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
+        try
+        {
+            // 构建 Host 并启动 Avalonia 应用
+            var host = Host.CreateDefaultBuilder(args)
+                .UseContentRoot(AppContext.BaseDirectory)
+                .ConfigureServices(ConfigureServices)
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddConsole();
+                    logging.AddDebug();
+                    logging.AddFile(_logFilePath, minimumLevel: Microsoft.Extensions.Logging.LogLevel.Debug);
+                    logging.SetMinimumLevel(LogLevel.Debug);
+                })
+                .Build();
+
+            // 将 Host 注入到 AppHost 服务
+            AppHost.Instance = new AppHost(host);
+
+            // 启动 Host 后台服务
+            var hostTask = host.RunAsync();
+
+            // 监控 Host 异常
+            _ = hostTask.ContinueWith(t =>
             {
-                logging.AddConsole();
-                logging.AddDebug();
-                logging.SetMinimumLevel(LogLevel.Debug);
-            })
-            .Build();
+                if (t.Exception != null)
+                {
+                    WriteCrashLog($"Host 异常退出: {t.Exception}");
+                }
+            }, System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
 
-        // 将 Host 注入到 AppHost 服务
-        AppHost.Instance = new AppHost(host);
+            // 启动 Avalonia
+            BuildAvaloniaApp()
+                .StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex)
+        {
+            WriteCrashLog($"应用启动失败: {ex}");
+            throw;
+        }
+    }
 
-        // 启动 Host 后台服务
-        _ = host.RunAsync();
+    /// <summary>
+    /// 全局未捕获异常处理
+    /// </summary>
+    private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        var message = e.ExceptionObject is Exception ex
+            ? $"未捕获异常 (IsTerminating={e.IsTerminating}): {ex}"
+            : $"未捕获异常对象: {e.ExceptionObject}";
+        WriteCrashLog(message);
+    }
 
-        // 启动 Avalonia
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+    /// <summary>
+    /// 未观察到的 Task 异常处理
+    /// </summary>
+    private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        WriteCrashLog($"未观察到的 Task 异常: {e.Exception}");
+        e.SetObserved();
+    }
+
+    /// <summary>
+    /// 写入崩溃日志到文件（独立于日志系统，确保总能写入）
+    /// </summary>
+    internal static void WriteCrashLog(string message)
+    {
+        try
+        {
+            var logDir = AppPaths.LogFolderPath;
+            if (!Directory.Exists(logDir))
+            {
+                Directory.CreateDirectory(logDir);
+            }
+
+            var crashLogPath = Path.Combine(logDir, "crash.log");
+            var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}{Environment.NewLine}";
+            File.AppendAllText(crashLogPath, line);
+        }
+        catch
+        {
+            // 崩溃日志写入失败，无能为力
+        }
     }
 
     /// <summary>

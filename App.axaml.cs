@@ -45,83 +45,91 @@ public partial class App : Application
     /// </summary>
     private async void OnDesktopStartup(object? sender, ControlledApplicationLifetimeStartupEventArgs e)
     {
-        _logger = AppHost.Instance?.GetService<ILogger<App>>();
-        _logger?.LogInformation("ClassIsScore 正在启动");
-
-        // 初始化主题服务
-        var themeService = AppHost.Instance?.GetService<IThemeService>();
-        themeService?.SetTheme(0, null);
-
-        // 创建并显示主窗口
-        var mainWindow = AppHost.Instance?.GetService<MainWindow>();
-        if (mainWindow != null)
+        try
         {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            _logger = AppHost.Instance?.GetService<ILogger<App>>();
+            _logger?.LogInformation("ClassIsScore 正在启动");
+
+            // 初始化主题服务
+            var themeService = AppHost.Instance?.GetService<IThemeService>();
+            themeService?.SetTheme(0, null);
+
+            // 创建并显示主窗口
+            var mainWindow = AppHost.Instance?.GetService<MainWindow>();
+            if (mainWindow != null)
             {
-                desktop.MainWindow = mainWindow;
-            }
-
-            mainWindow.Show();
-
-            // 检查是否首次启动，显示引导窗口
-            var appStateService = AppHost.Instance?.GetService<IAppStateService>();
-            if (appStateService != null && await appStateService.IsFirstLaunchAsync())
-            {
-                _logger?.LogInformation("检测到首次启动，显示引导向导");
-
-                var onboardingViewModel = AppHost.Instance?.GetService<OnboardingViewModel>();
-                if (onboardingViewModel != null)
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    var onboardingWindow = new OnboardingWindow(onboardingViewModel);
-                    await onboardingWindow.ShowDialog(mainWindow);
+                    desktop.MainWindow = mainWindow;
+                }
+
+                mainWindow.Show();
+
+                // 检查是否首次启动，显示引导窗口
+                var appStateService = AppHost.Instance?.GetService<IAppStateService>();
+                if (appStateService != null && await appStateService.IsFirstLaunchAsync())
+                {
+                    _logger?.LogInformation("检测到首次启动，显示引导向导");
+
+                    var onboardingViewModel = AppHost.Instance?.GetService<OnboardingViewModel>();
+                    if (onboardingViewModel != null)
+                    {
+                        var onboardingWindow = new OnboardingWindow(onboardingViewModel);
+                        await onboardingWindow.ShowDialog(mainWindow);
+                    }
                 }
             }
-        }
 
-        // 根据设置显示悬浮窗
-        var floatingWindowService = AppHost.Instance?.GetService<IFloatingWindowService>();
-        if (floatingWindowService != null && floatingWindowService.Settings.IsEnabled)
-        {
-            floatingWindowService.Show();
-        }
+            // 根据设置显示悬浮窗
+            var floatingWindowService = AppHost.Instance?.GetService<IFloatingWindowService>();
+            if (floatingWindowService != null && floatingWindowService.Settings.IsEnabled)
+            {
+                floatingWindowService.Show();
+            }
 
-        // 初始化系统托盘图标
-        var trayIconService = AppHost.Instance?.GetService<ITrayIconService>();
-        trayIconService?.Initialize();
+            // 初始化系统托盘图标
+            var trayIconService = AppHost.Instance?.GetService<ITrayIconService>();
+            trayIconService?.Initialize();
 
-        // 注册 URI 路由
-        RegisterUriRoutes();
+            // 注册 URI 路由
+            RegisterUriRoutes();
 
-        // 处理启动 URI 导航
-        if (!string.IsNullOrWhiteSpace(Program.StartupUri))
-        {
+            // 处理启动 URI 导航
+            if (!string.IsNullOrWhiteSpace(Program.StartupUri))
+            {
+                try
+                {
+                    var uriService = AppHost.Instance?.GetService<IUriNavigationService>();
+                    uriService?.Navigate(new Uri(Program.StartupUri));
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "处理启动 URI 导航失败");
+                }
+            }
+
+            // 启动自动评价服务
             try
             {
-                var uriService = AppHost.Instance?.GetService<IUriNavigationService>();
-                uriService?.Navigate(new Uri(Program.StartupUri));
+                var autoEvalService = AppHost.Instance?.GetService<IAutoEvaluationService>();
+                if (autoEvalService != null)
+                {
+                    await autoEvalService.StartAsync();
+                    _logger?.LogInformation("自动评价服务已启动");
+                }
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "处理启动 URI 导航失败");
+                _logger?.LogError(ex, "启动自动评价服务失败");
             }
-        }
 
-        // 启动自动评价服务
-        try
-        {
-            var autoEvalService = AppHost.Instance?.GetService<IAutoEvaluationService>();
-            if (autoEvalService != null)
-            {
-                await autoEvalService.StartAsync();
-                _logger?.LogInformation("自动评价服务已启动");
-            }
+            _logger?.LogInformation("ClassIsScore 启动完成");
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "启动自动评价服务失败");
+            // async void 异常会被吞掉，必须手动捕获写入崩溃日志
+            Program.WriteCrashLog($"OnDesktopStartup 异常: {ex}");
         }
-
-        _logger?.LogInformation("ClassIsScore 启动完成");
     }
 
     /// <summary>
