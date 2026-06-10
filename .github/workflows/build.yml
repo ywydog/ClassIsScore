@@ -101,11 +101,7 @@ jobs:
           cd ./artifacts
           for dir in */; do
             name=$(basename "$dir")
-            if [ "$name" = "win-x64" ] || [ "$name" = "win-arm64" ]; then
-              7z a -tzip "../release/ClassIsScore-${name}.zip" "./$dir/*"
-            else
-              tar czf "../release/ClassIsScore-${name}.tar.gz" -C "./$dir" .
-            fi
+            7z a -tzip "../release/ClassIsScore-${name}.zip" "./$dir/*"
           done
 
       - name: Determine Tag
