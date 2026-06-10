@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- HarmonyOS Sans SC - 华为开源中文字体 (参考ClassIsland) -->
+    <FontFamily x:Key="HarmonyOsSans">
+        /ClassIsScore;component/Assets/Fonts/#HarmonyOS Sans SC,
+        HarmonyOS Sans SC,
+        Noto Sans CJK SC,
+        Microsoft YaHei UI,
+        SimHei,
+        sans-serif
+    </FontFamily>
+</ResourceDictionary>
