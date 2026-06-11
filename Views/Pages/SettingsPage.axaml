@@ -403,6 +403,189 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ==================== 插件标签页 ==================== -->
+            <TabItem Header="插件">
+                <ScrollViewer>
+                    <StackPanel Spacing="2" MaxWidth="700">
+
+                        <!-- 插件管理分组 -->
+                        <TextBlock Text="已安装插件" Classes="setting-group-title" />
+
+                        <!-- 插件列表 -->
+                        <Border Classes="setting-card" IsVisible="{Binding HasPlugins}">
+                            <ItemsControl ItemsSource="{Binding Plugins}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                <!-- 插件图标 -->
+                                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="8"
+                                                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="&#xE735;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                                                               FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </Border>
+                                                <!-- 插件信息 -->
+                                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Manifest.Name}" Classes="setting-title" />
+                                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                                                        <TextBlock.Text>
+                                                            <MultiBinding StringFormat="{}v{0} · {1}">
+                                                                <Binding Path="Manifest.Version" />
+                                                                <Binding Path="Manifest.Author" />
+                                                            </MultiBinding>
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Manifest.Description}" Classes="setting-desc" />
+                                                </StackPanel>
+                                                <!-- 启用开关 -->
+                                                <ToggleSwitch Grid.Column="2"
+                                                              IsChecked="{Binding IsEnabled}"
+                                                              OnContent="启用"
+                                                              OffContent="禁用"
+                                                              VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+
+                        <!-- 无插件提示 -->
+                        <Border Classes="setting-card" IsVisible="{Binding !HasPlugins}">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center" Margin="0,24">
+                                <TextBlock Text="&#xE894;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                                           FontSize="32" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                <TextBlock Text="暂无已安装的插件" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="将插件文件夹放入 data/Plugins/ 目录即可自动加载" HorizontalAlignment="Center"
+                                           FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 插件目录 -->
+                        <TextBlock Text="插件目录" Classes="setting-group-title" />
+
+                        <Border Classes="setting-card">
+                            <StackPanel Spacing="8">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="插件存储位置" Classes="setting-title" />
+                                    <TextBlock Text="插件从此目录自动加载，每个子文件夹需包含 manifest.json" Classes="setting-desc" />
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Text="{Binding PluginFolderPath}" IsReadOnly="True" />
+                                    <Button Grid.Column="1" Classes="toolbar" Content="打开"
+                                            Command="{Binding OpenPluginFolderCommand}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ==================== 自定义主题标签页 ==================== -->
+            <TabItem Header="自定义主题">
+                <ScrollViewer>
+                    <StackPanel Spacing="2" MaxWidth="700">
+
+                        <!-- 自定义主题分组 -->
+                        <TextBlock Text="已安装主题" Classes="setting-group-title" />
+
+                        <!-- 主题列表 -->
+                        <Border Classes="setting-card" IsVisible="{Binding HasCustomThemes}">
+                            <ItemsControl ItemsSource="{Binding CustomThemes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                <!-- 主题图标 -->
+                                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="8"
+                                                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="&#xE771;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                                                               FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                </Border>
+                                                <!-- 主题信息 -->
+                                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Manifest.Name}" Classes="setting-title" />
+                                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+                                                        <TextBlock.Text>
+                                                            <MultiBinding StringFormat="{}v{0} · {1}">
+                                                                <Binding Path="Manifest.Version" />
+                                                                <Binding Path="Manifest.Author" />
+                                                            </MultiBinding>
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Manifest.Description}" Classes="setting-desc" />
+                                                </StackPanel>
+                                                <!-- 操作按钮 -->
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <ToggleSwitch IsChecked="{Binding IsEnabled}"
+                                                                  OnContent="启用"
+                                                                  OffContent="禁用" />
+                                                    <Button Content="删除" FontSize="12" Padding="8,4"
+                                                            Tag="{Binding Manifest.Id}"
+                                                            Click="OnDeleteThemeClicked" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+
+                        <!-- 无主题提示 -->
+                        <Border Classes="setting-card" IsVisible="{Binding !HasCustomThemes}">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center" Margin="0,24">
+                                <TextBlock Text="&#xE790;" FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                                           FontSize="32" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                <TextBlock Text="暂无自定义主题" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="导入 .cisui 主题包或手动放入 data/Themes/ 目录" HorizontalAlignment="Center"
+                                           FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 导入主题 -->
+                        <TextBlock Text="导入主题" Classes="setting-group-title" />
+
+                        <Border Classes="setting-card">
+                            <StackPanel Spacing="8">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="导入 .cisui 主题包" Classes="setting-title" />
+                                    <TextBlock Text="选择一个 .cisui 格式的主题包文件进行安装" Classes="setting-desc" />
+                                </StackPanel>
+                                <Button Content="选择文件并导入" Command="{Binding ImportThemeCommand}"
+                                        HorizontalAlignment="Left" Padding="16,6" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 主题目录 -->
+                        <TextBlock Text="主题目录" Classes="setting-group-title" />
+
+                        <Border Classes="setting-card">
+                            <StackPanel Spacing="8">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="主题存储位置" Classes="setting-title" />
+                                    <TextBlock Text="自定义主题从此目录加载，每个子文件夹需包含 manifest.json 和 Theme.axaml" Classes="setting-desc" />
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Text="{Binding ThemesFolderPath}" IsReadOnly="True" />
+                                    <Button Grid.Column="1" Classes="toolbar" Content="打开"
+                                            Command="{Binding OpenThemesFolderCommand}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- ==================== 关于标签页 ==================== -->
             <TabItem Header="关于">
                 <ScrollViewer>

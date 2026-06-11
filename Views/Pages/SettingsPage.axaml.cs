@@ -116,6 +116,8 @@ public partial class SettingsPage : UserControl
         viewModel.ImportDataRequested += OnImportDataRequested;
         viewModel.ExportStudentsRequested += OnExportStudentsRequested;
         viewModel.ImportStudentsRequested += OnImportStudentsRequested;
+        viewModel.ImportThemeRequested += OnImportThemeRequested;
+        viewModel.DeleteThemeRequested += OnDeleteThemeRequested;
     }
 
     /// <summary>
@@ -261,5 +263,56 @@ public partial class SettingsPage : UserControl
         });
 
         return results.Count > 0 ? results[0].TryGetLocalPath() : null;
+    }
+
+    /// <summary>
+    /// 处理导入主题文件选择请求
+    /// </summary>
+    private async Task<string?> OnImportThemeRequested()
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return null;
+
+        var storageProvider = topLevel.StorageProvider;
+
+        var results = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "导入自定义主题",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("ClassIsScore 主题包")
+                {
+                    Patterns = ["*.cisui"]
+                }
+            ]
+        });
+
+        return results.Count > 0 ? results[0].TryGetLocalPath() : null;
+    }
+
+    /// <summary>
+    /// 删除主题按钮点击事件
+    /// </summary>
+    private async void OnDeleteThemeClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is string themeId)
+        {
+            if (DataContext is SettingsViewModel vm)
+            {
+                await vm.DeleteThemeAsync(themeId);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 处理删除主题请求
+    /// </summary>
+    private async Task OnDeleteThemeRequested(string themeId)
+    {
+        if (DataContext is SettingsViewModel vm)
+        {
+            await vm.DeleteThemeAsync(themeId);
+        }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Avalonia.Media;
@@ -24,6 +25,8 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IFloatingWindowService _floatingWindowService;
     private readonly IDataTransferService _dataTransferService;
     private readonly ITrayIconService _trayIconService;
+    private readonly IPluginService _pluginService;
+    private readonly IXamlThemeService _xamlThemeService;
     private readonly ILogger<SettingsViewModel> _logger;
 
     /// <summary>
@@ -168,6 +171,38 @@ public partial class SettingsViewModel : ObservableObject
     private string _transferStatus = string.Empty;
 
     /// <summary>
+    /// 已加载的插件列表
+    /// </summary>
+    public ObservableCollection<PluginInfo> Plugins { get; } = new();
+
+    /// <summary>
+    /// 是否有已安装的插件
+    /// </summary>
+    public bool HasPlugins => Plugins.Count > 0;
+
+    /// <summary>
+    /// 插件目录路径
+    /// </summary>
+    [ObservableProperty]
+    private string _pluginFolderPath = string.Empty;
+
+    /// <summary>
+    /// 已安装的自定义主题列表
+    /// </summary>
+    public ObservableCollection<ThemeInfo> CustomThemes { get; } = new();
+
+    /// <summary>
+    /// 是否有自定义主题
+    /// </summary>
+    public bool HasCustomThemes => CustomThemes.Count > 0;
+
+    /// <summary>
+    /// 主题目录路径
+    /// </summary>
+    [ObservableProperty]
+    private string _themesFolderPath = string.Empty;
+
+    /// <summary>
     /// 预设主题色列表
     /// </summary>
     public string[] PresetAccentColors { get; } =
@@ -202,12 +237,16 @@ public partial class SettingsViewModel : ObservableObject
         IFloatingWindowService floatingWindowService,
         IDataTransferService dataTransferService,
         ITrayIconService trayIconService,
+        IPluginService pluginService,
+        IXamlThemeService xamlThemeService,
         ILogger<SettingsViewModel> logger)
     {
         _themeService = themeService;
         _floatingWindowService = floatingWindowService;
         _dataTransferService = dataTransferService;
         _trayIconService = trayIconService;
+        _pluginService = pluginService;
+        _xamlThemeService = xamlThemeService;
         _logger = logger;
 
         // 初始化字体列表：系统字体 + 默认HarmonyOS Sans SC（参考ClassIsland）
@@ -216,6 +255,10 @@ public partial class SettingsViewModel : ObservableObject
 
         // 订阅数据传输进度事件
         _dataTransferService.ProgressChanged += OnDataTransferProgressChanged;
+
+        // 订阅插件和主题集合变更
+        Plugins.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasPlugins));
+        CustomThemes.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasCustomThemes));
 
         LoadCurrentSettings();
     }
@@ -243,6 +286,22 @@ public partial class SettingsViewModel : ObservableObject
 
         // 加载数据目录路径
         DataFolderPath = AppPaths.DataFolderPath;
+
+        // 加载插件列表
+        Plugins.Clear();
+        foreach (var plugin in _pluginService.LoadedPlugins)
+        {
+            Plugins.Add(plugin);
+        }
+        PluginFolderPath = AppPaths.PluginFolderPath;
+
+        // 加载自定义主题列表
+        CustomThemes.Clear();
+        foreach (var theme in _xamlThemeService.Themes)
+        {
+            CustomThemes.Add(theme);
+        }
+        ThemesFolderPath = AppPaths.ThemesFolderPath;
     }
 
     /// <summary>
@@ -381,6 +440,16 @@ public partial class SettingsViewModel : ObservableObject
     {
         NavigateToAboutRequested?.Invoke();
     }
+
+    /// <summary>
+    /// 导入主题请求事件，由 View 层处理文件选择对话框
+    /// </summary>
+    public event Func<Task<string?>>? ImportThemeRequested;
+
+    /// <summary>
+    /// 删除主题请求事件
+    /// </summary>
+    public event Func<string, Task>? DeleteThemeRequested;
 
     /// <summary>
     /// 导出所有数据请求事件，由 View 层处理文件选择对话框
@@ -586,5 +655,111 @@ public partial class SettingsViewModel : ObservableObject
             return await ImportStudentsRequested();
         }
         return null;
+    }
+
+    /// <summary>
+    /// 打开插件目录
+    /// </summary>
+    [RelayCommand]
+    private void OpenPluginFolder()
+    {
+        try
+        {
+            if (!Directory.Exists(PluginFolderPath))
+            {
+                Directory.CreateDirectory(PluginFolderPath);
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = PluginFolderPath,
+                UseShellExecute = true,
+                Verb = "open"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "打开插件目录失败");
+        }
+    }
+
+    /// <summary>
+    /// 打开主题目录
+    /// </summary>
+    [RelayCommand]
+    private void OpenThemesFolder()
+    {
+        try
+        {
+            if (!Directory.Exists(ThemesFolderPath))
+            {
+                Directory.CreateDirectory(ThemesFolderPath);
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = ThemesFolderPath,
+                UseShellExecute = true,
+                Verb = "open"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "打开主题目录失败");
+        }
+    }
+
+    /// <summary>
+    /// 导入自定义主题
+    /// </summary>
+    [RelayCommand]
+    private async Task ImportThemeAsync()
+    {
+        try
+        {
+            var filePath = ImportThemeRequested != null ? await ImportThemeRequested() : null;
+            if (string.IsNullOrEmpty(filePath)) return;
+
+            await _xamlThemeService.ImportThemeAsync(filePath);
+
+            // 刷新主题列表
+            CustomThemes.Clear();
+            foreach (var theme in _xamlThemeService.Themes)
+            {
+                CustomThemes.Add(theme);
+            }
+
+            StatusMessage = "主题导入成功";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "导入主题失败");
+            StatusMessage = "导入主题失败";
+        }
+    }
+
+    /// <summary>
+    /// 删除自定义主题
+    /// </summary>
+    public async Task DeleteThemeAsync(string themeId)
+    {
+        try
+        {
+            await _xamlThemeService.DeleteThemeAsync(themeId);
+
+            // 刷新主题列表
+            CustomThemes.Clear();
+            foreach (var theme in _xamlThemeService.Themes)
+            {
+                CustomThemes.Add(theme);
+            }
+
+            StatusMessage = "主题已删除";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "删除主题失败");
+            StatusMessage = "删除主题失败";
+        }
     }
 }
