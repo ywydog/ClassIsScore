@@ -19,7 +19,7 @@ namespace ClassIsScore.Views.Pages;
 /// </summary>
 public partial class SettingsPage : UserControl
 {
-    private Timer? _statusTimer;
+    private System.Timers.Timer? _statusTimer;
 
     public SettingsPage()
     {
@@ -141,7 +141,7 @@ public partial class SettingsPage : UserControl
             {
                 _statusTimer?.Stop();
                 _statusTimer?.Dispose();
-                _statusTimer = new Timer(3000) { AutoReset = false };
+                _statusTimer = new System.Timers.Timer(3000) { AutoReset = false };
                 _statusTimer.Elapsed += (_, _) =>
                 {
                     Avalonia.Threading.Dispatcher.UIThread.Post(() =>
