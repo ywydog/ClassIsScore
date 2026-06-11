@@ -21,4 +21,9 @@ public interface ITrayIconService
     /// 托盘图标是否可见
     /// </summary>
     bool IsVisible { get; }
+
+    /// <summary>
+    /// 托盘图标是否已初始化
+    /// </summary>
+    bool IsInitialized { get; }
 }

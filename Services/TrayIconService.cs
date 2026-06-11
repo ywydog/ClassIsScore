@@ -11,16 +11,22 @@ namespace ClassIsScore.Services;
 /// <summary>
 /// 系统托盘图标服务实现
 /// </summary>
-public class TrayIconService : ITrayIconService
+public class TrayIconService : ITrayIconService, IDisposable
 {
     private readonly ILogger<TrayIconService> _logger;
     private readonly IFloatingWindowService _floatingWindowService;
     private TrayIcon? _trayIcon;
+    private bool _isInitialized;
 
     /// <summary>
     /// 托盘图标是否可见
     /// </summary>
     public bool IsVisible => _trayIcon != null;
+
+    /// <summary>
+    /// 托盘图标是否已初始化
+    /// </summary>
+    public bool IsInitialized => _isInitialized;
 
     public TrayIconService(
         ILogger<TrayIconService> logger,
@@ -35,6 +41,12 @@ public class TrayIconService : ITrayIconService
     /// </summary>
     public void Initialize()
     {
+        if (_isInitialized)
+        {
+            _logger.LogDebug("托盘图标已初始化，跳过重复初始化");
+            return;
+        }
+
         try
         {
             _trayIcon = new TrayIcon();
@@ -57,6 +69,7 @@ public class TrayIconService : ITrayIconService
             _trayIcon.Menu = CreateMenu(version);
             _trayIcon.Clicked += OnTrayIconClicked;
 
+            _isInitialized = true;
             _logger.LogInformation("系统托盘图标已初始化");
         }
         catch (Exception ex)
@@ -229,5 +242,19 @@ public class TrayIconService : ITrayIconService
             return desktop.MainWindow as MainWindow;
         }
         return null;
+    }
+
+    /// <summary>
+    /// 释放托盘图标资源
+    /// </summary>
+    public void Dispose()
+    {
+        if (_trayIcon != null)
+        {
+            _trayIcon.Clicked -= OnTrayIconClicked;
+            _trayIcon.Dispose();
+            _trayIcon = null;
+            _isInitialized = false;
+        }
     }
 }

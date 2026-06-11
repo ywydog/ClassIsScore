@@ -31,8 +31,13 @@ public partial class App : Application
     /// </summary>
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IControlledApplicationLifetime desktop)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // 关键：设置为OnExplicitShutdown，防止窗口Hide后进程自动退出
+            // 当窗口最小化到托盘时(Hide)，Avalonia不会因为"没有可见窗口"而终止进程
+            // 只有显式调用Shutdown()才会退出应用（参考ClassIsland）
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
             desktop.Startup += OnDesktopStartup;
             desktop.Exit += OnDesktopExit;
         }
@@ -164,6 +169,17 @@ public partial class App : Application
     private void OnDesktopExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
     {
         _logger?.LogInformation("ClassIsScore 正在退出");
+
+        // 清理托盘图标
+        try
+        {
+            var trayIconService = AppHost.Instance?.GetService<ITrayIconService>() as IDisposable;
+            trayIconService?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "清理托盘图标失败");
+        }
 
         // 停止自动评价服务
         try
