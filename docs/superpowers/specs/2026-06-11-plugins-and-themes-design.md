@@ -9,6 +9,7 @@
 - **`PluginBase`**: 插件基类，提供 `Initialize(HostBuilderContext context, IServiceCollection services)` 抽象方法供插件覆盖。插件可在此注册自己的服务或视图。
 - **`PluginEntranceAttribute`**: 用于标记插件入口类的特性，方便反射查找。
 - **`PluginManifest`**: 记录插件的元数据，如 `Id`, `Name`, `Version`, `Author`, `Description`, `EntranceAssembly`。通常对应插件目录下的 `manifest.json` 文件。
+- **插件包格式**: 插件可以打包为 `.cispg` 文件（本质为 ZIP 压缩包），便于分享和安装。
 
 ### 1.2 加载机制 (`PluginLoadContext`)
 - 继承 `AssemblyLoadContext` 以实现隔离加载。
@@ -25,10 +26,10 @@
 
 ## 2. 主题系统设计
 
-### 2.1 主题文件格式 (`.cist` / `.zip`)
+### 2.1 主题文件格式 (`.cisui` / `.zip`)
 自定义主题打包格式，内部结构如下：
 ```text
-theme.cist (zip压缩)
+theme.cisui (zip压缩)
  ├── manifest.json   # 包含主题名称、ID、作者、版本、目标应用版本等
  └── Theme.axaml     # Avalonia 资源字典 (Styles/ResourceDictionary)
 ```
@@ -44,7 +45,7 @@ theme.cist (zip压缩)
   1. 读取所有已安装的主题元数据。
   2. 根据启用列表，使用 `AvaloniaXamlLoader.Load(uri)` 加载 `Theme.axaml`。
   3. 将加载到的 `Styles` 插入到 `Application.Current.Styles` 集合中（或者应用层级的一个特定的 `Styles` 集合中），以覆盖默认样式。
-- 导入功能：允许用户选择 `.cist` 文件，服务将其解压并复制到 `data/Themes/<ThemeId>/` 目录。
+- 导入功能：允许用户选择 `.cisui` 文件，服务将其解压并复制到 `data/Themes/<ThemeId>/` 目录。
 
 ### 2.4 UI 交互
 - 在“设置”页中增加“自定义主题”标签页。
