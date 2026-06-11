@@ -53,12 +53,12 @@ public class IpcService : IIpcService, IAsyncDisposable
     /// <summary>
     /// 启动 IPC 服务
     /// </summary>
-    public async Task StartAsync()
+    public Task StartAsync()
     {
         if (_isRunning)
         {
             _logger.LogWarning("IPC 服务已在运行中");
-            return;
+            return Task.CompletedTask;
         }
 
         _cts = new CancellationTokenSource();
@@ -67,6 +67,8 @@ public class IpcService : IIpcService, IAsyncDisposable
 
         // 在后台线程中监听管道连接
         _ = Task.Run(() => ListenForConnectionsAsync(_cts.Token), _cts.Token);
+
+        return Task.CompletedTask;
     }
 
     /// <summary>

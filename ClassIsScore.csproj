@@ -10,6 +10,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>ClassIsScore</RootNamespace>
     <AssemblyName>ClassIsScore</AssemblyName>
+    <DefaultItemExcludes>$(DefaultItemExcludes);ClassIsScore.Tests\**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.13" />

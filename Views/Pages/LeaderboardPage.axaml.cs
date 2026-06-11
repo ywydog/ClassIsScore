@@ -82,25 +82,23 @@ public partial class LeaderboardPage : UserControl
     {
         if (DataContext is not LeaderboardViewModel vm) return;
 
-        var dialog = new SaveFileDialog
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return;
+
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
         {
             Title = "导出排行榜",
-            Filters = new System.Collections.Generic.List<FileDialogFilter>
+            DefaultExtension = "xlsx",
+            FileTypeChoices = new[]
             {
-                new() { Name = "Excel文件", Extensions = { "xlsx" } },
-                new() { Name = "所有文件", Extensions = { "*" } }
-            },
-            DefaultExtension = "xlsx"
-        };
-
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is Window window)
-        {
-            var result = await dialog.ShowAsync(window);
-            if (!string.IsNullOrEmpty(result))
-            {
-                await vm.ExportCommand.ExecuteAsync(result);
+                new Avalonia.Platform.Storage.FilePickerFileType("Excel文件") { Patterns = new[] { "*.xlsx" } },
+                new Avalonia.Platform.Storage.FilePickerFileType("所有文件") { Patterns = new[] { "*.*" } }
             }
+        });
+
+        if (file != null)
+        {
+            await vm.ExportCommand.ExecuteAsync(file.Path.LocalPath);
         }
     }
 }

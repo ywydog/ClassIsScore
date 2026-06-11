@@ -392,7 +392,7 @@ public class ScoreService : IScoreService
         {
             if (extension == ".csv")
             {
-                var lines = File.ReadAllLines(filePath);
+                var lines = await File.ReadAllLinesAsync(filePath);
                 if (lines.Length == 0) return mapping;
 
                 var header = ParseCsvLine(lines[0]);

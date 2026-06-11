@@ -164,24 +164,23 @@ public partial class StudentManagementPage : UserControl
     {
         if (DataContext is not StudentManagementViewModel vm) return;
 
-        var dialog = new OpenFileDialog
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
         {
             Title = "选择Excel文件",
-            Filters = new System.Collections.Generic.List<FileDialogFilter>
+            AllowMultiple = false,
+            FileTypeFilter = new[]
             {
-                new() { Name = "Excel文件", Extensions = { "xlsx", "xls" } },
-                new() { Name = "所有文件", Extensions = { "*" } }
+                new Avalonia.Platform.Storage.FilePickerFileType("Excel文件") { Patterns = new[] { "*.xlsx", "*.xls" } },
+                new Avalonia.Platform.Storage.FilePickerFileType("所有文件") { Patterns = new[] { "*.*" } }
             }
-        };
+        });
 
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is Window window)
+        if (files.Count > 0)
         {
-            var result = await dialog.ShowAsync(window);
-            if (result is { Length: > 0 })
-            {
-                await vm.ImportExcelCommand.ExecuteAsync(result[0]);
-            }
+            await vm.ImportExcelCommand.ExecuteAsync(files[0].Path.LocalPath);
         }
     }
 
@@ -192,24 +191,23 @@ public partial class StudentManagementPage : UserControl
     {
         if (DataContext is not StudentManagementViewModel vm) return;
 
-        var dialog = new OpenFileDialog
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
         {
             Title = "选择CSV文件",
-            Filters = new System.Collections.Generic.List<FileDialogFilter>
+            AllowMultiple = false,
+            FileTypeFilter = new[]
             {
-                new() { Name = "CSV文件", Extensions = { "csv" } },
-                new() { Name = "所有文件", Extensions = { "*" } }
+                new Avalonia.Platform.Storage.FilePickerFileType("CSV文件") { Patterns = new[] { "*.csv" } },
+                new Avalonia.Platform.Storage.FilePickerFileType("所有文件") { Patterns = new[] { "*.*" } }
             }
-        };
+        });
 
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is Window window)
+        if (files.Count > 0)
         {
-            var result = await dialog.ShowAsync(window);
-            if (result is { Length: > 0 })
-            {
-                await vm.ImportCsvCommand.ExecuteAsync(result[0]);
-            }
+            await vm.ImportCsvCommand.ExecuteAsync(files[0].Path.LocalPath);
         }
     }
 

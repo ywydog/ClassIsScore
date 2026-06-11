@@ -22,10 +22,12 @@ public class PluginService : IPluginService
     /// </summary>
     public IReadOnlyList<PluginInfo> LoadedPlugins => _loadedPlugins.AsReadOnly();
 
+#pragma warning disable CS0067
     /// <summary>
     /// 插件加载完成事件
     /// </summary>
     public event EventHandler<PluginLoadedEventArgs>? PluginLoaded;
+#pragma warning restore CS0067
 
     /// <summary>
     /// 加载所有插件
