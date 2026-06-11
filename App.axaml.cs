@@ -54,6 +54,10 @@ public partial class App : Application
             var themeService = AppHost.Instance?.GetService<IThemeService>();
             themeService?.SetTheme(0, null);
 
+            // 优先初始化系统托盘图标（确保即使窗口异常，用户仍可通过托盘操作）
+            var trayIconService = AppHost.Instance?.GetService<ITrayIconService>();
+            trayIconService?.Initialize();
+
             // 创建并显示主窗口
             var mainWindow = AppHost.Instance?.GetService<MainWindow>();
             if (mainWindow != null)
@@ -79,6 +83,10 @@ public partial class App : Application
                     }
                 }
             }
+            else
+            {
+                _logger?.LogError("无法创建主窗口实例，请检查DI注册");
+            }
 
             // 根据设置显示悬浮窗
             var floatingWindowService = AppHost.Instance?.GetService<IFloatingWindowService>();
@@ -86,10 +94,6 @@ public partial class App : Application
             {
                 floatingWindowService.Show();
             }
-
-            // 初始化系统托盘图标
-            var trayIconService = AppHost.Instance?.GetService<ITrayIconService>();
-            trayIconService?.Initialize();
 
             // 注册 URI 路由
             RegisterUriRoutes();

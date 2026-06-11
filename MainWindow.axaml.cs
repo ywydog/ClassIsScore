@@ -11,8 +11,6 @@ using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using Avalonia.Platform;
-
 namespace ClassIsScore;
 
 /// <summary>
@@ -45,15 +43,11 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// 设置标题栏集成（参考ClassIsland窗口设计）
-    /// 将NavigationView侧边栏区域扩展到标题栏，实现沉浸式标题栏效果
     /// </summary>
     private void SetupTitleBar()
     {
-        // 扩展客户区到标题栏，实现Mica背景覆盖标题栏区域
-        ExtendClientAreaToDecorationsHint = true;
-        // 保留系统标题栏按钮（最小化/最大化/关闭）
-        ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.PreferSystemChrome;
-        // 标题栏仍可拖动
+        // 暂不启用ExtendClientArea，避免在部分Windows版本上导致窗口不可见
+        // 后续可根据系统版本条件启用
         SystemDecorations = SystemDecorations.Full;
     }
 
@@ -87,10 +81,12 @@ public partial class MainWindow : Window
         {
             // 取消关闭，隐藏到托盘
             e.Cancel = true;
+            _logger?.LogDebug("窗口关闭已取消，隐藏到系统托盘");
             Hide();
             return;
         }
 
+        _logger?.LogInformation("主窗口正在关闭");
         base.OnClosing(e);
     }
 

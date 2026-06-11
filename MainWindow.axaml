@@ -11,13 +11,12 @@
         MinWidth="800"
         MinHeight="500"
         WindowStartupLocation="CenterScreen"
-        TransparencyLevelHint="Mica"
         Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
 
     <!-- 窗口背景过渡动画（参考ClassIsland） -->
     <Window.Transitions>
         <Transitions>
-            <BrushTransition Property="Background" Duration="0:0:0.25" />
+            <BrushTransition Property="Background" Duration="0:0:0.2" />
         </Transitions>
     </Window.Transitions>
 
