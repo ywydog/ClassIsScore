@@ -64,7 +64,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*,Auto">
         <!-- 页面标题区 -->
         <Border Grid.Row="0" Padding="24,20,24,0">
             <StackPanel Spacing="4">
@@ -79,7 +79,8 @@
         <TabControl x:Name="SettingsTabControl"
                     Grid.Row="1"
                     Padding="24,8,24,24"
-                    SelectedIndex="0">
+                    SelectedIndex="0"
+                    SelectionChanged="OnTabSelectionChanged">
 
             <!-- ==================== 外观标签页 ==================== -->
             <TabItem Header="外观">
@@ -416,7 +417,7 @@
                             <ItemsControl ItemsSource="{Binding Plugins}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Padding="0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                                        <Border Padding="0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,0">
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                                 <!-- 插件图标 -->
                                                 <Border Grid.Column="0" Width="40" Height="40" CornerRadius="8"
@@ -444,7 +445,9 @@
                                                               IsChecked="{Binding IsEnabled}"
                                                               OnContent="启用"
                                                               OffContent="禁用"
-                                                              VerticalAlignment="Center" />
+                                                              VerticalAlignment="Center"
+                                                              Tag="{Binding Manifest.Id}"
+                                                              IsCheckedChanged="OnPluginToggled" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -487,7 +490,7 @@
             </TabItem>
 
             <!-- ==================== 自定义主题标签页 ==================== -->
-            <TabItem Header="自定义主题">
+            <TabItem Header="主题包">
                 <ScrollViewer>
                     <StackPanel Spacing="2" MaxWidth="700">
 
@@ -499,7 +502,7 @@
                             <ItemsControl ItemsSource="{Binding CustomThemes}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Padding="0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                                        <Border Padding="0,8" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,0">
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                                 <!-- 主题图标 -->
                                                 <Border Grid.Column="0" Width="40" Height="40" CornerRadius="8"
@@ -526,7 +529,9 @@
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                     <ToggleSwitch IsChecked="{Binding IsEnabled}"
                                                                   OnContent="启用"
-                                                                  OffContent="禁用" />
+                                                                  OffContent="禁用"
+                                                                  Tag="{Binding Manifest.Id}"
+                                                                  IsCheckedChanged="OnThemeToggled" />
                                                     <Button Content="删除" FontSize="12" Padding="8,4"
                                                             Tag="{Binding Manifest.Id}"
                                                             Click="OnDeleteThemeClicked" />
@@ -717,5 +722,22 @@
             </TabItem>
 
         </TabControl>
+
+        <!-- 状态消息 Toast 通知 -->
+        <Border Grid.Row="2"
+                x:Name="StatusToast"
+                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="16,10"
+                Margin="24,0,24,12"
+                IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom">
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Border>
     </Grid>
 </UserControl>

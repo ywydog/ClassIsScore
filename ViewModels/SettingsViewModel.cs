@@ -269,6 +269,7 @@ public partial class SettingsViewModel : ObservableObject
     private void LoadCurrentSettings()
     {
         // 加载主题设置
+        // CurrentRealThemeMode: 0=浅色, 1=深色
         IsDarkMode = _themeService.CurrentRealThemeMode == 1;
 
         // 加载悬浮窗设置
@@ -680,6 +681,61 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "打开插件目录失败");
+        }
+    }
+
+    /// <summary>
+    /// 切换插件启用/禁用
+    /// </summary>
+    [RelayCommand]
+    private void TogglePlugin((string PluginId, bool IsEnabled) param)
+    {
+        try
+        {
+            var plugin = _pluginService.LoadedPlugins.FirstOrDefault(p => p.Manifest.Id == param.PluginId);
+            if (plugin != null)
+            {
+                plugin.IsEnabled = param.IsEnabled;
+                StatusMessage = param.IsEnabled ? $"已启用插件 {plugin.Manifest.Name}" : $"已禁用插件 {plugin.Manifest.Name}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "切换插件状态失败");
+            StatusMessage = "切换插件状态失败";
+        }
+    }
+
+    /// <summary>
+    /// 切换主题启用/禁用
+    /// </summary>
+    [RelayCommand]
+    private void ToggleTheme((string ThemeId, bool IsEnabled) param)
+    {
+        try
+        {
+            if (param.IsEnabled)
+            {
+                _xamlThemeService.EnableTheme(param.ThemeId);
+            }
+            else
+            {
+                _xamlThemeService.DisableTheme(param.ThemeId);
+            }
+
+            // 同步本地集合
+            var theme = CustomThemes.FirstOrDefault(t => t.Manifest.Id == param.ThemeId);
+            if (theme != null)
+            {
+                theme.IsEnabled = param.IsEnabled;
+            }
+
+            StatusMessage = param.IsEnabled ? "主题已启用" : "主题已禁用";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "切换主题状态失败");
+            StatusMessage = "切换主题状态失败";
         }
     }
 

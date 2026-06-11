@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Timers;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -9,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using ClassIsScore.ViewModels;
+using FluentAvalonia.UI.Controls;
 
 namespace ClassIsScore.Views.Pages;
 
@@ -17,6 +19,8 @@ namespace ClassIsScore.Views.Pages;
 /// </summary>
 public partial class SettingsPage : UserControl
 {
+    private Timer? _statusTimer;
+
     public SettingsPage()
     {
         InitializeComponent();
@@ -33,6 +37,17 @@ public partial class SettingsPage : UserControl
 
         // 为当前可见Tab的卡片播放入场动画
         PlayEntranceAnimation(cards);
+    }
+
+    /// <summary>
+    /// Tab 切换时播放入场动画
+    /// </summary>
+    private void OnTabSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is TabControl tabControl)
+        {
+            PlayEntranceAnimation(tabControl);
+        }
     }
 
     /// <summary>
@@ -118,6 +133,26 @@ public partial class SettingsPage : UserControl
         viewModel.ImportStudentsRequested += OnImportStudentsRequested;
         viewModel.ImportThemeRequested += OnImportThemeRequested;
         viewModel.DeleteThemeRequested += OnDeleteThemeRequested;
+
+        // 订阅状态消息变更，自动3秒后清除
+        viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.StatusMessage))
+            {
+                _statusTimer?.Stop();
+                _statusTimer?.Dispose();
+                _statusTimer = new Timer(3000) { AutoReset = false };
+                _statusTimer.Elapsed += (_, _) =>
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        if (DataContext is SettingsViewModel vm)
+                            vm.StatusMessage = string.Empty;
+                    });
+                };
+                _statusTimer.Start();
+            }
+        };
     }
 
     /// <summary>
@@ -155,6 +190,34 @@ public partial class SettingsPage : UserControl
             if (DataContext is SettingsViewModel vm)
             {
                 vm.FloatingWindowAccentColor = colorHex;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 插件启用/禁用切换事件
+    /// </summary>
+    private void OnPluginToggled(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleSwitch toggle && toggle.Tag is string pluginId)
+        {
+            if (DataContext is SettingsViewModel vm)
+            {
+                vm.TogglePluginCommand.Execute((pluginId, toggle.IsChecked == true));
+            }
+        }
+    }
+
+    /// <summary>
+    /// 主题启用/禁用切换事件
+    /// </summary>
+    private void OnThemeToggled(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleSwitch toggle && toggle.Tag is string themeId)
+        {
+            if (DataContext is SettingsViewModel vm)
+            {
+                vm.ToggleThemeCommand.Execute((themeId, toggle.IsChecked == true));
             }
         }
     }
@@ -296,12 +359,30 @@ public partial class SettingsPage : UserControl
     /// </summary>
     private async void OnDeleteThemeClicked(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button button && button.Tag is string themeId)
+        if (sender is not Button button || button.Tag is not string themeId) return;
+
+        // 确认对话框
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is Window window)
         {
-            if (DataContext is SettingsViewModel vm)
+            var dialog = new ContentDialog
+            {
+                Title = "确认删除",
+                Content = "确定要删除此主题吗？此操作不可撤销。",
+                PrimaryButtonText = "删除",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close
+            };
+
+            var result = await dialog.ShowAsync(window);
+            if (result == ContentDialogResult.Primary && DataContext is SettingsViewModel vm)
             {
                 await vm.DeleteThemeAsync(themeId);
             }
+        }
+        else if (DataContext is SettingsViewModel vm)
+        {
+            await vm.DeleteThemeAsync(themeId);
         }
     }
 
