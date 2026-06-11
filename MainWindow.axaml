@@ -12,8 +12,7 @@
         MinHeight="500"
         WindowStartupLocation="CenterScreen"
         TransparencyLevelHint="Mica"
-        Background="Transparent"
-        TransparencyBackgroundFallback="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
 
     <!-- 窗口背景过渡动画（参考ClassIsland） -->
     <Window.Transitions>
