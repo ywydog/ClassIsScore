@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -43,11 +44,31 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// 设置标题栏集成（参考ClassIsland窗口设计）
+    /// 仅在Windows 11 (Build 22000+)上启用Mica沉浸式标题栏
     /// </summary>
     private void SetupTitleBar()
     {
-        // 暂不启用ExtendClientArea，避免在部分Windows版本上导致窗口不可见
-        // 后续可根据系统版本条件启用
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            try
+            {
+                var version = Environment.OSVersion.Version;
+                // Windows 11 = Build 22000+ (Major 10, Minor 0, Build 22000+)
+                if (version.Major > 10 || (version.Major == 10 && version.Build >= 22000))
+                {
+                    // Windows 11：启用Mica沉浸式标题栏
+                    ExtendClientAreaToDecorationsHint = true;
+                    ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.PreferSystemChrome;
+                    TransparencyLevelHint = WindowTransparencyLevel.Mica;
+                    Background = null;
+                }
+            }
+            catch
+            {
+                // 版本检测失败，使用默认设置
+            }
+        }
+
         SystemDecorations = SystemDecorations.Full;
     }
 
@@ -62,15 +83,37 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// 显示并激活窗口（从托盘恢复）
+    /// 使用SetForegroundWindow替代Topmost hack，避免窗口闪烁
     /// </summary>
     public void ShowAndActivate()
     {
         Show();
         WindowState = WindowState.Normal;
         Activate();
-        Topmost = true;
-        Topmost = false;
+
+        // Windows平台：使用SetForegroundWindow将窗口带到前台
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            try
+            {
+                var handle = TryGetPlatformHandle();
+                if (handle != null)
+                {
+                    SetForegroundWindow(handle.Handle);
+                }
+            }
+            catch
+            {
+                // 降级：使用Topmost hack
+                Topmost = true;
+                Topmost = false;
+            }
+        }
     }
+
+    // Windows P/Invoke：将窗口设为前台窗口
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     /// <summary>
     /// 窗口关闭时，根据设置决定是最小化到托盘还是真正关闭

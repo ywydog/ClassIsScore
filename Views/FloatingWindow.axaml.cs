@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using ClassIsScore.Helpers;
 using ClassIsScore.Models;
 
 namespace ClassIsScore.Views;
@@ -16,7 +17,6 @@ public partial class FloatingWindow : Window
     private bool _isDragging;
     private bool _hasMoved;
     private Point _dragStartPoint;
-    private PixelPoint _dragStartScreenPoint;
     private readonly FloatingWindowSettings _settings;
 
     /// <summary>
@@ -46,6 +46,20 @@ public partial class FloatingWindow : Window
 
         // 应用设置
         ApplySettings(settings);
+
+        // 窗口打开后注入无焦点样式
+        Opened += OnWindowOpened;
+    }
+
+    /// <summary>
+    /// 窗口打开后应用平台特定的无焦点设置
+    /// </summary>
+    private void OnWindowOpened(object? sender, EventArgs e)
+    {
+        if (_settings.IsNoFocus)
+        {
+            FocusHelper.SetNoFocus(this);
+        }
     }
 
     /// <summary>
@@ -247,62 +261,52 @@ public partial class FloatingWindow : Window
     }
 
     /// <summary>
-    /// 指针按下事件 - 记录起始位置
+    /// 指针按下事件 - 判定拖拽或点击
     /// </summary>
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var pointerPoint = e.GetCurrentPoint(this);
-        // 支持鼠标左键和触摸按下
         if (pointerPoint.Properties.IsLeftButtonPressed || e.Pointer.Type == PointerType.Touch)
         {
             _isDragging = true;
             _hasMoved = false;
             _dragStartPoint = e.GetPosition(this);
-            _dragStartScreenPoint = Position;
             e.Handled = true;
         }
     }
 
     /// <summary>
-    /// 指针移动事件 - 拖拽移动窗口（带阈值判定）
+    /// 指针移动事件 - 超过阈值后交由OS拖拽
     /// </summary>
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (!_isDragging) return;
-
-        var pointerPoint = e.GetCurrentPoint(this);
-        // 支持鼠标左键和触摸
-        if (!pointerPoint.Properties.IsLeftButtonPressed && e.Pointer.Type != PointerType.Touch)
-        {
-            _isDragging = false;
-            return;
-        }
+        if (!_isDragging || _hasMoved) return;
 
         var currentPoint = e.GetPosition(this);
         var offset = currentPoint - _dragStartPoint;
+        var distance = Math.Sqrt(offset.X * offset.X + offset.Y * offset.Y);
 
-        // 判断是否超过拖拽阈值
-        if (!_hasMoved)
+        if (distance >= DragThreshold)
         {
-            var distance = Math.Sqrt(offset.X * offset.X + offset.Y * offset.Y);
-            if (distance < DragThreshold)
-            {
-                return;
-            }
             _hasMoved = true;
+            _isDragging = false;
+
+            // 交由OS处理拖拽，避免多显示器/DPI下抖动
+            try
+            {
+                BeginMoveDrag(e);
+            }
+            catch
+            {
+                // BeginMoveDrag在某些平台可能抛出异常
+            }
+
+            e.Handled = true;
         }
-
-        // 移动窗口
-        var newPosition = new PixelPoint(
-            _dragStartScreenPoint.X + (int)offset.X,
-            _dragStartScreenPoint.Y + (int)offset.Y);
-        Position = newPosition;
-
-        e.Handled = true;
     }
 
     /// <summary>
-    /// 指针释放事件 - 结束拖拽或触发点击
+    /// 指针释放事件 - 触发点击或通知位置变更
     /// </summary>
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
@@ -310,17 +314,19 @@ public partial class FloatingWindow : Window
         {
             _isDragging = false;
 
-            if (_hasMoved)
-            {
-                // 拖拽移动完成，通知位置变更
-                FloatingPositionChanged?.Invoke(Position.X, Position.Y);
-            }
-            else
+            if (!_hasMoved)
             {
                 // 未超过阈值，视为点击/轻触
                 FloatingClicked?.Invoke();
             }
 
+            e.Handled = true;
+        }
+        else if (_hasMoved)
+        {
+            // BeginMoveDrag结束后通知位置变更
+            FloatingPositionChanged?.Invoke(Position.X, Position.Y);
+            _hasMoved = false;
             e.Handled = true;
         }
     }
