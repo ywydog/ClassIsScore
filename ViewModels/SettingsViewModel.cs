@@ -448,11 +448,6 @@ public partial class SettingsViewModel : ObservableObject
     public event Func<Task<string?>>? ImportThemeRequested;
 
     /// <summary>
-    /// 删除主题请求事件
-    /// </summary>
-    public event Func<string, Task>? DeleteThemeRequested;
-
-    /// <summary>
     /// 导出所有数据请求事件，由 View 层处理文件选择对话框
     /// </summary>
     public event Func<Task<string?>>? ExportDataRequested;

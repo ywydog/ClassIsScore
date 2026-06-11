@@ -132,7 +132,6 @@ public partial class SettingsPage : UserControl
         viewModel.ExportStudentsRequested += OnExportStudentsRequested;
         viewModel.ImportStudentsRequested += OnImportStudentsRequested;
         viewModel.ImportThemeRequested += OnImportThemeRequested;
-        viewModel.DeleteThemeRequested += OnDeleteThemeRequested;
 
         // 订阅状态消息变更，自动3秒后清除
         viewModel.PropertyChanged += (s, e) =>
@@ -381,17 +380,6 @@ public partial class SettingsPage : UserControl
             }
         }
         else if (DataContext is SettingsViewModel vm)
-        {
-            await vm.DeleteThemeAsync(themeId);
-        }
-    }
-
-    /// <summary>
-    /// 处理删除主题请求
-    /// </summary>
-    private async Task OnDeleteThemeRequested(string themeId)
-    {
-        if (DataContext is SettingsViewModel vm)
         {
             await vm.DeleteThemeAsync(themeId);
         }
