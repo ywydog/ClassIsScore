@@ -60,6 +60,20 @@ public partial class App : Application
             var themeService = AppHost.Instance?.GetService<IThemeService>();
             themeService?.SetTheme(0, null);
 
+            // 加载自定义主题
+            var xamlThemeService = AppHost.Instance?.GetService<IXamlThemeService>();
+            if (xamlThemeService != null)
+            {
+                await xamlThemeService.LoadAllThemesAsync();
+            }
+
+            // 加载插件
+            var pluginService = AppHost.Instance?.GetService<IPluginService>();
+            if (pluginService != null)
+            {
+                await pluginService.LoadPluginsAsync();
+            }
+
             // 优先初始化系统托盘图标（确保即使窗口异常，用户仍可通过托盘操作）
             var trayIconService = AppHost.Instance?.GetService<ITrayIconService>();
             trayIconService?.Initialize();
@@ -191,6 +205,17 @@ public partial class App : Application
         catch (Exception ex)
         {
             _logger?.LogError(ex, "停止自动评价服务失败");
+        }
+
+        // 卸载插件
+        try
+        {
+            var pluginService = AppHost.Instance?.GetService<IPluginService>();
+            pluginService?.UnloadPluginsAsync().Wait();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "卸载插件失败");
         }
 
         // 停止 Host

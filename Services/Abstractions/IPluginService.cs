@@ -1,4 +1,6 @@
 using ClassIsScore.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace ClassIsScore.Services.Abstractions;
 
@@ -26,6 +28,13 @@ public interface IPluginService
     /// 卸载所有插件
     /// </summary>
     Task UnloadPluginsAsync();
+
+    /// <summary>
+    /// 初始化所有已加载插件的 DI 注册
+    /// </summary>
+    /// <param name="context">Host 构建上下文</param>
+    /// <param name="services">服务集合</param>
+    void InitializePlugins(HostBuilderContext context, IServiceCollection services);
 
     /// <summary>
     /// 插件加载完成事件

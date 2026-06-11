@@ -1,3 +1,5 @@
+using ClassIsScore.Abstractions;
+
 namespace ClassIsScore.Models;
 
 /// <summary>
@@ -23,5 +25,5 @@ public class PluginInfo
     /// <summary>
     /// 插件实例对象
     /// </summary>
-    public object? Instance { get; set; }
+    public PluginBase? Instance { get; set; }
 }

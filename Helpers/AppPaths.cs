@@ -35,6 +35,11 @@ public static class AppPaths
     public static string PluginFolderPath => Path.Combine(AppRootFolderPath, "Plugins");
 
     /// <summary>
+    /// 主题目录
+    /// </summary>
+    public static string ThemesFolderPath => Path.Combine(AppRootFolderPath, "Themes");
+
+    /// <summary>
     /// 配置目录
     /// </summary>
     public static string ConfigFolderPath => Path.Combine(AppRootFolderPath, "Config");
@@ -49,6 +54,7 @@ public static class AppPaths
         EnsureDirectoryExists(LogFolderPath);
         EnsureDirectoryExists(BackupFolderPath);
         EnsureDirectoryExists(PluginFolderPath);
+        EnsureDirectoryExists(ThemesFolderPath);
         EnsureDirectoryExists(ConfigFolderPath);
     }
 
