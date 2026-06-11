@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform;
 using ClassIsScore.Services;
 using ClassIsScore.Services.Abstractions;
 using ClassIsScore.ViewModels;
@@ -58,7 +59,7 @@ public partial class MainWindow : Window
                 {
                     // Windows 11：启用Mica沉浸式标题栏
                     ExtendClientAreaToDecorationsHint = true;
-                    ExtendClientAreaChromeHints = Avalonia.Controls.ExtendClientAreaChromeHints.PreferSystemChrome;
+                    ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.PreferSystemChrome;
                     TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent };
                     Background = null;
                 }
