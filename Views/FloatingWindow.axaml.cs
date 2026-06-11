@@ -17,6 +17,7 @@ public partial class FloatingWindow : Window
     private bool _isDragging;
     private bool _hasMoved;
     private Point _dragStartPoint;
+    private PointerPressedEventArgs? _pressedEventArgs;
     private readonly FloatingWindowSettings _settings;
 
     /// <summary>
@@ -261,7 +262,7 @@ public partial class FloatingWindow : Window
     }
 
     /// <summary>
-    /// 指针按下事件 - 判定拖拽或点击
+    /// 指针按下事件 - 记录起始位置和事件参数
     /// </summary>
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -271,6 +272,7 @@ public partial class FloatingWindow : Window
             _isDragging = true;
             _hasMoved = false;
             _dragStartPoint = e.GetPosition(this);
+            _pressedEventArgs = e;
             e.Handled = true;
         }
     }
@@ -292,13 +294,16 @@ public partial class FloatingWindow : Window
             _isDragging = false;
 
             // 交由OS处理拖拽，避免多显示器/DPI下抖动
-            try
+            if (_pressedEventArgs != null)
             {
-                BeginMoveDrag(e);
-            }
-            catch
-            {
-                // BeginMoveDrag在某些平台可能抛出异常
+                try
+                {
+                    BeginMoveDrag(_pressedEventArgs);
+                }
+                catch
+                {
+                    // BeginMoveDrag在某些平台可能抛出异常
+                }
             }
 
             e.Handled = true;

@@ -58,8 +58,8 @@ public partial class MainWindow : Window
                 {
                     // Windows 11：启用Mica沉浸式标题栏
                     ExtendClientAreaToDecorationsHint = true;
-                    ExtendClientAreaChromeHints = ExtendClientAreaChromeHints.PreferSystemChrome;
-                    TransparencyLevelHint = WindowTransparencyLevel.Mica;
+                    ExtendClientAreaChromeHints = Avalonia.Controls.ExtendClientAreaChromeHints.PreferSystemChrome;
+                    TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent };
                     Background = null;
                 }
             }
