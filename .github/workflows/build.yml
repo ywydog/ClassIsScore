@@ -121,7 +121,8 @@ jobs:
           tag: ${{ steps.tag.outputs.tag }}
           name: ClassIsScore ${{ steps.tag.outputs.tag }}
           artifacts: "./release/*"
-          draft: true
+          draft: false
+          prerelease: true
           generateReleaseNotes: true
           allowUpdates: true
           replacesExistingArtifacts: true
