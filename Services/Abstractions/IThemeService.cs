@@ -15,9 +15,9 @@ public interface IThemeService
     /// <summary>
     /// 当前主题模式
     /// <list type="bullet">
-    ///   <item>0 - 浅色</item>
-    ///   <item>1 - 深色</item>
-    ///   <item>2 - 跟随系统</item>
+    ///   <item>0 - 跟随系统</item>
+    ///   <item>1 - 浅色</item>
+    ///   <item>2 - 深色</item>
     /// </list>
     /// </summary>
     int CurrentThemeMode { get; }
@@ -25,7 +25,7 @@ public interface IThemeService
     /// <summary>
     /// 设置主题
     /// </summary>
-    /// <param name="themeMode">主题模式：0=浅色，1=深色，2=跟随系统</param>
+    /// <param name="themeMode">主题模式：0=跟随系统，1=浅色，2=深色</param>
     /// <param name="primary">自定义主题色，为 null 则使用默认色</param>
     void SetTheme(int themeMode, Color? primary);
 

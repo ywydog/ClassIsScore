@@ -59,10 +59,42 @@ public partial class App : Application
             // 初始化主题服务
             var themeService = AppHost.Instance?.GetService<IThemeService>();
             themeService?.SetTheme(0, null);
+            _logger?.LogInformation("主题服务初始化完成");
+
+            // 加载自定义主题
+            try
+            {
+                var xamlThemeService = AppHost.Instance?.GetService<IXamlThemeService>();
+                if (xamlThemeService != null)
+                {
+                    await xamlThemeService.LoadAllThemesAsync();
+                    _logger?.LogInformation("自定义主题加载完成");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "加载自定义主题失败");
+            }
+
+            // 加载插件
+            try
+            {
+                var pluginService = AppHost.Instance?.GetService<IPluginService>();
+                if (pluginService != null)
+                {
+                    await pluginService.LoadPluginsAsync();
+                    _logger?.LogInformation("插件加载完成");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "加载插件失败");
+            }
 
             // 优先初始化系统托盘图标（确保即使窗口异常，用户仍可通过托盘操作）
             var trayIconService = AppHost.Instance?.GetService<ITrayIconService>();
             trayIconService?.Initialize();
+            _logger?.LogInformation("托盘图标初始化完成");
 
             // 创建并显示主窗口
             var mainWindow = AppHost.Instance?.GetService<MainWindow>();
@@ -74,6 +106,7 @@ public partial class App : Application
                 }
 
                 mainWindow.Show();
+                _logger?.LogInformation("主窗口已显示");
 
                 // 检查是否首次启动，显示引导窗口
                 var appStateService = AppHost.Instance?.GetService<IAppStateService>();
@@ -191,6 +224,17 @@ public partial class App : Application
         catch (Exception ex)
         {
             _logger?.LogError(ex, "停止自动评价服务失败");
+        }
+
+        // 卸载插件
+        try
+        {
+            var pluginService = AppHost.Instance?.GetService<IPluginService>();
+            pluginService?.UnloadPluginsAsync().Wait();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "卸载插件失败");
         }
 
         // 停止 Host

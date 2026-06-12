@@ -191,6 +191,7 @@ public static class Program
         services.AddSingleton<IAutoEvaluationService, AutoEvaluationService>();
         services.AddSingleton<IDataTransferService, DataTransferService>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
+        services.AddSingleton<IXamlThemeService, XamlThemeService>();
 
         // 注册 ViewModel
         services.AddTransient<OnboardingViewModel>();
