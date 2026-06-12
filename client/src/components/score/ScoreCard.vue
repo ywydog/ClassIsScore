@@ -1,5 +1,12 @@
 <template>
-  <div class="score-card" :class="{ 'score-card--positive': scoreChange > 0, 'score-card--negative': scoreChange < 0 }">
+  <div
+    class="score-card"
+    :class="{
+      'score-card--positive': scoreChange > 0,
+      'score-card--negative': scoreChange < 0,
+      'score-card--reverted': isReverted
+    }"
+  >
     <div class="score-card__header">
       <span class="score-card__name">{{ studentName }}</span>
       <span class="score-card__change" :class="scoreChange > 0 ? 'score-card__change--up' : 'score-card__change--down'">
@@ -9,8 +16,9 @@
     <div class="score-card__reason">{{ reason }}</div>
     <div class="score-card__footer">
       <span class="score-card__time">{{ formatTime(createdAt) }}</span>
+      <el-tag v-if="isReverted" type="info" size="small">已撤销</el-tag>
       <el-button
-        v-if="canQuickRevert"
+        v-else-if="canQuickRevert"
         type="danger"
         size="small"
         text
@@ -30,6 +38,7 @@ defineProps<{
   reason: string
   createdAt: string
   canQuickRevert: boolean
+  isReverted?: boolean
 }>()
 
 defineEmits<{
@@ -45,14 +54,18 @@ function formatTime(dateStr: string): string {
 <style scoped>
 .score-card {
   background-color: var(--cis-card-bg);
-  border-radius: 8px;
+  border-radius: var(--cis-radius-md);
   padding: 12px 16px;
   border: 1px solid var(--cis-border-color);
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, opacity 0.2s;
 }
 
 .score-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--cis-shadow-sm);
+}
+
+.score-card--reverted {
+  opacity: 0.5;
 }
 
 .score-card__header {

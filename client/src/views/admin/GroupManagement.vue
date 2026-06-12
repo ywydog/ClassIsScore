@@ -2,90 +2,201 @@
   <div class="group-management">
     <div class="group-management__header">
       <h2>分组管理</h2>
-      <el-button type="primary" @click="showAddDialog = true">
+      <el-button type="primary" @click="openCreateDialog">
         <el-icon><Plus /></el-icon>
         创建小组
       </el-button>
     </div>
 
     <div class="group-management__list">
-      <el-card v-for="group in groups" :key="group.id" class="group-management__card">
+      <el-card v-for="group in groups" :key="group.id" class="group-card">
         <template #header>
-          <div class="group-management__card-header">
-            <span>{{ group.name }}</span>
-            <div>
-              <el-button type="primary" size="small" text @click="handleEdit(group)">编辑</el-button>
+          <div class="group-card__header">
+            <div class="group-card__title">
+              <el-icon color="var(--cis-primary)"><Grid /></el-icon>
+              <span>{{ group.name }}</span>
+            </div>
+            <div class="group-card__actions">
+              <el-button type="primary" size="small" text @click="openEditDialog(group)">编辑</el-button>
               <el-button type="danger" size="small" text @click="handleDelete(group.id)">删除</el-button>
             </div>
           </div>
         </template>
-        <div class="group-management__card-content">
-          <span class="group-management__member-count">成员: {{ group.studentIds.length }} 人</span>
+        <div class="group-card__content">
+          <div class="group-card__stats">
+            <div class="group-card__stat">
+              <span class="group-card__stat-label">成员数</span>
+              <span class="group-card__stat-value">{{ group.studentIds.length }}</span>
+            </div>
+            <div class="group-card__stat">
+              <span class="group-card__stat-label">小组总分</span>
+              <span class="group-card__stat-value">{{ getGroupScore(group) }}</span>
+            </div>
+          </div>
+          <div class="group-card__members" v-if="group.studentIds.length > 0">
+            <el-tag
+              v-for="sid in group.studentIds"
+              :key="sid"
+              size="small"
+              closable
+              @close="removeStudentFromGroup(group.id, sid)"
+              class="group-card__member-tag"
+            >
+              {{ getStudentName(sid) }}
+            </el-tag>
+          </div>
+          <div v-else class="group-card__empty">暂无成员</div>
+          <el-button size="small" text type="primary" @click="openMemberDialog(group)">
+            <el-icon><Plus /></el-icon> 添加成员
+          </el-button>
         </div>
       </el-card>
       <el-empty v-if="groups.length === 0" description="暂无小组" />
     </div>
 
-    <el-dialog v-model="showAddDialog" :title="editingGroup ? '编辑小组' : '创建小组'" width="480px">
+    <!-- 创建/编辑对话框 -->
+    <el-dialog v-model="showFormDialog" :title="editingGroup ? '编辑小组' : '创建小组'" width="480px">
       <el-form :model="groupForm" label-width="80px">
-        <el-form-item label="小组名称">
+        <el-form-item label="小组名称" required>
           <el-input v-model="groupForm.name" placeholder="请输入小组名称" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showAddDialog = false">取消</el-button>
+        <el-button @click="showFormDialog = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 添加成员对话框 -->
+    <el-dialog v-model="showMemberDialog" title="添加成员" width="480px">
+      <el-select v-model="selectedStudentIds" multiple placeholder="选择学生" filterable style="width: 100%">
+        <el-option
+          v-for="s in availableStudents"
+          :key="s.id"
+          :label="s.name"
+          :value="s.id"
+        />
+      </el-select>
+      <template #footer>
+        <el-button @click="showMemberDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleAddMembers">添加</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { Plus, Grid } from '@element-plus/icons-vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { groupApi } from '@/services/group'
+import { useStudentStore } from '@/stores/student'
 import type { StudentGroup } from '@/types'
 
-const groups = ref<StudentGroup[]>([])
-const showAddDialog = ref(false)
-const editingGroup = ref<StudentGroup | null>(null)
+const studentStore = useStudentStore()
 
-const groupForm = reactive({
-  name: '',
+const groups = ref<StudentGroup[]>([])
+const showFormDialog = ref(false)
+const showMemberDialog = ref(false)
+const editingGroup = ref<StudentGroup | null>(null)
+const currentGroup = ref<StudentGroup | null>(null)
+const selectedStudentIds = ref<string[]>([])
+
+const groupForm = reactive({ name: '' })
+
+const availableStudents = computed(() => {
+  if (!currentGroup.value) return studentStore.students
+  const memberIds = new Set(currentGroup.value.studentIds)
+  return studentStore.students.filter(s => !memberIds.has(s.id))
 })
 
 onMounted(async () => {
-  await fetchGroups()
+  await Promise.all([
+    fetchGroups(),
+    studentStore.fetchStudents(),
+  ])
 })
 
 async function fetchGroups() {
-  const response = await groupApi.getAll()
-  groups.value = response.data.data
+  try {
+    const response = await groupApi.getAll()
+    groups.value = response.data.data
+  } catch { /* ignore */ }
 }
 
-function handleEdit(group: StudentGroup) {
+function getStudentName(studentId: string): string {
+  return studentStore.getStudentById(studentId)?.name || '未知'
+}
+
+function getGroupScore(group: StudentGroup): number {
+  return group.studentIds.reduce((sum, sid) => {
+    const student = studentStore.getStudentById(sid)
+    return sum + (student?.score || 0)
+  }, 0)
+}
+
+function openCreateDialog() {
+  editingGroup.value = null
+  groupForm.name = ''
+  showFormDialog.value = true
+}
+
+function openEditDialog(group: StudentGroup) {
   editingGroup.value = group
   groupForm.name = group.name
-  showAddDialog.value = true
+  showFormDialog.value = true
 }
 
-async function handleDelete(id: string) {
-  await ElMessageBox.confirm('确定删除该小组吗？', '确认', { type: 'warning' })
-  await groupApi.delete(id)
-  await fetchGroups()
+function openMemberDialog(group: StudentGroup) {
+  currentGroup.value = group
+  selectedStudentIds.value = []
+  showMemberDialog.value = true
 }
 
 async function handleSubmit() {
-  if (editingGroup.value) {
-    await groupApi.update(editingGroup.value.id, { name: groupForm.name })
-  } else {
-    await groupApi.create({ name: groupForm.name })
+  if (!groupForm.name.trim()) {
+    ElMessage.warning('请输入小组名称')
+    return
   }
-  showAddDialog.value = false
-  editingGroup.value = null
-  groupForm.name = ''
-  await fetchGroups()
+  try {
+    if (editingGroup.value) {
+      await groupApi.update(editingGroup.value.id, { name: groupForm.name })
+      ElMessage.success('已更新')
+    } else {
+      await groupApi.create({ name: groupForm.name })
+      ElMessage.success('已创建')
+    }
+    showFormDialog.value = false
+    await fetchGroups()
+  } catch { /* error handled by interceptor */ }
+}
+
+async function handleDelete(id: string) {
+  await ElMessageBox.confirm('确定删除该小组吗？', '确认删除', { type: 'warning' })
+  try {
+    await groupApi.delete(id)
+    ElMessage.success('已删除')
+    await fetchGroups()
+  } catch { /* ignore */ }
+}
+
+async function handleAddMembers() {
+  if (!currentGroup.value || selectedStudentIds.value.length === 0) return
+  try {
+    for (const sid of selectedStudentIds.value) {
+      await groupApi.addStudent(currentGroup.value.id, sid)
+    }
+    ElMessage.success('已添加成员')
+    showMemberDialog.value = false
+    await fetchGroups()
+  } catch { /* ignore */ }
+}
+
+async function removeStudentFromGroup(groupId: string, studentId: string) {
+  try {
+    await groupApi.removeStudent(groupId, studentId)
+    await fetchGroups()
+  } catch { /* ignore */ }
 }
 </script>
 
@@ -105,18 +216,65 @@ async function handleSubmit() {
 
 .group-management__list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
 }
 
-.group-management__card-header {
+.group-card__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.group-management__card-content {
-  font-size: 14px;
-  color: var(--cis-text-secondary);
+.group-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.group-card__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.group-card__stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.group-card__stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.group-card__stat-label {
+  font-size: 12px;
+  color: var(--cis-text-tertiary);
+}
+
+.group-card__stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cis-primary);
+}
+
+.group-card__members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.group-card__member-tag {
+  cursor: default;
+}
+
+.group-card__empty {
+  color: var(--cis-text-tertiary);
+  font-size: 13px;
+  margin-bottom: 8px;
 }
 </style>

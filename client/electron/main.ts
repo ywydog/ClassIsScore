@@ -49,6 +49,13 @@ app.whenReady().then(async () => {
     }
   })
 
+  ipcMain.handle('show-main-window', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show()
+      mainWindow.focus()
+    }
+  })
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createMainWindow()

@@ -14,4 +14,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFloatingWindow: () => ipcRenderer.invoke('open-floating-window'),
   closeDisplayWindow: () => ipcRenderer.invoke('close-display-window'),
   closeFloatingWindow: () => ipcRenderer.invoke('close-floating-window'),
+  openWindow: (name: string) => {
+    if (name === 'display') return ipcRenderer.invoke('open-display-window')
+    if (name === 'floating') return ipcRenderer.invoke('open-floating-window')
+    if (name === 'main') return ipcRenderer.invoke('show-main-window')
+    return Promise.resolve()
+  },
 })

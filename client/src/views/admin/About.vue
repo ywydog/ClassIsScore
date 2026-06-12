@@ -7,9 +7,9 @@
     <div class="about-page__content">
       <el-card class="about-page__card">
         <div class="about-page__app-info">
-          <el-icon :size="64" color="var(--cis-primary)"><Trophy /></el-icon>
+          <el-icon :size="72" color="var(--cis-primary)"><Trophy /></el-icon>
           <h3 class="about-page__app-name">ClassIsScore</h3>
-          <p class="about-page__version">版本 1.0.0</p>
+          <p class="about-page__version">版本 1.0.0-web</p>
           <p class="about-page__description">
             一款面向课堂场景的积分管理工具，支持学生管理、积分记录、排行榜、宠物系统等功能。
           </p>
@@ -21,9 +21,28 @@
           <span>技术栈</span>
         </template>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="前端">Vue 3 + Element Plus + Pinia</el-descriptions-item>
-          <el-descriptions-item label="后端">Spring Boot</el-descriptions-item>
-          <el-descriptions-item label="桌面端">Electron</el-descriptions-item>
+          <el-descriptions-item label="前端框架">Vue 3.5 + TypeScript</el-descriptions-item>
+          <el-descriptions-item label="UI 组件">Element Plus</el-descriptions-item>
+          <el-descriptions-item label="状态管理">Pinia</el-descriptions-item>
+          <el-descriptions-item label="桌面端">Electron 33</el-descriptions-item>
+          <el-descriptions-item label="后端框架">Spring Boot 3.3</el-descriptions-item>
+          <el-descriptions-item label="数据库">H2 Embedded</el-descriptions-item>
+          <el-descriptions-item label="ORM">MyBatis-Plus</el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+
+      <el-card class="about-page__card">
+        <template #header>
+          <span>开源信息</span>
+        </template>
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="开发者">ywydog</el-descriptions-item>
+          <el-descriptions-item label="仓库">
+            <el-link type="primary" href="https://github.com/ywydog/ClassIsScore" target="_blank">
+              github.com/ywydog/ClassIsScore
+            </el-link>
+          </el-descriptions-item>
+          <el-descriptions-item label="许可证">MIT License</el-descriptions-item>
         </el-descriptions>
       </el-card>
     </div>
@@ -54,18 +73,12 @@ import { Trophy } from '@element-plus/icons-vue'
 
 .about-page__app-info {
   text-align: center;
-  padding: 20px 0;
-}
-
-.about-page__logo {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 12px;
+  padding: 24px 0;
 }
 
 .about-page__app-name {
-  margin: 0 0 4px;
-  font-size: 22px;
+  margin: 12px 0 4px;
+  font-size: 24px;
   color: var(--cis-text-primary);
 }
 
