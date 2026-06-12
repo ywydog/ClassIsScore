@@ -1,0 +1,21 @@
+[data-theme='light'] {
+  --cis-bg: #f5f7fa;
+  --cis-bg-secondary: #ebeef5;
+  --cis-card-bg: #ffffff;
+  --cis-header-bg: #ffffff;
+  --cis-sidebar-bg: #ffffff;
+
+  --cis-text-primary: #303133;
+  --cis-text-secondary: #606266;
+  --cis-text-tertiary: #909399;
+  --cis-text-placeholder: #c0c4cc;
+
+  --cis-border-color: #e4e7ed;
+  --cis-border-color-light: #ebeef5;
+
+  --cis-primary: #409eff;
+  --cis-primary-light-3: #79bbff;
+  --cis-primary-light-5: #a0cfff;
+  --cis-primary-light-7: #c6e2ff;
+  --cis-primary-light-9: #ecf5ff;
+}

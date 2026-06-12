@@ -1,0 +1,21 @@
+[data-theme='dark'] {
+  --cis-bg: #141414;
+  --cis-bg-secondary: #1d1d1d;
+  --cis-card-bg: #1d1d1d;
+  --cis-header-bg: #1d1d1d;
+  --cis-sidebar-bg: #1d1d1d;
+
+  --cis-text-primary: #e5eaf3;
+  --cis-text-secondary: #a3a6ad;
+  --cis-text-tertiary: #6c6e72;
+  --cis-text-placeholder: #4a4d52;
+
+  --cis-border-color: #363637;
+  --cis-border-color-light: #2c2c2d;
+
+  --cis-primary: #409eff;
+  --cis-primary-light-3: #3375b9;
+  --cis-primary-light-5: #2a598a;
+  --cis-primary-light-7: #213d5c;
+  --cis-primary-light-9: #18222c;
+}

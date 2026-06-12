@@ -1,0 +1,42 @@
+:root {
+  /* 主色调 */
+  --cis-primary: #409eff;
+  --cis-primary-light-3: #79bbff;
+  --cis-primary-light-5: #a0cfff;
+  --cis-primary-light-7: #c6e2ff;
+  --cis-primary-light-9: #ecf5ff;
+  --cis-primary-dark-2: #337ecc;
+
+  /* 字体 */
+  --cis-font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --cis-font-size-base: 14px;
+  --cis-font-size-sm: 12px;
+  --cis-font-size-lg: 16px;
+  --cis-font-size-xl: 20px;
+
+  /* 间距 */
+  --cis-spacing-xs: 4px;
+  --cis-spacing-sm: 8px;
+  --cis-spacing-md: 16px;
+  --cis-spacing-lg: 24px;
+  --cis-spacing-xl: 32px;
+
+  /* 圆角 */
+  --cis-radius-sm: 4px;
+  --cis-radius-md: 8px;
+  --cis-radius-lg: 12px;
+  --cis-radius-xl: 16px;
+
+  /* 阴影 */
+  --cis-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --cis-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --cis-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.16);
+
+  /* 过渡 */
+  --cis-transition-fast: 0.15s ease;
+  --cis-transition-normal: 0.3s ease;
+
+  /* 边框 */
+  --cis-border-color: #e4e7ed;
+  --cis-border-radius: var(--cis-radius-md);
+}

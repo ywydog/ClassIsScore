@@ -1,34 +1,29 @@
-## .NET
+# .NET
 bin/
 obj/
-*.user
-*.suo
-*.cache
-*.log
-
-## Avalonia
-*.avalonia.cache
-
-## 发布输出
 publish/
-*.nupkg
 
-## IDE
-.vs/
-.vscode/
+# Client
+client/dist/
+client/node_modules/
+client/.vite/
+
+# Server
+server/target/
+server/.mvn/
+server/mvnw
+server/mvnw.cmd
+
+# IDE
 .idea/
-*.swp
-*.swo
-*~
+.vscode/
+*.iml
+*.suo
+*.user
 
-## 运行时数据
-data/
-*.db
-
-## OS
+# OS
 .DS_Store
 Thumbs.db
-Desktop.ini
 
-## 参照仓库（不提交）
-reference/
+# Build
+*.log
