@@ -47,7 +47,7 @@
           <el-radio-group v-model="config.scoreDisplayMode">
             <el-radio value="net">净加分（加分 - 减分）</el-radio>
             <el-radio value="split">加减分两列显示</el-radio>
-          </el-radio>
+          </el-radio-group>
         </el-form-item>
         <el-form-item label="总计列">
           <el-checkbox-group v-model="config.totalColumns">
