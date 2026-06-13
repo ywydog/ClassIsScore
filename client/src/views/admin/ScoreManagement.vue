@@ -103,6 +103,42 @@
           @admin-revert="handleAdminRevert"
         />
       </div>
+      <div class="score-management__stats-panel">
+        <div class="stats-panel">
+          <div class="stats-panel__header">
+            <span class="stats-panel__title">积分统计</span>
+            <div class="stats-panel__toggles">
+              <button
+                v-for="p in periodOptions"
+                :key="p.key"
+                :class="['stats-panel__toggle', { 'stats-panel__toggle--active': activePeriod === p.key }]"
+                @click="activePeriod = p.key"
+              >{{ p.label }}</button>
+            </div>
+          </div>
+          <div class="stats-panel__body">
+            <div
+              v-for="stat in periodStatsList"
+              :key="stat.studentId"
+              class="stats-panel__row"
+              :class="{ 'stats-panel__row--highlight': addForm.studentId && String(stat.studentId) === String(addForm.studentId) }"
+            >
+              <span class="stats-panel__name">{{ stat.studentName }}</span>
+              <span class="stats-panel__detail">
+                <span class="stats-panel__plus">+{{ stat.plus }}</span>
+                <span class="stats-panel__slash">/</span>
+                <span class="stats-panel__minus">{{ stat.minus }}</span>
+              </span>
+              <span class="stats-panel__net" :class="stat.net > 0 ? 'stats-panel__net--pos' : stat.net < 0 ? 'stats-panel__net--neg' : ''">
+                {{ formatStatNet(stat.net) }}
+              </span>
+            </div>
+            <div v-if="periodStatsList.length === 0" class="stats-panel__empty">
+              暂无数据
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 批量操作对话框 -->
@@ -310,6 +346,44 @@ const scoreStats = ref<StudentScoreStats[]>([])
 const selectedStudentStats = computed(() => {
   if (!addForm.studentId) return null
   return scoreStats.value.find(s => String(s.studentId) === String(addForm.studentId))
+})
+
+// 周期积分面板
+type PeriodKey = 'day' | 'week' | 'month' | 'semester'
+const activePeriod = ref<PeriodKey>('week')
+const periodOptions = computed(() => {
+  const opts: { key: PeriodKey; label: string }[] = [
+    { key: 'day', label: '日' },
+    { key: 'week', label: '周' },
+    { key: 'month', label: '月' },
+  ]
+  if (scoreStats.value.some(s => s.semesterNet !== undefined)) {
+    opts.push({ key: 'semester', label: '学期' })
+  }
+  return opts
+})
+
+interface PeriodStatRow {
+  studentId: number
+  studentName: string
+  plus: number
+  minus: number
+  net: number
+}
+
+const periodStatsList = computed<PeriodStatRow[]>(() => {
+  return scoreStats.value
+    .map(s => {
+      let plus = 0, minus = 0, net = 0
+      switch (activePeriod.value) {
+        case 'day': plus = s.dayPlus; minus = s.dayMinus; net = s.dayNet; break
+        case 'week': plus = s.weekPlus; minus = s.weekMinus; net = s.weekNet; break
+        case 'month': plus = s.monthPlus; minus = s.monthMinus; net = s.monthNet; break
+        case 'semester': plus = s.semesterPlus || 0; minus = s.semesterMinus || 0; net = s.semesterNet || 0; break
+      }
+      return { studentId: s.studentId, studentName: s.studentName, plus, minus, net }
+    })
+    .sort((a, b) => b.net - a.net)
 })
 
 const addForm = reactive({ studentId: '', scoreChange: 1, reason: '' })
@@ -776,17 +850,156 @@ function closeImportDialog() {
 .score-operator__stats-item--semester strong { color: #0d9488; }
 
 .score-management__content {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+.score-management__history,
+.score-management__stats-panel {
   background: var(--cis-card-bg);
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
 }
 
-.score-management__content:hover {
+.score-management__history:hover,
+.score-management__stats-panel:hover {
   box-shadow: var(--cis-shadow-card-hover);
 }
 
+/* 周期积分统计面板 */
+.stats-panel {
+  padding: 16px;
+}
+
+.stats-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.stats-panel__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+}
+
+.stats-panel__toggles {
+  display: flex;
+  gap: 3px;
+}
+
+.stats-panel__toggle {
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--cis-border-color-light, #e4e7ed);
+  background: var(--cis-fill-color-light, #f5f7fa);
+  color: var(--cis-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stats-panel__toggle:hover {
+  border-color: var(--cis-primary, #0d9488);
+  color: var(--cis-primary, #0d9488);
+}
+
+.stats-panel__toggle--active {
+  background: var(--cis-primary, #0d9488);
+  border-color: var(--cis-primary, #0d9488);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+}
+
+.stats-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.stats-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+
+.stats-panel__row:hover {
+  background: var(--cis-fill-color-light, #f5f7fa);
+}
+
+.stats-panel__row--highlight {
+  background: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+.stats-panel__name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cis-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-panel__detail {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.stats-panel__plus {
+  color: var(--cis-success, #22c55e);
+  font-weight: 600;
+}
+
+.stats-panel__slash {
+  color: var(--cis-text-tertiary, #999);
+}
+
+.stats-panel__minus {
+  color: var(--cis-danger, #ef4444);
+  font-weight: 600;
+}
+
+.stats-panel__net {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 36px;
+  text-align: right;
+  color: var(--cis-text-secondary);
+}
+
+.stats-panel__net--pos {
+  color: var(--cis-success, #22c55e);
+}
+
+.stats-panel__net--neg {
+  color: var(--cis-danger, #ef4444);
+}
+
+.stats-panel__empty {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--cis-text-tertiary);
+}
+
 @media (max-width: 900px) {
+  .score-management__content {
+    grid-template-columns: 1fr;
+  }
   .score-operator__row {
     flex-wrap: wrap;
   }
