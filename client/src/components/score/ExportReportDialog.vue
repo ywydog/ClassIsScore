@@ -99,8 +99,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, ri) in preview.rows.slice(0, 10)" :key="ri"
-                :class="{ 'preview-table__group-row': isGroupRow(row) }">
+            <tr v-for="(row, ri) in preview.rows.slice(0, 10)" :key="ri">
               <td v-for="(cell, ci) in row" :key="ci"
                   :style="getCellStyle(cell, ci)">
                 {{ formatCell(cell, ci) }}
@@ -262,12 +261,19 @@ function nextStep() {
   step.value++
 }
 
-function isGroupRow(row: (string | number)[]): boolean {
-  return row.slice(1).every(v => v === '')
+function isGroupColumn(): boolean {
+  return config.groupByGroup
 }
 
 function getCellStyle(cell: string | number, colIndex: number) {
-  if (colIndex === 0) return {}
+  // 组别列
+  if (isGroupColumn() && colIndex === 0) {
+    return { fontWeight: '600', color: 'var(--cis-text-secondary)' }
+  }
+  // 姓名列
+  const nameColIdx = isGroupColumn() ? 1 : 0
+  if (colIndex === nameColIdx) return {}
+  // 数值列
   if (typeof cell === 'number') {
     if (cell > 0) return { color: 'var(--cis-success, #22c55e)' }
     if (cell < 0) return { color: 'var(--cis-danger, #ef4444)' }
@@ -276,7 +282,9 @@ function getCellStyle(cell: string | number, colIndex: number) {
 }
 
 function formatCell(cell: string | number, colIndex: number): string {
-  if (colIndex === 0) return String(cell)
+  const nameColIdx = isGroupColumn() ? 1 : 0
+  if (colIndex === nameColIdx) return String(cell)
+  if (isGroupColumn() && colIndex === 0) return String(cell)
   if (typeof cell === 'number') {
     if (cell > 0) return `+${cell}`
     if (cell === 0) return '-'

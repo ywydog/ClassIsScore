@@ -42,6 +42,7 @@ export interface ReportScoreRecord {
 export interface ReportPreview {
   headers: string[]
   rows: (string | number)[][]
+  groupMergeRanges: { startRow: number; endRow: number }[]
 }
 
 // ========== 报表生成逻辑 ==========
@@ -157,7 +158,11 @@ export function generateReport(
   }
 
   // 生成列头
-  const headers: string[] = ['姓名']
+  const headers: string[] = []
+  if (config.groupByGroup) {
+    headers.push('组别')
+  }
+  headers.push('姓名')
 
   // 周序号映射
   const weekNumberMap = (config.dimension === 'week' || config.dimension === 'semester') &&
@@ -231,19 +236,29 @@ export function generateReport(
 
   // 生成行数据
   const rows: (string | number)[][] = []
+  const groupMergeRanges: { startRow: number; endRow: number }[] = []
   let lastGroupName = ''
+  let groupStartRow = -1
 
   for (const student of sortedStudents) {
-    // 小组分隔行
-    if (config.groupByGroup && student.groupName && student.groupName !== lastGroupName) {
-      lastGroupName = student.groupName
-      const groupRow: (string | number)[] = [student.groupName]
-      for (let i = 1; i < headers.length; i++) groupRow.push('')
-      rows.push(groupRow)
+    const row: (string | number)[] = []
+
+    // 组别列：同组只在首行显示组名，其余为空
+    if (config.groupByGroup) {
+      if (student.groupName && student.groupName !== lastGroupName) {
+        // 上一个组的合并范围结束
+        if (groupStartRow >= 0 && rows.length - 1 > groupStartRow) {
+          groupMergeRanges.push({ startRow: groupStartRow, endRow: rows.length - 1 })
+        }
+        lastGroupName = student.groupName
+        groupStartRow = rows.length
+        row.push(student.groupName)
+      } else {
+        row.push('')
+      }
     }
 
-    const periodMap = studentPeriodData.get(student.id)!
-    const row: (string | number)[] = [student.name]
+    row.push(student.name)
 
     let rangeNet = 0
     for (const key of periodKeys) {
@@ -267,7 +282,12 @@ export function generateReport(
     rows.push(row)
   }
 
-  return { headers, rows }
+  // 最后一个组的合并范围
+  if (config.groupByGroup && groupStartRow >= 0 && rows.length - 1 > groupStartRow) {
+    groupMergeRanges.push({ startRow: groupStartRow, endRow: rows.length - 1 })
+  }
+
+  return { headers, rows, groupMergeRanges }
 }
 
 /** 导出报表为 Excel */
@@ -284,17 +304,12 @@ export function exportReportToExcel(
     wch: i === 0 ? 10 : Math.max(h.length * 2.5, 8),
   }))
 
-  // 合并小组分隔行的单元格
-  if (groupByGroup) {
-    const merges: XLSX.Range[] = []
-    for (let r = 0; r < report.rows.length; r++) {
-      if (typeof report.rows[r][0] === 'string' && report.rows[r].slice(1).every(v => v === '')) {
-        merges.push({
-          s: { r: r + 1, c: 0 },
-          e: { r: r + 1, c: report.headers.length - 1 },
-        })
-      }
-    }
+  // 合并组别列的单元格
+  if (groupByGroup && report.groupMergeRanges.length > 0) {
+    const merges: XLSX.Range[] = report.groupMergeRanges.map(range => ({
+      s: { r: range.startRow + 1, c: 0 },  // +1 因为第一行是表头
+      e: { r: range.endRow + 1, c: 0 },
+    }))
     ws['!merges'] = merges
   }
 
