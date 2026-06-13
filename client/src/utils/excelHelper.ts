@@ -91,11 +91,11 @@ function formatPeriodHeader(
   weekHeaderFormat: WeekHeaderFormat
 ): string {
   if (dimension === 'day') {
-    const [y, m, d] = key.split('-')
+    const [, m, d] = key.split('-')
     return `${parseInt(m)}月${parseInt(d)}日`
   }
   if (dimension === 'month') {
-    const [y, m] = key.split('-')
+    const [, m] = key.split('-')
     return `${parseInt(m)}月`
   }
   // week / semester 都按周处理
