@@ -5,6 +5,8 @@ publish/
 
 # Client
 client/dist/
+client/dist-electron/
+client/release/
 client/node_modules/
 client/.vite/
 
