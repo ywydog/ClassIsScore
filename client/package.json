@@ -33,6 +33,11 @@
   "build": {
     "appId": "com.classisscore.app",
     "productName": "ClassIsScore",
+    "publish": {
+      "provider": "github",
+      "owner": "ywydog",
+      "repo": "ClassIsScore"
+    },
     "directories": {
       "output": "release"
     },
