@@ -6,10 +6,12 @@
       :class="['status-toast__item', `status-toast__item--${toast.type}`]"
       @click="removeToast(toast.id)"
     >
-      <el-icon v-if="toast.type === 'success'"><SuccessFilled /></el-icon>
-      <el-icon v-else-if="toast.type === 'error'"><CircleCloseFilled /></el-icon>
-      <el-icon v-else-if="toast.type === 'warning'"><WarningFilled /></el-icon>
-      <el-icon v-else><InfoFilled /></el-icon>
+      <div class="status-toast__icon">
+        <el-icon v-if="toast.type === 'success'"><SuccessFilled /></el-icon>
+        <el-icon v-else-if="toast.type === 'error'"><CircleCloseFilled /></el-icon>
+        <el-icon v-else-if="toast.type === 'warning'"><WarningFilled /></el-icon>
+        <el-icon v-else><InfoFilled /></el-icon>
+      </div>
       <span class="status-toast__message">{{ toast.message }}</span>
     </div>
   </transition-group>
@@ -28,9 +30,9 @@ const { removeToast } = appStore
 <style scoped>
 .status-toast {
   position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 9999;
+  top: 60px;
+  right: 20px;
+  z-index: var(--cis-z-toast, 500);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -39,47 +41,73 @@ const { removeToast } = appStore
 .status-toast__item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: var(--cis-radius-lg);
+  font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  transition: opacity 0.3s, transform 0.3s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid transparent;
+  box-shadow: var(--cis-shadow-lg);
+  transition: all var(--cis-transition-fast);
+  min-width: 200px;
+}
+
+.status-toast__item:hover {
+  transform: translateX(-4px);
+}
+
+.status-toast__icon {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.status-toast__message {
+  font-weight: 500;
 }
 
 .status-toast__item--success {
-  background-color: var(--el-color-success-light-9);
-  color: var(--el-color-success);
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--cis-success);
+  border-color: rgba(34, 197, 94, 0.2);
 }
 
 .status-toast__item--error {
-  background-color: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--cis-danger);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .status-toast__item--warning {
-  background-color: var(--el-color-warning-light-9);
-  color: var(--el-color-warning);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--cis-warning);
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .status-toast__item--info {
-  background-color: var(--el-color-info-light-9);
-  color: var(--el-color-info);
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--cis-primary);
+  border-color: rgba(13, 148, 136, 0.2);
 }
 
-.toast-slide-enter-active,
+.toast-slide-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .toast-slide-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .toast-slide-enter-from {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateX(40px) scale(0.95);
 }
 
 .toast-slide-leave-to {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateX(40px) scale(0.95);
 }
 </style>

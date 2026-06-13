@@ -138,17 +138,34 @@ async function handleResetAll() {
 
 <style scoped>
 .admin-settings__header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .admin-settings__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .admin-settings__card {
   max-width: 600px;
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.admin-settings__card:hover {
+  box-shadow: var(--cis-shadow-card-hover);
 }
 
 .card-header {

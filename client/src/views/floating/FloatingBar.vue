@@ -2,8 +2,11 @@
   <div class="floating-bar" @dblclick="openMainWindow">
     <div class="floating-bar__content">
       <div class="floating-bar__brand">
-        <el-icon :size="14" color="#409eff"><Trophy /></el-icon>
+        <div class="floating-bar__brand-icon">
+          <el-icon :size="12"><Trophy /></el-icon>
+        </div>
       </div>
+      <div class="floating-bar__divider"></div>
       <div class="floating-bar__items">
         <div v-for="(entry, index) in topStudents" :key="entry.name" class="floating-bar__item">
           <span class="floating-bar__rank" :class="`floating-bar__rank--${index + 1}`">{{ index + 1 }}</span>
@@ -55,35 +58,50 @@ function openMainWindow() {
 .floating-bar {
   width: 100%;
   height: 100%;
-  background: rgba(20, 20, 30, 0.88);
-  border-radius: 12px;
+  background: rgba(10, 22, 40, 0.92);
+  border-radius: 14px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 10px;
   -webkit-app-region: drag;
   user-select: none;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .floating-bar__content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
 .floating-bar__brand {
   display: flex;
   align-items: center;
-  padding-right: 8px;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.floating-bar__brand-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  border-radius: 6px;
+  color: #fff;
+}
+
+.floating-bar__divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .floating-bar__items {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   overflow: hidden;
 }
 
@@ -91,37 +109,35 @@ function openMainWindow() {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
   white-space: nowrap;
 }
 
 .floating-bar__rank {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .floating-bar__rank--1 {
-  background: #ffd700;
+  background: linear-gradient(135deg, #ffd700, #ffb700);
   color: #1a1a2e;
 }
-
 .floating-bar__rank--2 {
-  background: #c0c0c0;
+  background: linear-gradient(135deg, #e8e8e8, #b0b0b0);
   color: #1a1a2e;
 }
-
 .floating-bar__rank--3 {
-  background: #cd7f32;
-  color: #1a1a2e;
+  background: linear-gradient(135deg, #cd7f32, #a0622a);
+  color: #fff;
 }
 
 .floating-bar__name {
@@ -130,6 +146,6 @@ function openMainWindow() {
 
 .floating-bar__score {
   font-weight: 700;
-  color: #409eff;
+  color: #2dd4bf;
 }
 </style>

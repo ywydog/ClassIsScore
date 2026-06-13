@@ -205,13 +205,22 @@ async function handleBatchImport() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .student-management__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .student-management__actions {
@@ -220,14 +229,27 @@ async function handleBatchImport() {
   align-items: center;
 }
 
+.student-management__table-card {
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.student-management__table-card:hover {
+  box-shadow: var(--cis-shadow-card-hover);
+}
+
 .score-positive {
-  color: var(--el-color-success);
-  font-weight: 600;
+  color: var(--cis-success);
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .score-negative {
-  color: var(--el-color-danger);
-  font-weight: 600;
+  color: var(--cis-danger);
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .import-hint {
@@ -244,7 +266,7 @@ async function handleBatchImport() {
   margin-top: 4px;
   padding: 4px 8px;
   background-color: var(--cis-card-bg);
-  border-radius: 4px;
+  border-radius: var(--cis-radius-sm);
   font-size: 12px;
 }
 

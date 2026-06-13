@@ -7,25 +7,28 @@
       'score-card--reverted': isReverted
     }"
   >
-    <div class="score-card__header">
-      <span class="score-card__name">{{ studentName }}</span>
-      <span class="score-card__change" :class="scoreChange > 0 ? 'score-card__change--up' : 'score-card__change--down'">
-        {{ scoreChange > 0 ? '+' : '' }}{{ scoreChange }}
-      </span>
-    </div>
-    <div class="score-card__reason">{{ reason }}</div>
-    <div class="score-card__footer">
-      <span class="score-card__time">{{ formatTime(createdAt) }}</span>
-      <el-tag v-if="isReverted" type="info" size="small">已撤销</el-tag>
-      <el-button
-        v-else-if="canQuickRevert"
-        type="danger"
-        size="small"
-        text
-        @click="$emit('revert', id)"
-      >
-        撤销
-      </el-button>
+    <div class="score-card__accent"></div>
+    <div class="score-card__body">
+      <div class="score-card__header">
+        <span class="score-card__name">{{ studentName }}</span>
+        <span class="score-card__change" :class="scoreChange > 0 ? 'score-card__change--up' : 'score-card__change--down'">
+          {{ scoreChange > 0 ? '+' : '' }}{{ scoreChange }}
+        </span>
+      </div>
+      <div class="score-card__reason">{{ reason }}</div>
+      <div class="score-card__footer">
+        <span class="score-card__time">{{ formatTime(createdAt) }}</span>
+        <el-tag v-if="isReverted" type="info" size="small">已撤销</el-tag>
+        <el-button
+          v-else-if="canQuickRevert"
+          type="danger"
+          size="small"
+          text
+          @click="$emit('revert', id)"
+        >
+          撤销
+        </el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -53,19 +56,51 @@ function formatTime(dateStr: string): string {
 
 <style scoped>
 .score-card {
-  background-color: var(--cis-card-bg);
-  border-radius: var(--cis-radius-md);
-  padding: 12px 16px;
-  border: 1px solid var(--cis-border-color);
-  transition: box-shadow 0.2s, opacity 0.2s;
+  display: flex;
+  background: var(--cis-card-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--cis-radius-lg);
+  border: 1px solid var(--cis-border-color-light);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-normal), transform var(--cis-transition-fast);
+  overflow: hidden;
 }
 
 .score-card:hover {
-  box-shadow: var(--cis-shadow-sm);
+  box-shadow: var(--cis-shadow-card-hover);
+  transform: translateY(-1px);
 }
 
 .score-card--reverted {
   opacity: 0.5;
+}
+
+.score-card--reverted .score-card__name,
+.score-card--reverted .score-card__reason {
+  text-decoration: line-through;
+}
+
+.score-card__accent {
+  width: 4px;
+  flex-shrink: 0;
+  border-radius: 4px 0 0 4px;
+  background: var(--cis-border-color);
+  transition: background var(--cis-transition-fast);
+}
+
+.score-card--positive .score-card__accent {
+  background: var(--cis-gradient-success);
+}
+
+.score-card--negative .score-card__accent {
+  background: linear-gradient(180deg, var(--cis-danger), #f87171);
+}
+
+.score-card__body {
+  flex: 1;
+  padding: 12px 16px;
+  min-width: 0;
 }
 
 .score-card__header {
@@ -83,15 +118,20 @@ function formatTime(dateStr: string): string {
 
 .score-card__change {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 18px;
+  font-family: var(--cis-font-family-display);
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .score-card__change--up {
-  color: var(--el-color-success);
+  color: var(--cis-success);
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
 }
 
 .score-card__change--down {
-  color: var(--el-color-danger);
+  color: var(--cis-danger);
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
 }
 
 .score-card__reason {

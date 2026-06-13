@@ -205,19 +205,39 @@ async function removeStudentFromGroup(groupId: string, studentId: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .group-management__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .group-management__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
+}
+
+.group-card {
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.group-card:hover {
+  box-shadow: var(--cis-shadow-card-hover);
 }
 
 .group-card__header {
@@ -258,7 +278,10 @@ async function removeStudentFromGroup(groupId: string, studentId: string) {
 .group-card__stat-value {
   font-size: 18px;
   font-weight: 700;
-  color: var(--cis-primary);
+  background: var(--cis-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .group-card__members {

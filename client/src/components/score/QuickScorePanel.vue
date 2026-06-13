@@ -84,10 +84,18 @@ function handleScore(item: EvaluationItem) {
 
 <style scoped>
 .quick-score-panel {
-  background-color: var(--cis-card-bg);
+  background: var(--cis-card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: var(--cis-radius-lg);
   padding: 16px;
-  border: 1px solid var(--cis-border-color);
+  border: 1px solid var(--cis-border-color-light);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-normal);
+}
+
+.quick-score-panel:hover {
+  box-shadow: var(--cis-shadow-card-hover);
 }
 
 .quick-score-panel__header {
@@ -95,6 +103,7 @@ function handleScore(item: EvaluationItem) {
 }
 
 .quick-score-panel__title {
+  font-family: var(--cis-font-family-display);
   font-size: 15px;
   font-weight: 600;
   color: var(--cis-text-primary);
@@ -117,7 +126,7 @@ function handleScore(item: EvaluationItem) {
 }
 
 .quick-score-panel__group-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--cis-text-tertiary);
   margin-bottom: 8px;
@@ -139,29 +148,55 @@ function handleScore(item: EvaluationItem) {
   border-radius: var(--cis-radius-md);
   cursor: pointer;
   font-size: 13px;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: all var(--cis-transition-fast);
   user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-score-panel__item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0);
+  transition: background var(--cis-transition-fast);
 }
 
 .quick-score-panel__item:hover {
   transform: translateY(-1px);
-  box-shadow: var(--cis-shadow-sm);
+  box-shadow: var(--cis-shadow-card);
 }
 
 .quick-score-panel__item:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.97);
+}
+
+.quick-score-panel__item:active::after {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .quick-score-panel__item--positive {
-  background-color: var(--el-color-success-light-9);
-  color: var(--el-color-success);
-  border: 1px solid var(--el-color-success-light-7);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.15));
+  color: var(--cis-success);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.quick-score-panel__item--positive:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.2));
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
 }
 
 .quick-score-panel__item--negative {
-  background-color: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
-  border: 1px solid var(--el-color-danger-light-7);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.15));
+  color: var(--cis-danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.quick-score-panel__item--negative:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.2));
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
 }
 
 .quick-score-panel__item-name {
@@ -170,6 +205,7 @@ function handleScore(item: EvaluationItem) {
 
 .quick-score-panel__item-value {
   font-weight: 700;
+  font-size: 14px;
 }
 
 .quick-score-panel__hint {

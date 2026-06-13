@@ -9,11 +9,12 @@
     <span class="app-header__title">{{ pageTitle }}</span>
     <div class="app-header__actions">
       <el-tooltip content="打开大屏展示" placement="bottom">
-        <el-button :icon="Monitor" text size="small" @click="openDisplayWindow" />
+        <el-button :icon="Monitor" text size="small" class="app-header__action-btn" @click="openDisplayWindow" />
       </el-tooltip>
       <el-tooltip content="打开浮动积分条" placement="bottom">
-        <el-button :icon="DataLine" text size="small" @click="openFloatingBar" />
+        <el-button :icon="DataLine" text size="small" class="app-header__action-btn" @click="openFloatingBar" />
       </el-tooltip>
+      <div class="app-header__divider"></div>
       <ThemeToggle />
     </div>
   </div>
@@ -65,13 +66,20 @@ function openFloatingBar() {
 .app-header__toggle {
   -webkit-app-region: no-drag;
   cursor: pointer;
+  color: var(--cis-text-secondary);
+  transition: color var(--cis-transition-fast);
+}
+
+.app-header__toggle:hover {
+  color: var(--cis-primary);
 }
 
 .app-header__title {
-  font-size: 15px;
+  font-family: var(--cis-font-family-display);
+  font-size: 16px;
   font-weight: 600;
   color: var(--cis-text-primary);
-  margin-left: 8px;
+  margin-left: 4px;
 }
 
 .app-header__actions {
@@ -80,5 +88,21 @@ function openFloatingBar() {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.app-header__action-btn {
+  color: var(--cis-text-tertiary);
+  transition: color var(--cis-transition-fast);
+}
+
+.app-header__action-btn:hover {
+  color: var(--cis-primary);
+}
+
+.app-header__divider {
+  width: 1px;
+  height: 16px;
+  background-color: var(--cis-border-color);
+  margin: 0 4px;
 }
 </style>

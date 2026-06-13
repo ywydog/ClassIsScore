@@ -55,13 +55,22 @@ import { Trophy } from '@element-plus/icons-vue'
 
 <style scoped>
 .about-page__header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .about-page__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .about-page__content {
@@ -71,6 +80,17 @@ import { Trophy } from '@element-plus/icons-vue'
   gap: 16px;
 }
 
+.about-page__card {
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.about-page__card:hover {
+  box-shadow: var(--cis-shadow-card-hover);
+}
+
 .about-page__app-info {
   text-align: center;
   padding: 24px 0;
@@ -78,8 +98,12 @@ import { Trophy } from '@element-plus/icons-vue'
 
 .about-page__app-name {
   margin: 12px 0 4px;
+  font-family: var(--cis-font-family-display);
   font-size: 24px;
-  color: var(--cis-text-primary);
+  background: var(--cis-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .about-page__version {

@@ -235,13 +235,22 @@ async function handleRevert(recordId: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .score-management__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .score-management__actions {
@@ -254,6 +263,19 @@ async function handleRevert(recordId: string) {
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   align-items: start;
+}
+
+.score-management__panel,
+.score-management__history {
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.score-management__panel:hover,
+.score-management__history:hover {
+  box-shadow: var(--cis-shadow-card-hover);
 }
 
 @media (max-width: 900px) {

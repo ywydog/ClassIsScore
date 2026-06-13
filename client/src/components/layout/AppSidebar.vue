@@ -1,7 +1,9 @@
 <template>
   <div class="app-sidebar">
     <div class="app-sidebar__logo">
-      <el-icon :size="24" color="var(--cis-primary)"><Trophy /></el-icon>
+      <div class="app-sidebar__logo-icon">
+        <el-icon :size="22"><Trophy /></el-icon>
+      </div>
       <transition name="fade">
         <span v-if="!collapsed" class="app-sidebar__logo-text">ClassIsScore</span>
       </transition>
@@ -18,7 +20,7 @@
         :active-text-color="'var(--cis-primary)'"
       >
         <el-menu-item-group>
-          <template #title><span v-if="!collapsed">核心功能</span></template>
+          <template #title><span v-if="!collapsed" class="menu-group-label">核心功能</span></template>
           <el-menu-item index="/admin/scores">
             <el-icon><Trophy /></el-icon>
             <template #title>积分管理</template>
@@ -37,7 +39,7 @@
           </el-menu-item>
         </el-menu-item-group>
         <el-menu-item-group>
-          <template #title><span v-if="!collapsed">高级功能</span></template>
+          <template #title><span v-if="!collapsed" class="menu-group-label">高级功能</span></template>
           <el-menu-item index="/admin/evaluation">
             <el-icon><Timer /></el-icon>
             <template #title>自动评估</template>
@@ -48,7 +50,7 @@
           </el-menu-item>
         </el-menu-item-group>
         <el-menu-item-group>
-          <template #title><span v-if="!collapsed">系统</span></template>
+          <template #title><span v-if="!collapsed" class="menu-group-label">系统</span></template>
           <el-menu-item index="/admin/settings">
             <el-icon><Setting /></el-icon>
             <template #title>设置</template>
@@ -97,20 +99,37 @@ const activeMenu = computed(() => route.path)
 }
 
 .app-sidebar__logo {
-  height: 48px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   padding: 0 16px;
-  border-bottom: 1px solid var(--cis-border-color);
+  border-bottom: 1px solid var(--cis-border-color-light);
   flex-shrink: 0;
 }
 
+.app-sidebar__logo-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cis-gradient-primary);
+  border-radius: var(--cis-radius-md);
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}
+
 .app-sidebar__logo-text {
-  font-size: 16px;
+  font-family: var(--cis-font-family-display);
+  font-size: 17px;
   font-weight: 700;
-  color: var(--cis-primary);
+  background: var(--cis-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   white-space: nowrap;
 }
 
@@ -121,27 +140,54 @@ const activeMenu = computed(() => route.path)
 
 .app-sidebar__menu {
   border-right: none;
+  padding: 4px 8px;
+}
+
+.menu-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--cis-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .app-sidebar__menu :deep(.el-menu-item-group__title) {
-  font-size: 11px;
-  color: var(--cis-text-tertiary);
-  padding-top: 16px;
+  padding-top: 20px;
   padding-bottom: 4px;
+  padding-left: 12px !important;
+}
+
+.app-sidebar__menu :deep(.el-menu-item) {
+  margin: 2px 0;
+  border-radius: var(--cis-radius-md);
+  height: 40px;
+  line-height: 40px;
+  transition: all var(--cis-transition-fast);
+}
+
+.app-sidebar__menu :deep(.el-menu-item:hover) {
+  background-color: var(--cis-primary-light-9) !important;
 }
 
 .app-sidebar__menu :deep(.el-menu-item.is-active) {
-  background-color: var(--cis-primary-light-9) !important;
-  border-right: 3px solid var(--cis-primary);
+  background: var(--cis-gradient-primary) !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: var(--cis-shadow-glow);
+}
+
+.app-sidebar__menu :deep(.el-menu-item.is-active .el-icon) {
+  color: #fff !important;
 }
 
 .app-sidebar__version {
   padding: 8px 16px;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--cis-text-tertiary);
   text-align: center;
-  border-top: 1px solid var(--cis-border-color);
+  border-top: 1px solid var(--cis-border-color-light);
   flex-shrink: 0;
+  letter-spacing: 0.5px;
 }
 
 .fade-enter-active,

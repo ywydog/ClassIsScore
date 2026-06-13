@@ -163,13 +163,22 @@ async function handleDeleteItem(id: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .auto-evaluation__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .auto-evaluation__content {
@@ -179,6 +188,19 @@ async function handleDeleteItem(id: string) {
   max-width: 800px;
 }
 
+.auto-evaluation__config-card,
+.auto-evaluation__items-card {
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.auto-evaluation__config-card:hover,
+.auto-evaluation__items-card:hover {
+  box-shadow: var(--cis-shadow-card-hover);
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -186,12 +208,14 @@ async function handleDeleteItem(id: string) {
 }
 
 .score-positive {
-  color: var(--el-color-success);
-  font-weight: 600;
+  color: var(--cis-success);
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .score-negative {
-  color: var(--el-color-danger);
-  font-weight: 600;
+  color: var(--cis-danger);
+  font-weight: 700;
+  font-size: 15px;
 }
 </style>

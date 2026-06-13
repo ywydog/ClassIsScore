@@ -1,14 +1,29 @@
 :root {
-  /* 主色调 */
-  --cis-primary: #409eff;
-  --cis-primary-light-3: #79bbff;
-  --cis-primary-light-5: #a0cfff;
-  --cis-primary-light-7: #c6e2ff;
-  --cis-primary-light-9: #ecf5ff;
-  --cis-primary-dark-2: #337ecc;
+  /* 主色调 - Teal Warm Academic */
+  --cis-primary: #0d9488;
+  --cis-primary-light: #2dd4bf;
+  --cis-primary-dark: #0f766e;
+  --cis-primary-light-3: #5eead4;
+  --cis-primary-light-5: #99f6e4;
+  --cis-primary-light-7: #ccfbf1;
+  --cis-primary-light-9: #f0fdfa;
+  --cis-primary-dark-2: #0f766e;
+
+  /* 语义色 */
+  --cis-success: #22c55e;
+  --cis-danger: #ef4444;
+  --cis-warning: #f59e0b;
+  --cis-info: #0d9488;
+
+  /* 渐变 */
+  --cis-gradient-primary: linear-gradient(135deg, #0d9488, #2dd4bf);
+  --cis-gradient-warm: linear-gradient(135deg, #f59e0b, #fb923c);
+  --cis-gradient-cool: linear-gradient(135deg, #0d9488, #06b6d4);
+  --cis-gradient-success: linear-gradient(135deg, #22c55e, #4ade80);
 
   /* 字体 */
-  --cis-font-family: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --cis-font-family: 'LXGW WenKai', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --cis-font-family-display: 'LXGW WenKai', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --cis-font-size-base: 14px;
   --cis-font-size-sm: 12px;
   --cis-font-size-lg: 16px;
@@ -22,21 +37,33 @@
   --cis-spacing-xl: 32px;
 
   /* 圆角 */
+  --cis-radius-xs: 2px;
   --cis-radius-sm: 4px;
   --cis-radius-md: 8px;
   --cis-radius-lg: 12px;
   --cis-radius-xl: 16px;
+  --cis-radius-2xl: 24px;
+  --cis-radius-full: 9999px;
 
   /* 阴影 */
-  --cis-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
-  --cis-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.12);
-  --cis-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.16);
+  --cis-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --cis-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --cis-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --cis-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --cis-shadow-card-hover: 0 4px 12px rgba(13, 148, 136, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --cis-shadow-glow: 0 0 12px rgba(13, 148, 136, 0.25);
+  --cis-shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
 
   /* 过渡 */
   --cis-transition-fast: 0.15s ease;
-  --cis-transition-normal: 0.3s ease;
+  --cis-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --cis-transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* 边框 */
   --cis-border-color: #e4e7ed;
+  --cis-border-color-light: #ebeef5;
   --cis-border-radius: var(--cis-radius-md);
+
+  /* Z-index */
+  --cis-z-toast: 500;
 }

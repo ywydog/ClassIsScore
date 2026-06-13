@@ -100,12 +100,21 @@ async function fetchLeaderboard() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .leaderboard__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .leaderboard__controls {
@@ -163,15 +172,18 @@ async function fetchLeaderboard() {
 }
 
 .leaderboard__medal--gold {
-  background: #ffd700;
+  background: linear-gradient(135deg, #ffd700, #ffb800);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
 }
 
 .leaderboard__medal--silver {
-  background: #c0c0c0;
+  background: linear-gradient(135deg, #c0c0c0, #a8a8a8);
+  box-shadow: 0 2px 8px rgba(192, 192, 192, 0.4);
 }
 
 .leaderboard__medal--bronze {
-  background: #cd7f32;
+  background: linear-gradient(135deg, #cd7f32, #b8722e);
+  box-shadow: 0 2px 8px rgba(205, 127, 50, 0.4);
 }
 
 .leaderboard__podium-name {
@@ -183,7 +195,10 @@ async function fetchLeaderboard() {
 .leaderboard__podium-score {
   font-weight: 700;
   font-size: 18px;
-  color: var(--cis-primary);
+  background: var(--cis-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* 列表 */
@@ -199,13 +214,15 @@ async function fetchLeaderboard() {
   gap: 16px;
   padding: 12px 16px;
   background-color: var(--cis-card-bg);
-  border-radius: var(--cis-radius-md);
-  border: 1px solid var(--cis-border-color);
-  transition: box-shadow 0.2s;
+  border-radius: var(--cis-radius-lg);
+  border: 1px solid var(--cis-border-color-light);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
 }
 
 .leaderboard__item:hover {
-  box-shadow: var(--cis-shadow-sm);
+  box-shadow: var(--cis-shadow-card-hover);
+  transform: translateY(-1px);
 }
 
 .leaderboard__rank {
@@ -214,7 +231,7 @@ async function fetchLeaderboard() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--cis-radius-full);
   font-weight: 700;
   font-size: 14px;
   background-color: var(--cis-bg-secondary);
@@ -230,6 +247,9 @@ async function fetchLeaderboard() {
 .leaderboard__score {
   font-weight: 700;
   font-size: 16px;
-  color: var(--cis-primary);
+  background: var(--cis-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 </style>

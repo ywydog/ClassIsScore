@@ -172,17 +172,34 @@ function handleImportTheme() {
 
 <style scoped>
 .settings-page__header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .settings-page__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .settings-page__card {
   max-width: 700px;
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.settings-page__card:hover {
+  box-shadow: var(--cis-shadow-card-hover);
 }
 
 /* 插件列表 */
@@ -197,13 +214,16 @@ function handleImportTheme() {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border: 1px solid var(--cis-border-color);
-  border-radius: var(--cis-radius-md);
-  transition: box-shadow 0.2s;
+  border: 1px solid var(--cis-border-color-light);
+  border-radius: var(--cis-radius-lg);
+  background: var(--cis-card-bg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
 }
 
 .plugin-item:hover, .theme-item:hover {
-  box-shadow: var(--cis-shadow-sm);
+  box-shadow: var(--cis-shadow-card-hover);
+  transform: translateY(-1px);
 }
 
 .plugin-item__info, .theme-item__info {
@@ -239,6 +259,6 @@ function handleImportTheme() {
 .theme-import {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid var(--cis-border-color);
+  border-top: 1px solid var(--cis-border-color-light);
 }
 </style>

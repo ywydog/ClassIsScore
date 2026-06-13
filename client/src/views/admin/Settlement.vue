@@ -100,19 +100,39 @@ function formatTime(dateStr: string): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
 }
 
 .settlement__header h2 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--cis-font-family-display);
+  font-size: 22px;
   color: var(--cis-text-primary);
+  padding-left: 12px;
+  border-left: 3px solid var(--cis-primary);
+  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .settlement__list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.settlement__card {
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.settlement__card:hover {
+  box-shadow: var(--cis-shadow-card-hover);
 }
 
 .settlement__card-content {
@@ -141,5 +161,10 @@ function formatTime(dateStr: string): string {
   gap: 16px;
   font-size: 13px;
   color: var(--cis-text-secondary);
+}
+
+.settlement__card-stats strong {
+  color: var(--cis-primary);
+  font-weight: 700;
 }
 </style>

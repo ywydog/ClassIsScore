@@ -1,9 +1,11 @@
 <template>
   <div class="student-card" @click="$emit('click', student)">
     <div class="student-card__avatar">
-      <el-avatar :size="40" :src="student.avatar">
-        {{ student.name.charAt(0) }}
-      </el-avatar>
+      <div class="student-card__avatar-wrapper">
+        <el-avatar :size="40" :src="student.avatar">
+          {{ student.name.charAt(0) }}
+        </el-avatar>
+      </div>
     </div>
     <div class="student-card__info">
       <div class="student-card__name">{{ student.name }}</div>
@@ -12,7 +14,7 @@
         <el-tag v-if="groupName" size="small" type="info">{{ groupName }}</el-tag>
       </div>
     </div>
-    <div class="student-card__score" :class="scoreClass">
+    <div class="student-card__score-badge" :class="scoreClass">
       {{ student.score }}
     </div>
     <div class="student-card__actions">
@@ -42,9 +44,9 @@ defineEmits<{
 }>()
 
 const scoreClass = computed(() => {
-  if (props.student.score > 0) return 'student-card__score--positive'
-  if (props.student.score < 0) return 'student-card__score--negative'
-  return 'student-card__score--zero'
+  if (props.student.score > 0) return 'student-card__score-badge--positive'
+  if (props.student.score < 0) return 'student-card__score-badge--negative'
+  return 'student-card__score-badge--zero'
 })
 </script>
 
@@ -54,15 +56,30 @@ const scoreClass = computed(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background-color: var(--cis-card-bg);
-  border-radius: var(--cis-radius-md);
-  border: 1px solid var(--cis-border-color);
+  background: var(--cis-card-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--cis-radius-lg);
+  border: 1px solid var(--cis-border-color-light);
+  box-shadow: var(--cis-shadow-card);
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  transition: box-shadow var(--cis-transition-normal), transform var(--cis-transition-fast);
 }
 
 .student-card:hover {
-  box-shadow: var(--cis-shadow-sm);
+  box-shadow: var(--cis-shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.student-card__avatar-wrapper {
+  position: relative;
+  border-radius: var(--cis-radius-full);
+  padding: 2px;
+  background: var(--cis-gradient-primary);
+}
+
+.student-card__avatar-wrapper :deep(.el-avatar) {
+  border: 2px solid var(--cis-card-bg);
 }
 
 .student-card__info {
@@ -85,23 +102,30 @@ const scoreClass = computed(() => {
   align-items: center;
 }
 
-.student-card__score {
+.student-card__score-badge {
+  font-family: var(--cis-font-family-display);
   font-size: 20px;
   font-weight: 700;
   min-width: 48px;
-  text-align: right;
+  text-align: center;
+  padding: 4px 10px;
+  border-radius: var(--cis-radius-md);
+  flex-shrink: 0;
 }
 
-.student-card__score--positive {
-  color: var(--el-color-success);
+.student-card__score-badge--positive {
+  color: var(--cis-success);
+  background: rgba(34, 197, 94, 0.1);
 }
 
-.student-card__score--negative {
-  color: var(--el-color-danger);
+.student-card__score-badge--negative {
+  color: var(--cis-danger);
+  background: rgba(239, 68, 68, 0.1);
 }
 
-.student-card__score--zero {
+.student-card__score-badge--zero {
   color: var(--cis-text-tertiary);
+  background: var(--cis-bg-secondary);
 }
 
 .student-card__actions {

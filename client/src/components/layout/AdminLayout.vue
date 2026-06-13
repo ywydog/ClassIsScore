@@ -1,15 +1,15 @@
 <template>
   <el-container class="admin-layout">
-    <el-aside :width="isCollapsed ? '64px' : '220px'" class="admin-layout__aside">
+    <el-aside :width="isCollapsed ? '64px' : '240px'" class="admin-layout__aside">
       <AppSidebar :collapsed="isCollapsed" @toggle="toggleCollapse" />
     </el-aside>
     <el-container class="admin-layout__main">
-      <el-header class="admin-layout__header" height="48px">
+      <el-header class="admin-layout__header" height="52px">
         <AppHeader @toggle-sidebar="toggleCollapse" />
       </el-header>
       <el-main class="admin-layout__content">
         <router-view v-slot="{ Component }">
-          <transition name="fade-slide" mode="out-in">
+          <transition name="page-fade" mode="out-in">
             <component :is="Component" />
           </transition>
         </router-view>
@@ -62,9 +62,11 @@ onUnmounted(() => {
 }
 
 .admin-layout__aside {
-  background-color: var(--cis-sidebar-bg);
-  border-right: 1px solid var(--cis-border-color);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--cis-sidebar-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--cis-border-color-light);
+  transition: width var(--cis-transition-normal);
   overflow: hidden;
 }
 
@@ -78,25 +80,29 @@ onUnmounted(() => {
   -webkit-app-region: drag;
   display: flex;
   align-items: center;
-  background-color: var(--cis-header-bg);
-  border-bottom: 1px solid var(--cis-border-color);
-  padding: 0 16px;
+  background: var(--cis-header-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--cis-border-color-light);
+  padding: 0 20px;
 }
 
 .admin-layout__content {
   flex: 1;
   overflow-y: auto;
   background-color: var(--cis-bg);
-  padding: 20px;
+  padding: 24px;
 }
 
 .admin-layout__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  background-color: var(--cis-header-bg);
-  border-top: 1px solid var(--cis-border-color);
+  padding: 0 20px;
+  background: var(--cis-header-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--cis-border-color-light);
   font-size: 11px;
   color: var(--cis-text-tertiary);
   -webkit-app-region: drag;
@@ -113,15 +119,16 @@ onUnmounted(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  transition: background-color var(--cis-transition-fast), box-shadow var(--cis-transition-fast);
 }
 
 .admin-layout__status-dot.connected {
-  background-color: #67c23a;
-  box-shadow: 0 0 4px rgba(103, 194, 58, 0.5);
+  background-color: var(--cis-success);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
 }
 
 .admin-layout__status-dot.disconnected {
-  background-color: #f56c6c;
+  background-color: var(--cis-danger);
 }
 
 .admin-layout__status-text {
@@ -132,18 +139,22 @@ onUnmounted(() => {
   -webkit-app-region: no-drag;
 }
 
-.fade-slide-enter-active,
-.fade-slide-leave-active {
+/* 页面切换动画 */
+.page-fade-enter-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
+.page-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.fade-slide-leave-to {
+.page-fade-enter-from {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(6px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>
