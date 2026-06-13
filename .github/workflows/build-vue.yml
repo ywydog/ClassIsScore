@@ -106,10 +106,13 @@ jobs:
         with:
           name: ClassIsScore-Web-${{ matrix.os }}
           path: |
-            ${{ env.CLIENT_DIR }}/dist/*.exe
-            ${{ env.CLIENT_DIR }}/dist/*.AppImage
-            ${{ env.CLIENT_DIR }}/dist/*.dmg
-            ${{ env.CLIENT_DIR }}/dist/*.zip
+            ${{ env.CLIENT_DIR }}/release/*.exe
+            ${{ env.CLIENT_DIR }}/release/*.AppImage
+            ${{ env.CLIENT_DIR }}/release/*.dmg
+            ${{ env.CLIENT_DIR }}/release/*.zip
+            ${{ env.CLIENT_DIR }}/release/*.yml
+            ${{ env.CLIENT_DIR }}/release/mac*/**/*
+            ${{ env.CLIENT_DIR }}/release/linux-unpacked/**/*.AppImage
           if-no-files-found: warn
 
   release:
@@ -131,7 +134,7 @@ jobs:
       - name: Collect Release Files
         run: |
           mkdir -p ./release
-          find ./artifacts -type f \( -name "*.exe" -o -name "*.AppImage" -o -name "*.dmg" -o -name "*.zip" \) -exec cp {} ./release/ \;
+          find ./artifacts -type f \( -name "*.exe" -o -name "*.AppImage" -o -name "*.dmg" -o -name "*.zip" -o -name "*.yml" \) -exec cp {} ./release/ \;
 
       - name: Determine Tag
         id: tag
