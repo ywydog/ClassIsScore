@@ -38,6 +38,18 @@
             <el-form-item label="主题色">
               <el-color-picker v-model="settings.customAccentColor" @change="handleSave" />
             </el-form-item>
+            <el-form-item label="开学日期">
+              <el-date-picker
+                v-model="settings.semesterStartDate"
+                type="date"
+                placeholder="选择开学日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                style="max-width: 200px"
+                @change="handleSemesterStartDateChange"
+              />
+              <span v-if="currentWeek" class="semester-week-hint">当前第 {{ currentWeek }} 周</span>
+            </el-form-item>
           </el-form>
         </el-card>
 
@@ -201,7 +213,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Upload, Download, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSettingsStore } from '@/stores/settings'
@@ -244,6 +256,17 @@ const settings = reactive({
   displayMode: DisplayMode.Card,
   customAccentColor: '',
   fontFamily: 'system',
+  semesterStartDate: '' as string,
+})
+
+const currentWeek = computed(() => {
+  if (!settings.semesterStartDate) return null
+  const start = new Date(settings.semesterStartDate)
+  const now = new Date()
+  const diffMs = now.getTime() - start.getTime()
+  if (diffMs < 0) return null
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  return Math.floor(diffDays / 7) + 1
 })
 
 const floatingSettings = reactive({
@@ -322,6 +345,10 @@ async function handleFontFamilyChange(fontFamily: string) {
 
 async function handleSave() {
   await settingsStore.updateSettings(settings)
+}
+
+async function handleSemesterStartDateChange(date: string) {
+  await settingsStore.updateSettings({ semesterStartDate: date } as Record<string, unknown>)
 }
 
 async function handleFloatingSave() {
@@ -670,5 +697,12 @@ function handleOpenDataFolder() {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.semester-week-hint {
+  margin-left: 12px;
+  font-size: 13px;
+  color: var(--cis-text-secondary);
+  font-weight: 500;
 }
 </style>

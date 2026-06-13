@@ -126,6 +126,7 @@ export interface AppSettings {
   displayMode: DisplayMode
   customAccentColor?: string
   petStyle?: string
+  semesterStartDate?: string
 }
 
 export enum PetCategory {

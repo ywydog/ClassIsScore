@@ -22,6 +22,7 @@ export interface ReportConfig {
   weekHeaderFormat: WeekHeaderFormat
   groupByGroup: boolean
   sortOrder: SortOrder
+  semesterStartDate?: string
 }
 
 export interface ReportStudent {
@@ -110,12 +111,31 @@ function formatPeriodHeader(
   return key // 占位，后续替换
 }
 
-/** 为周维度键生成"第N周"格式 */
-function formatWeekNumberHeaders(keys: string[]): Map<string, string> {
+/** 为周维度键生成"第N周"格式，基于开学日期计算 */
+function formatWeekNumberHeaders(keys: string[], semesterStartDate?: string): Map<string, string> {
   const map = new Map<string, string>()
-  keys.forEach((key, i) => {
-    map.set(key, `第${i + 1}周`)
-  })
+  if (semesterStartDate) {
+    const semesterStart = new Date(semesterStartDate)
+    // 找到开学日期所在周的周一
+    const startDay = semesterStart.getDay() || 7
+    const semesterMonday = new Date(semesterStart)
+    semesterMonday.setDate(semesterStart.getDate() - startDay + 1)
+    semesterMonday.setHours(0, 0, 0, 0)
+
+    for (const key of keys) {
+      const weekMonday = new Date(key)
+      weekMonday.setHours(0, 0, 0, 0)
+      const diffMs = weekMonday.getTime() - semesterMonday.getTime()
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+      const weekNum = Math.floor(diffDays / 7) + 1
+      map.set(key, weekNum > 0 ? `第${weekNum}周` : key)
+    }
+  } else {
+    // 无开学日期，按序号排列
+    keys.forEach((key, i) => {
+      map.set(key, `第${i + 1}周`)
+    })
+  }
   return map
 }
 
@@ -167,7 +187,7 @@ export function generateReport(
   // 周序号映射
   const weekNumberMap = (config.dimension === 'week' || config.dimension === 'semester') &&
     config.weekHeaderFormat === 'weekNumber'
-    ? formatWeekNumberHeaders(periodKeys)
+    ? formatWeekNumberHeaders(periodKeys, config.semesterStartDate)
     : null
 
   for (const key of periodKeys) {

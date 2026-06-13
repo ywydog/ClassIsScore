@@ -160,6 +160,7 @@ const props = defineProps<{
   students: Student[]
   groups: StudentGroup[]
   records: ScoreRecord[]
+  semesterStartDate?: string
 }>()
 
 defineEmits<{
@@ -254,6 +255,7 @@ const preview = ref<ReportPreview | null>(null)
 
 function buildPreview() {
   try {
+    config.semesterStartDate = props.semesterStartDate
     preview.value = generateReport(config, reportStudents.value, reportRecords.value)
   } catch {
     preview.value = null
