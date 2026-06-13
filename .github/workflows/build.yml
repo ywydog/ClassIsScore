@@ -20,7 +20,7 @@ on:
 
 env:
   DOTNET_VERSION: '8.0.x'
-  PROJECT_PATH: 'ClassIsScore.csproj'
+  PROJECT_PATH: 'avalonia/ClassIsScore.csproj'
 
 jobs:
   build:

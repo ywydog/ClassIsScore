@@ -1,16 +1,16 @@
-# .NET
-bin/
-obj/
-publish/
+# Avalonia (original .NET version)
+avalonia/bin/
+avalonia/obj/
+avalonia/publish/
 
-# Client
+# Client (Vue+Electron)
 client/dist/
 client/dist-electron/
 client/release/
 client/node_modules/
 client/.vite/
 
-# Server
+# Server (Spring Boot)
 server/target/
 server/.mvn/
 server/mvnw
