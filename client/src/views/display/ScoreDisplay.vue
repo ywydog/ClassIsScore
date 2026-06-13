@@ -1,17 +1,22 @@
 <template>
-  <div class="score-display">
-    <div class="score-display__bg">
+  <div
+    class="score-display"
+    :class="{ 'score-display--fullscreen': isFullscreen, 'score-display--settings-open': showSettings }"
+    :style="rootStyle"
+    @mousemove="onMouseMove"
+  >
+    <div class="score-display__bg" :style="bgStyle">
       <div class="score-display__orb" v-for="i in 5" :key="i" :style="orbStyle(i)"></div>
     </div>
     <div class="score-display__content">
-      <div class="score-display__header">
+      <div class="score-display__header" :class="{ 'score-display__header--hidden': isFullscreen && !showGearOnFullscreen }">
         <div class="score-display__brand">
           <div class="score-display__brand-icon">
             <el-icon :size="20"><Trophy /></el-icon>
           </div>
           <h1 class="score-display__title">积分排行榜</h1>
         </div>
-        <div class="score-display__time">{{ currentTime }}</div>
+        <div class="score-display__time" v-if="displaySettings.showClock">{{ currentTime }}</div>
         <div class="score-display__toggles">
           <!-- 多选模式切换 -->
           <el-button
@@ -33,6 +38,10 @@
             <el-radio-button value="Circle">圆形</el-radio-button>
             <el-radio-button value="Pet">宠物</el-radio-button>
           </el-radio-group>
+          <!-- 设置齿轮按钮 -->
+          <button class="score-display__settings-btn" @click="showSettings = !showSettings" title="显示设置">
+            <el-icon :size="18"><Setting /></el-icon>
+          </button>
         </div>
       </div>
 
@@ -53,39 +62,60 @@
 
       <!-- 排行榜模式：领奖台 + 列表 -->
       <template v-if="displayMode === 'leaderboard'">
-        <div v-if="topThree.length > 0" class="score-display__podium">
-          <div class="score-display__podium-item score-display__podium--2" v-if="topThree.length >= 2">
+        <div v-if="limitedTopThree.length > 0" class="score-display__podium">
+          <div
+            class="score-display__podium-item score-display__podium--2"
+            :class="{ 'score-display__podium-item--animated': mounted }"
+            style="--podium-delay: 0.2s"
+            v-if="limitedTopThree.length >= 2"
+          >
             <div class="score-display__podium-avatar">
-              <el-avatar :size="72">{{ topThree[1].name.charAt(0) }}</el-avatar>
-              <div class="score-display__medal score-display__medal--silver">2</div>
+              <el-avatar :size="72">{{ limitedTopThree[1].name.charAt(0) }}</el-avatar>
+              <div class="score-display__medal score-display__medal--silver" v-if="displaySettings.showRank">2</div>
             </div>
-            <div class="score-display__podium-name">{{ topThree[1].name }}</div>
-            <div class="score-display__podium-score">{{ topThree[1].score }}</div>
+            <div class="score-display__podium-name">{{ limitedTopThree[1].name }}</div>
+            <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[1].score }}</div>
           </div>
-          <div class="score-display__podium-item score-display__podium--1" v-if="topThree.length >= 1">
+          <div
+            class="score-display__podium-item score-display__podium--1"
+            :class="{ 'score-display__podium-item--animated': mounted }"
+            style="--podium-delay: 0.4s"
+            v-if="limitedTopThree.length >= 1"
+          >
             <div class="score-display__podium-crown">👑</div>
             <div class="score-display__podium-avatar">
-              <el-avatar :size="96">{{ topThree[0].name.charAt(0) }}</el-avatar>
-              <div class="score-display__medal score-display__medal--gold">1</div>
+              <el-avatar :size="96">{{ limitedTopThree[0].name.charAt(0) }}</el-avatar>
+              <div class="score-display__medal score-display__medal--gold" v-if="displaySettings.showRank">1</div>
             </div>
-            <div class="score-display__podium-name">{{ topThree[0].name }}</div>
-            <div class="score-display__podium-score">{{ topThree[0].score }}</div>
+            <div class="score-display__podium-name">{{ limitedTopThree[0].name }}</div>
+            <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[0].score }}</div>
           </div>
-          <div class="score-display__podium-item score-display__podium--3" v-if="topThree.length >= 3">
+          <div
+            class="score-display__podium-item score-display__podium--3"
+            :class="{ 'score-display__podium-item--animated': mounted }"
+            style="--podium-delay: 0s"
+            v-if="limitedTopThree.length >= 3"
+          >
             <div class="score-display__podium-avatar">
-              <el-avatar :size="60">{{ topThree[2].name.charAt(0) }}</el-avatar>
-              <div class="score-display__medal score-display__medal--bronze">3</div>
+              <el-avatar :size="60">{{ limitedTopThree[2].name.charAt(0) }}</el-avatar>
+              <div class="score-display__medal score-display__medal--bronze" v-if="displaySettings.showRank">3</div>
             </div>
-            <div class="score-display__podium-name">{{ topThree[2].name }}</div>
-            <div class="score-display__podium-score">{{ topThree[2].score }}</div>
+            <div class="score-display__podium-name">{{ limitedTopThree[2].name }}</div>
+            <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[2].score }}</div>
           </div>
         </div>
 
-        <div class="score-display__list" v-if="restEntries.length > 0">
-          <div v-for="entry in restEntries" :key="entry.rank" class="score-display__item">
-            <span class="score-display__rank">{{ entry.rank }}</span>
+        <div class="score-display__list" v-if="limitedRestEntries.length > 0">
+          <div
+            v-for="(entry, idx) in limitedRestEntries"
+            :key="entry.rank"
+            class="score-display__item"
+            :class="{ 'score-display__item--animated': mounted }"
+            :style="{ '--item-delay': `${idx * 50}ms` }"
+          >
+            <span class="score-display__rank" v-if="displaySettings.showRank">{{ entry.rank }}</span>
             <span class="score-display__name">{{ entry.name }}</span>
-            <span class="score-display__score">{{ entry.score }}</span>
+            <span class="score-display__score" v-if="displaySettings.showScore">{{ entry.score }}</span>
           </div>
         </div>
       </template>
@@ -139,6 +169,105 @@
         </div>
       </div>
     </div>
+
+    <!-- 分数变化浮动动画 -->
+    <transition-group name="score-float" tag="div" class="score-display__float-container">
+      <div
+        v-for="anim in scoreAnimations"
+        :key="anim.id"
+        class="score-display__float-anim"
+        :class="anim.change > 0 ? 'score-display__float-anim--pos' : 'score-display__float-anim--neg'"
+      >
+        {{ anim.change > 0 ? '+' : '' }}{{ anim.change }}
+      </div>
+    </transition-group>
+
+    <!-- 显示设置面板 -->
+    <transition name="settings-slide">
+      <div v-if="showSettings" class="score-display__settings-panel">
+        <div class="score-display__settings-header">
+          <h3>显示设置</h3>
+          <button class="score-display__settings-close" @click="showSettings = false">
+            <el-icon :size="16"><Close /></el-icon>
+          </button>
+        </div>
+
+        <div class="score-display__settings-body">
+          <!-- 背景主题 -->
+          <div class="score-display__settings-section">
+            <div class="score-display__settings-label">背景主题</div>
+            <el-radio-group v-model="displaySettings.background" size="small" @change="saveSettings">
+              <el-radio-button value="deepblue">深蓝</el-radio-button>
+              <el-radio-button value="pureblack">纯黑</el-radio-button>
+              <el-radio-button value="warmgray">暖灰</el-radio-button>
+              <el-radio-button value="custom">自定义</el-radio-button>
+            </el-radio-group>
+            <div v-if="displaySettings.background === 'custom'" class="score-display__settings-color-picker">
+              <input type="color" v-model="displaySettings.customColor" @input="saveSettings" />
+            </div>
+          </div>
+
+          <!-- 字体大小 -->
+          <div class="score-display__settings-section">
+            <div class="score-display__settings-label">字体大小</div>
+            <el-radio-group v-model="displaySettings.fontSize" size="small" @change="saveSettings">
+              <el-radio-button value="small">小</el-radio-button>
+              <el-radio-button value="medium">中</el-radio-button>
+              <el-radio-button value="large">大</el-radio-button>
+              <el-radio-button value="xlarge">特大</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <!-- 排行榜条目数 -->
+          <div class="score-display__settings-section">
+            <div class="score-display__settings-label">排行榜条目数</div>
+            <el-radio-group v-model="displaySettings.maxItems" size="small" @change="saveSettings">
+              <el-radio-button :value="5">5</el-radio-button>
+              <el-radio-button :value="10">10</el-radio-button>
+              <el-radio-button :value="15">15</el-radio-button>
+              <el-radio-button :value="20">20</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <!-- 自动刷新间隔 -->
+          <div class="score-display__settings-section">
+            <div class="score-display__settings-label">自动刷新间隔</div>
+            <el-radio-group v-model="displaySettings.refreshInterval" size="small" @change="onRefreshIntervalChange">
+              <el-radio-button :value="10">10s</el-radio-button>
+              <el-radio-button :value="30">30s</el-radio-button>
+              <el-radio-button :value="60">60s</el-radio-button>
+              <el-radio-button :value="0">关闭</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <!-- 显示/隐藏开关 -->
+          <div class="score-display__settings-section">
+            <div class="score-display__settings-label">显示元素</div>
+            <div class="score-display__settings-switches">
+              <label class="score-display__settings-switch">
+                <span>时钟</span>
+                <input type="checkbox" v-model="displaySettings.showClock" @change="saveSettings" />
+              </label>
+              <label class="score-display__settings-switch">
+                <span>排名数字</span>
+                <input type="checkbox" v-model="displaySettings.showRank" @change="saveSettings" />
+              </label>
+              <label class="score-display__settings-switch">
+                <span>分数</span>
+                <input type="checkbox" v-model="displaySettings.showScore" @change="saveSettings" />
+              </label>
+            </div>
+          </div>
+
+          <!-- 全屏按钮 -->
+          <div class="score-display__settings-section">
+            <button class="score-display__settings-fullscreen-btn" @click="toggleFullscreen">
+              {{ isFullscreen ? '退出全屏' : '进入全屏' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- 快速评分底部栏 -->
     <transition name="quick-score-slide">
@@ -333,10 +462,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Trophy, Check, Close } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
+import { Trophy, Check, Close, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import type { LeaderboardEntry, Student, EvaluationItem } from '@/types'
+import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent } from '@/types'
 import { PetCategory } from '@/types'
 import api from '@/services/api'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
@@ -347,6 +476,102 @@ import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
 import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
 import PetDisplay from '@/components/display/PetDisplay.vue'
 
+// ===== 显示设置 =====
+interface DisplaySettings {
+  background: 'deepblue' | 'pureblack' | 'warmgray' | 'custom'
+  customColor: string
+  fontSize: 'small' | 'medium' | 'large' | 'xlarge'
+  maxItems: number
+  refreshInterval: number
+  showClock: boolean
+  showRank: boolean
+  showScore: boolean
+}
+
+const DEFAULT_SETTINGS: DisplaySettings = {
+  background: 'deepblue',
+  customColor: '#1a1a2e',
+  fontSize: 'medium',
+  maxItems: 10,
+  refreshInterval: 30,
+  showClock: true,
+  showRank: true,
+  showScore: true,
+}
+
+function loadSettings(): DisplaySettings {
+  try {
+    const raw = localStorage.getItem('displaySettings')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return { ...DEFAULT_SETTINGS, ...parsed }
+    }
+  } catch { /* ignore */ }
+  return { ...DEFAULT_SETTINGS }
+}
+
+const displaySettings = reactive<DisplaySettings>(loadSettings())
+
+function saveSettings() {
+  localStorage.setItem('displaySettings', JSON.stringify(displaySettings))
+}
+
+// ===== 全屏模式 =====
+const isFullscreen = ref(false)
+const showGearOnFullscreen = ref(true)
+let fullscreenHideTimer: ReturnType<typeof setTimeout> | null = null
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      isFullscreen.value = true
+    }).catch(() => {})
+  } else {
+    document.exitFullscreen().then(() => {
+      isFullscreen.value = false
+    }).catch(() => {})
+  }
+}
+
+function onFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
+function onMouseMove(e: MouseEvent) {
+  if (!isFullscreen.value) return
+  if (e.clientY < 60) {
+    showGearOnFullscreen.value = true
+    if (fullscreenHideTimer) clearTimeout(fullscreenHideTimer)
+    fullscreenHideTimer = setTimeout(() => {
+      showGearOnFullscreen.value = false
+    }, 3000)
+  }
+}
+
+// ===== 设置面板 =====
+const showSettings = ref(false)
+
+// ===== 分数变化动画 =====
+interface ScoreAnimation {
+  id: number
+  change: number
+}
+
+const scoreAnimations = ref<ScoreAnimation[]>([])
+let animIdCounter = 0
+
+function addScoreAnimation(change: number) {
+  const id = ++animIdCounter
+  scoreAnimations.value.push({ id, change })
+  setTimeout(() => {
+    scoreAnimations.value = scoreAnimations.value.filter(a => a.id !== id)
+  }, 1500)
+}
+
+// ===== 排行榜入场动画 =====
+const mounted = ref(false)
+
+// ===== 核心数据 =====
 const leaderboard = ref<LeaderboardEntry[]>([])
 const students = ref<Student[]>([])
 const evaluationItems = ref<EvaluationItem[]>([])
@@ -375,8 +600,34 @@ const petDialogStudent = ref<Student | null>(null)
 let timeTimer: ReturnType<typeof setInterval> | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
-const topThree = computed(() => leaderboard.value.slice(0, 3))
-const restEntries = computed(() => leaderboard.value.slice(3))
+// ===== 计算属性 =====
+const fontSizeMap: Record<string, string> = {
+  small: '14px',
+  medium: '16px',
+  large: '20px',
+  xlarge: '24px',
+}
+
+const rootStyle = computed(() => ({
+  '--display-font-size': fontSizeMap[displaySettings.fontSize] || '16px',
+}))
+
+const bgStyle = computed(() => {
+  switch (displaySettings.background) {
+    case 'pureblack':
+      return { background: '#000' }
+    case 'warmgray':
+      return { background: 'linear-gradient(160deg, #2a2520 0%, #3d3530 40%, #332d28 70%, #252018 100%)' }
+    case 'custom':
+      return { background: displaySettings.customColor }
+    default: // deepblue
+      return {}
+  }
+})
+
+const limitedLeaderboard = computed(() => leaderboard.value.slice(0, displaySettings.maxItems))
+const limitedTopThree = computed(() => limitedLeaderboard.value.slice(0, 3))
+const limitedRestEntries = computed(() => limitedLeaderboard.value.slice(3))
 
 const normalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Normal))
 const mythicalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Mythical))
@@ -400,6 +651,25 @@ function orbStyle(i: number) {
     top: `${y}%`,
     animationDelay: `${delay}s`,
     animationDuration: `${18 + i * 2}s`,
+  }
+}
+
+// 刷新间隔变更
+function onRefreshIntervalChange() {
+  saveSettings()
+  restartRefreshTimer()
+}
+
+function restartRefreshTimer() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+  if (displaySettings.refreshInterval > 0) {
+    refreshTimer = setInterval(() => {
+      fetchLeaderboard()
+      fetchStudents()
+    }, displaySettings.refreshInterval * 1000)
   }
 }
 
@@ -520,22 +790,29 @@ onMounted(async () => {
   updateTime()
   timeTimer = setInterval(updateTime, 1000)
   await Promise.all([fetchLeaderboard(), fetchStudents(), fetchEvaluationItems()])
+  // 触发入场动画
+  requestAnimationFrame(() => {
+    mounted.value = true
+  })
   connectWebSocket({
-    onScoreUpdate: () => {
+    onScoreUpdate: (data: ScoreUpdateEvent) => {
+      if (data.scoreChange !== undefined && data.scoreChange !== 0) {
+        addScoreAnimation(data.scoreChange)
+      }
       fetchLeaderboard()
       fetchStudents()
     },
   })
-  refreshTimer = setInterval(() => {
-    fetchLeaderboard()
-    fetchStudents()
-  }, 30000)
+  restartRefreshTimer()
+  document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 
 onUnmounted(() => {
   disconnectWebSocket()
   if (timeTimer) clearInterval(timeTimer)
   if (refreshTimer) clearInterval(refreshTimer)
+  if (fullscreenHideTimer) clearTimeout(fullscreenHideTimer)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
 })
 
 async function fetchLeaderboard() {
@@ -568,6 +845,28 @@ async function fetchEvaluationItems() {
 </script>
 
 <style scoped>
+/* ===== Focus-less CSS ===== */
+.score-display * {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+.score-display *:focus {
+  outline: none;
+}
+.score-display *:focus-visible {
+  outline: none;
+}
+/* 设置面板打开时恢复交互元素光标 */
+.score-display--settings-open .score-display__settings-panel * {
+  cursor: auto;
+}
+.score-display--settings-open .score-display__settings-panel button,
+.score-display--settings-open .score-display__settings-panel input,
+.score-display--settings-open .score-display__settings-panel label {
+  cursor: pointer;
+}
+
 .score-display {
   width: 100vw;
   height: 100vh;
@@ -577,6 +876,7 @@ async function fetchEvaluationItems() {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  font-size: var(--display-font-size, 16px);
 }
 
 /* 背景光球 */
@@ -615,6 +915,13 @@ async function fetchEvaluationItems() {
   align-items: center;
   gap: 20px;
   margin-bottom: 36px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.score-display__header--hidden {
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
 }
 
 .score-display__brand {
@@ -684,6 +991,28 @@ async function fetchEvaluationItems() {
   border-color: #0d9488;
   color: #fff;
   box-shadow: 0 0 16px rgba(13, 148, 136, 0.3);
+}
+
+/* 设置齿轮按钮 */
+.score-display__settings-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.score-display__settings-btn:hover {
+  background: rgba(13, 148, 136, 0.15);
+  border-color: rgba(13, 148, 136, 0.4);
+  color: #2dd4bf;
+  transform: rotate(45deg);
 }
 
 /* 多选工具栏 */
@@ -770,6 +1099,15 @@ async function fetchEvaluationItems() {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.score-display__podium-item--animated {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: var(--podium-delay, 0s);
 }
 
 .score-display__podium--1 { order: 2; }
@@ -861,6 +1199,14 @@ async function fetchEvaluationItems() {
   border-radius: var(--cis-radius-lg, 12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   transition: all var(--cis-transition-fast, 0.12s ease);
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.score-display__item--animated {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: var(--item-delay, 0ms);
 }
 
 .score-display__item:hover {
@@ -1364,5 +1710,258 @@ async function fetchEvaluationItems() {
 
 .score-display :deep(.el-input__inner::placeholder) {
   color: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== 排行榜入场动画关键帧 ===== */
+@keyframes slide-up-fade {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-right-fade {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ===== 分数变化浮动动画 ===== */
+.score-display__float-container {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.score-display__float-anim {
+  font-size: 24px;
+  font-weight: 700;
+  animation: score-rise 1.5s ease-out forwards;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.score-display__float-anim--pos {
+  color: #4ade80;
+}
+
+.score-display__float-anim--neg {
+  color: #f87171;
+}
+
+@keyframes score-rise {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
+}
+
+.score-float-enter-active {
+  animation: score-rise 1.5s ease-out forwards;
+}
+
+.score-float-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.score-float-leave-to {
+  opacity: 0;
+}
+
+/* ===== 显示设置面板 ===== */
+.score-display__settings-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  z-index: 150;
+  background: rgba(10, 22, 40, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid rgba(13, 148, 136, 0.2);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.score-display__settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.score-display__settings-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.score-display__settings-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.score-display__settings-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.score-display__settings-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.score-display__settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.score-display__settings-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.score-display__settings-section :deep(.el-radio-button__inner) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.score-display__settings-section :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  border-color: #0d9488;
+  color: #fff;
+}
+
+.score-display__settings-color-picker {
+  margin-top: 4px;
+}
+
+.score-display__settings-color-picker input[type="color"] {
+  width: 48px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.score-display__settings-switches {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.score-display__settings-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.score-display__settings-switch input[type="checkbox"] {
+  width: 40px;
+  height: 22px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.score-display__settings-switch input[type="checkbox"]::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.score-display__settings-switch input[type="checkbox"]:checked {
+  background: rgba(13, 148, 136, 0.6);
+}
+
+.score-display__settings-switch input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+  background: #2dd4bf;
+}
+
+.score-display__settings-fullscreen-btn {
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  background: rgba(13, 148, 136, 0.1);
+  color: #2dd4bf;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.score-display__settings-fullscreen-btn:hover {
+  background: rgba(13, 148, 136, 0.2);
+  border-color: rgba(13, 148, 136, 0.5);
+  box-shadow: 0 2px 12px rgba(13, 148, 136, 0.2);
+}
+
+/* 设置面板滑入动画 */
+.settings-slide-enter-active,
+.settings-slide-leave-active {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+}
+
+.settings-slide-enter-from,
+.settings-slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
 }
 </style>

@@ -5,12 +5,18 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/admin/scores',
+    redirect: '/admin/dashboard',
   },
   {
     path: '/admin',
     component: AdminLayout,
     children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/admin/Dashboard.vue'),
+        meta: { title: '总览', icon: 'HomeFilled' },
+      },
       {
         path: 'scores',
         name: 'ScoreManagement',

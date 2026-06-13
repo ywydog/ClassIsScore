@@ -21,6 +21,10 @@
       >
         <el-menu-item-group>
           <template #title><span v-if="!collapsed" class="menu-group-label">核心功能</span></template>
+          <el-menu-item index="/admin/dashboard">
+            <el-icon><HomeFilled /></el-icon>
+            <template #title>总览</template>
+          </el-menu-item>
           <el-menu-item index="/admin/scores">
             <el-icon><Trophy /></el-icon>
             <template #title>积分管理</template>
@@ -69,6 +73,12 @@
     <div v-if="!collapsed" class="app-sidebar__version">
       v1.0.0-web
     </div>
+    <div class="app-sidebar__collapse-btn" @click="$emit('toggle')">
+      <el-icon :size="16">
+        <Expand v-if="collapsed" />
+        <Fold v-else />
+      </el-icon>
+    </div>
   </div>
 </template>
 
@@ -78,6 +88,7 @@ import { useRoute } from 'vue-router'
 import {
   Trophy, User, Grid, Rank, Timer, Finished, Setting, Lock, InfoFilled,
 } from '@element-plus/icons-vue'
+import { Expand, Fold } from '@element-plus/icons-vue'
 
 defineProps<{
   collapsed: boolean
@@ -188,6 +199,23 @@ const activeMenu = computed(() => route.path)
   border-top: 1px solid var(--cis-border-color-light);
   flex-shrink: 0;
   letter-spacing: 0.5px;
+}
+
+.app-sidebar__collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--cis-border-color-light);
+  cursor: pointer;
+  color: var(--cis-text-tertiary);
+  transition: color var(--cis-transition-fast), background-color var(--cis-transition-fast);
+  flex-shrink: 0;
+}
+
+.app-sidebar__collapse-btn:hover {
+  color: var(--cis-primary);
+  background-color: var(--cis-primary-light-9);
 }
 
 .fade-enter-active,

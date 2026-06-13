@@ -27,7 +27,8 @@
     </div>
 
     <div class="score-history__list">
-      <template v-if="paginatedRecords.length > 0">
+      <el-skeleton v-if="loading" :loading="loading" :rows="5" animated />
+      <template v-else-if="paginatedRecords.length > 0">
         <ScoreCard
           v-for="record in paginatedRecords"
           :key="record.id"
@@ -39,6 +40,7 @@
           :can-quick-revert="record.canQuickRevert && !record.isReverted"
           :needs-admin-revert="record.needsAdminRevert && !record.isReverted && !record.canQuickRevert"
           :is-reverted="record.isReverted"
+          :category-color="getCategoryColor(record.reason)"
           @revert="$emit('revert', $event)"
           @admin-revert="$emit('adminRevert', $event)"
         />
@@ -62,17 +64,25 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Search } from '@element-plus/icons-vue'
-import type { ScoreRecord } from '@/types'
+import type { ScoreRecord, EvaluationItem } from '@/types'
 import ScoreCard from './ScoreCard.vue'
 
 const props = defineProps<{
   records: ScoreRecord[]
+  evaluationItems?: EvaluationItem[]
+  loading?: boolean
 }>()
 
 defineEmits<{
   revert: [id: string]
   adminRevert: [id: string]
 }>()
+
+function getCategoryColor(reason: string): string | undefined {
+  if (!props.evaluationItems) return undefined
+  const item = props.evaluationItems.find(i => i.name === reason && i.color)
+  return item?.color
+}
 
 const searchText = ref('')
 const dateRange = ref<[Date, Date] | null>(null)

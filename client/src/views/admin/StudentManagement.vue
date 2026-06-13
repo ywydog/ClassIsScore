@@ -26,7 +26,9 @@
     </div>
 
     <el-card class="student-management__table-card">
+      <el-skeleton v-if="loading" :loading="loading" :rows="5" animated />
       <el-table
+        v-else
         :data="paginatedStudents"
         stripe
         style="width: 100%"
@@ -257,6 +259,7 @@ const groups = ref<StudentGroup[]>([])
 const importText = ref('')
 const currentPage = ref(1)
 const pageSize = 20
+const loading = ref(true)
 
 // 导入相关状态
 const importStep = ref(0)
@@ -307,10 +310,12 @@ const paginatedStudents = computed(() => {
 })
 
 onMounted(async () => {
+  loading.value = true
   await Promise.all([
     studentStore.fetchStudents(),
     fetchGroups(),
   ])
+  loading.value = false
 })
 
 async function fetchGroups() {

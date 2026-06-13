@@ -37,6 +37,7 @@ export interface EvaluationItem {
   name: string
   scoreChange: number
   isPositive: boolean
+  color?: string
   createdAt: string
 }
 

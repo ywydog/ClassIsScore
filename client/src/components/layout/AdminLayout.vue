@@ -40,9 +40,18 @@ const isConnected = ref(false)
 
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
+  localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed.value))
 }
 
 onMounted(() => {
+  // 从 localStorage 恢复折叠状态
+  try {
+    const stored = localStorage.getItem('sidebarCollapsed')
+    if (stored !== null) {
+      isCollapsed.value = JSON.parse(stored)
+    }
+  } catch { /* ignore */ }
+
   connectWebSocket({
     onConnect: () => { isConnected.value = true },
     onDisconnect: () => { isConnected.value = false },

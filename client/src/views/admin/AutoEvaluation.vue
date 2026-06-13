@@ -17,7 +17,12 @@
           </div>
         </template>
         <el-table :data="evaluationItems" stripe empty-text="暂无评估项目">
-          <el-table-column prop="name" label="名称" />
+          <el-table-column prop="name" label="名称">
+            <template #default="{ row }">
+              <span v-if="row.color" class="eval-color-dot" :style="{ backgroundColor: row.color }"></span>
+              {{ row.name }}
+            </template>
+          </el-table-column>
           <el-table-column prop="scoreChange" label="积分变动" width="120">
             <template #default="{ row }">
               <span :class="row.scoreChange >= 0 ? 'score-positive' : 'score-negative'">
@@ -112,6 +117,20 @@
             <el-radio-button :value="true">加分</el-radio-button>
             <el-radio-button :value="false">扣分</el-radio-button>
           </el-radio-group>
+        </el-form-item>
+        <el-form-item label="颜色标签">
+          <div class="color-picker-row">
+            <span
+              v-for="c in presetColors"
+              :key="c.value"
+              class="color-preset-dot"
+              :class="{ 'color-preset-dot--active': itemForm.color === c.value }"
+              :style="{ backgroundColor: c.value }"
+              @click="itemForm.color = itemForm.color === c.value ? '' : c.value"
+              :title="c.label"
+            ></span>
+            <el-color-picker v-model="itemForm.color" size="small" @change="onColorPickerChange" />
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -233,7 +252,23 @@ const itemForm = reactive({
   name: '',
   scoreChange: 1,
   isPositive: true,
+  color: '',
 })
+
+const presetColors = [
+  { label: '绿色', value: '#22c55e' },
+  { label: '红色', value: '#ef4444' },
+  { label: '蓝色', value: '#3b82f6' },
+  { label: '紫色', value: '#8b5cf6' },
+  { label: '橙色', value: '#f97316' },
+  { label: '黄色', value: '#eab308' },
+]
+
+function onColorPickerChange(val: string | null) {
+  if (!val) {
+    itemForm.color = ''
+  }
+}
 
 async function fetchItems() {
   try {
@@ -248,10 +283,12 @@ function openItemDialog(item?: EvaluationItem) {
     itemForm.name = item.name
     itemForm.scoreChange = item.scoreChange
     itemForm.isPositive = item.scoreChange >= 0
+    itemForm.color = item.color || ''
   } else {
     itemForm.name = ''
     itemForm.scoreChange = 1
     itemForm.isPositive = true
+    itemForm.color = ''
   }
   showItemDialog.value = true
 }
@@ -265,6 +302,7 @@ async function handleSaveItem() {
     name: itemForm.name,
     scoreChange: itemForm.isPositive ? Math.abs(itemForm.scoreChange) : -Math.abs(itemForm.scoreChange),
     isPositive: itemForm.isPositive,
+    color: itemForm.color || undefined,
   }
   try {
     if (editingItem.value) {
@@ -545,5 +583,41 @@ onMounted(async () => {
   color: var(--cis-danger);
   font-weight: 700;
   font-size: 15px;
+}
+
+.eval-color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-preset-dot {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color var(--cis-transition-fast), transform var(--cis-transition-fast);
+}
+
+.color-preset-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-preset-dot--active {
+  border-color: var(--cis-text-primary);
+  box-shadow: 0 0 0 2px var(--cis-bg);
 }
 </style>

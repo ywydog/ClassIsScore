@@ -40,6 +40,47 @@
             </el-form-item>
           </el-form>
         </el-card>
+
+        <!-- 自定义快捷分值 -->
+        <el-card class="settings-page__card" style="margin-top: 16px">
+          <template #header>
+            <span style="font-weight: 600">自定义快捷分值</span>
+          </template>
+          <div class="custom-scores">
+            <div class="custom-scores__list">
+              <el-tag
+                v-for="(val, idx) in customQuickScores"
+                :key="idx"
+                :type="val >= 0 ? 'success' : 'danger'"
+                closable
+                size="large"
+                class="custom-scores__tag"
+                @close="removeCustomScore(idx)"
+              >
+                {{ val >= 0 ? '+' : '' }}{{ val }}
+              </el-tag>
+              <span v-if="customQuickScores.length === 0" class="custom-scores__empty">
+                未设置，将使用默认值 +1/+2/+5/-1/-2/-5
+              </span>
+            </div>
+            <div v-if="showAddScoreInput" class="custom-scores__add-row">
+              <el-input-number
+                v-model="newScoreValue"
+                :min="-999"
+                :max="999"
+                size="small"
+                style="width: 140px"
+                @keyup.enter="addCustomScore"
+              />
+              <el-button type="primary" size="small" @click="addCustomScore">确认</el-button>
+              <el-button size="small" @click="showAddScoreInput = false">取消</el-button>
+            </div>
+            <el-button v-else type="primary" size="small" @click="showAddScoreInput = true">
+              <el-icon><Plus /></el-icon>
+              添加
+            </el-button>
+          </div>
+        </el-card>
       </el-tab-pane>
 
       <el-tab-pane label="悬浮窗" name="floating">
@@ -71,6 +112,40 @@
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="handleFloatingSave">保存悬浮窗设置</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="宠物" name="pet">
+        <el-card class="settings-page__card">
+          <el-form label-width="120px">
+            <el-form-item label="启用宠物系统">
+              <el-switch v-model="petSettings.enabled" @change="handlePetSave" />
+            </el-form-item>
+            <el-form-item label="默认宠物类型">
+              <el-select v-model="petSettings.defaultPetType" @change="handlePetSave" placeholder="选择默认宠物" style="max-width: 200px">
+                <el-option
+                  v-for="pet in ALL_PET_TYPES"
+                  :key="pet.id"
+                  :label="pet.emoji + ' ' + pet.name"
+                  :value="pet.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-divider content-position="left">等级经验阈值</el-divider>
+            <el-form-item v-for="i in 7" :key="i" :label="`等级 ${i} → ${i + 1}`">
+              <el-input-number
+                v-model="petSettings.levelThresholds[i - 1]"
+                :min="1"
+                :max="9999"
+                size="small"
+                style="width: 140px"
+                @change="handlePetSave"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="handlePetSave">保存宠物设置</el-button>
             </el-form-item>
           </el-form>
         </el-card>
@@ -179,11 +254,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { Box, Brush, Upload, Download } from '@element-plus/icons-vue'
+import { Box, Brush, Upload, Download, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSettingsStore } from '@/stores/settings'
 import { DisplayMode } from '@/types'
 import type { PluginManifest, ThemeManifest, Student, StudentGroup, EvaluationItem } from '@/types'
+import { ALL_PET_TYPES } from '@/utils/petSystem'
 import api from '@/services/api'
 import { studentApi } from '@/services/student'
 import { groupApi } from '@/services/group'
@@ -239,10 +315,24 @@ const dataFolderPath = ref('')
 const importFileInput = ref<HTMLInputElement | null>(null)
 const importStudentFileInput = ref<HTMLInputElement | null>(null)
 
+// 自定义快捷分值
+const customQuickScores = ref<number[]>([])
+const showAddScoreInput = ref(false)
+const newScoreValue = ref(1)
+
+// 宠物设置
+const petSettings = reactive({
+  enabled: true,
+  defaultPetType: 'cat',
+  levelThresholds: [40, 60, 80, 100, 120, 140, 160] as number[],
+})
+
 onMounted(async () => {
   await settingsStore.fetchSettings()
   Object.assign(settings, settingsStore.settings)
   await Promise.all([fetchPlugins(), fetchThemes(), fetchFloatingSettings(), fetchDataFolderPath()])
+  loadCustomQuickScores()
+  loadPetSettings()
 })
 
 async function fetchPlugins() {
@@ -541,6 +631,64 @@ async function onImportStudentFileChange(event: Event) {
   }
 }
 
+// ===== 自定义快捷分值 =====
+
+function loadCustomQuickScores() {
+  try {
+    const stored = localStorage.getItem('customQuickScores')
+    if (stored) {
+      customQuickScores.value = JSON.parse(stored)
+    }
+  } catch { /* ignore */ }
+}
+
+function saveCustomQuickScores() {
+  localStorage.setItem('customQuickScores', JSON.stringify(customQuickScores.value))
+}
+
+function addCustomScore() {
+  if (customQuickScores.value.includes(newScoreValue.value)) {
+    ElMessage.warning('该分值已存在')
+    return
+  }
+  customQuickScores.value.push(newScoreValue.value)
+  customQuickScores.value.sort((a, b) => b - a)
+  saveCustomQuickScores()
+  newScoreValue.value = 1
+  showAddScoreInput.value = false
+  ElMessage.success('已添加')
+}
+
+function removeCustomScore(idx: number) {
+  customQuickScores.value.splice(idx, 1)
+  saveCustomQuickScores()
+}
+
+// ===== 宠物设置 =====
+
+function loadPetSettings() {
+  try {
+    const stored = localStorage.getItem('petSettings')
+    if (stored) {
+      const data = JSON.parse(stored)
+      if (data.enabled !== undefined) petSettings.enabled = data.enabled
+      if (data.defaultPetType) petSettings.defaultPetType = data.defaultPetType
+      if (Array.isArray(data.levelThresholds) && data.levelThresholds.length === 7) {
+        petSettings.levelThresholds = data.levelThresholds
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+function handlePetSave() {
+  localStorage.setItem('petSettings', JSON.stringify({
+    enabled: petSettings.enabled,
+    defaultPetType: petSettings.defaultPetType,
+    levelThresholds: petSettings.levelThresholds,
+  }))
+  ElMessage.success('宠物设置已保存')
+}
+
 function handleOpenDataFolder() {
   if (window.electronAPI?.openPath) {
     window.electronAPI.openPath(dataFolderPath.value)
@@ -656,5 +804,29 @@ function handleOpenDataFolder() {
   align-items: center;
   width: 100%;
   max-width: 500px;
+}
+
+/* 自定义快捷分值 */
+.custom-scores__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.custom-scores__tag {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.custom-scores__empty {
+  font-size: 13px;
+  color: var(--cis-text-tertiary);
+}
+
+.custom-scores__add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

@@ -33,6 +33,7 @@ defineEmits<{
 const route = useRoute()
 
 const pageTitles: Record<string, string> = {
+  '/admin/dashboard': '总览',
   '/admin/scores': '积分管理',
   '/admin/students': '学生管理',
   '/admin/groups': '分组管理',

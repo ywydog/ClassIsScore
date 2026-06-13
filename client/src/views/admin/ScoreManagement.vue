@@ -34,6 +34,8 @@
       <div class="score-management__history">
         <ScoreHistory
           :records="scoreStore.recentRecords"
+          :evaluation-items="evaluationItems"
+          :loading="scoreStore.loading"
           @revert="handleRevert"
           @admin-revert="handleAdminRevert"
         />

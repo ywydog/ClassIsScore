@@ -15,7 +15,10 @@
           {{ scoreChange > 0 ? '+' : '' }}{{ scoreChange }}
         </span>
       </div>
-      <div class="score-card__reason">{{ reason }}</div>
+      <div class="score-card__reason">
+        <span v-if="categoryColor" class="score-card__color-dot" :style="{ backgroundColor: categoryColor }"></span>
+        {{ reason }}
+      </div>
       <div class="score-card__footer">
         <span class="score-card__time">{{ formatTime(createdAt) }}</span>
         <el-tag v-if="isReverted" type="info" size="small">已撤销</el-tag>
@@ -52,6 +55,7 @@ defineProps<{
   canQuickRevert: boolean
   needsAdminRevert?: boolean
   isReverted?: boolean
+  categoryColor?: string
 }>()
 
 defineEmits<{
@@ -149,6 +153,17 @@ function formatTime(dateStr: string): string {
   font-size: 13px;
   color: var(--cis-text-secondary);
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-card__color-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .score-card__footer {

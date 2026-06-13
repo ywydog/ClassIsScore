@@ -36,6 +36,8 @@ export function createDisplayWindow(): BrowserWindow {
     width,
     height,
     fullscreen: true,
+    focusable: false,
+    skipTaskbar: true,
     title: 'ClassIsScore - 大屏展示',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

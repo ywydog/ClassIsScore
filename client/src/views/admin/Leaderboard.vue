@@ -21,6 +21,8 @@
     </div>
 
     <!-- 前三名展示 -->
+    <el-skeleton v-if="loading" :loading="loading" :rows="5" animated />
+    <template v-else>
     <div v-if="topThree.length > 0" class="leaderboard__podium">
       <div class="leaderboard__podium-item leaderboard__podium--2" v-if="topThree.length >= 2">
         <div class="leaderboard__podium-avatar">
@@ -61,6 +63,7 @@
       </div>
       <el-empty v-if="entries.length === 0" description="暂无排行数据" />
     </div>
+    </template>
   </div>
 </template>
 
@@ -76,7 +79,7 @@ import { exportToExcel, type ExcelColumn } from '@/utils/excelHelper'
 const mode = ref<'personal' | 'group'>('personal')
 const timeRange = ref<'today' | 'week' | 'month' | 'all'>('all')
 const entries = ref<LeaderboardEntry[]>([])
-
+const loading = ref(true)
 const topThree = computed(() => entries.value.slice(0, 3))
 const restEntries = computed(() => entries.value.slice(3))
 
@@ -84,6 +87,7 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
   await fetchLeaderboard()
+  loading.value = false
   connectWebSocket({
     onScoreUpdate: () => fetchLeaderboard(),
   })
