@@ -12,50 +12,87 @@
           <h1 class="score-display__title">积分排行榜</h1>
         </div>
         <div class="score-display__time">{{ currentTime }}</div>
-        <div class="score-display__mode-toggle">
+        <div class="score-display__toggles">
           <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard">
             <el-radio-button value="personal">个人</el-radio-button>
             <el-radio-button value="group">小组</el-radio-button>
           </el-radio-group>
+          <el-radio-group v-model="displayMode" size="small" class="score-display__display-toggle">
+            <el-radio-button value="leaderboard">排行</el-radio-button>
+            <el-radio-button value="Card">卡片</el-radio-button>
+            <el-radio-button value="Circle">圆形</el-radio-button>
+            <el-radio-button value="Pet">宠物</el-radio-button>
+          </el-radio-group>
         </div>
       </div>
 
-      <!-- 领奖台 -->
-      <div v-if="topThree.length > 0" class="score-display__podium">
-        <div class="score-display__podium-item score-display__podium--2" v-if="topThree.length >= 2">
-          <div class="score-display__podium-avatar">
-            <el-avatar :size="72">{{ topThree[1].name.charAt(0) }}</el-avatar>
-            <div class="score-display__medal score-display__medal--silver">2</div>
+      <!-- 排行榜模式：领奖台 + 列表 -->
+      <template v-if="displayMode === 'leaderboard'">
+        <div v-if="topThree.length > 0" class="score-display__podium">
+          <div class="score-display__podium-item score-display__podium--2" v-if="topThree.length >= 2">
+            <div class="score-display__podium-avatar">
+              <el-avatar :size="72">{{ topThree[1].name.charAt(0) }}</el-avatar>
+              <div class="score-display__medal score-display__medal--silver">2</div>
+            </div>
+            <div class="score-display__podium-name">{{ topThree[1].name }}</div>
+            <div class="score-display__podium-score">{{ topThree[1].score }}</div>
           </div>
-          <div class="score-display__podium-name">{{ topThree[1].name }}</div>
-          <div class="score-display__podium-score">{{ topThree[1].score }}</div>
-        </div>
-        <div class="score-display__podium-item score-display__podium--1" v-if="topThree.length >= 1">
-          <div class="score-display__podium-crown">👑</div>
-          <div class="score-display__podium-avatar">
-            <el-avatar :size="96">{{ topThree[0].name.charAt(0) }}</el-avatar>
-            <div class="score-display__medal score-display__medal--gold">1</div>
+          <div class="score-display__podium-item score-display__podium--1" v-if="topThree.length >= 1">
+            <div class="score-display__podium-crown">👑</div>
+            <div class="score-display__podium-avatar">
+              <el-avatar :size="96">{{ topThree[0].name.charAt(0) }}</el-avatar>
+              <div class="score-display__medal score-display__medal--gold">1</div>
+            </div>
+            <div class="score-display__podium-name">{{ topThree[0].name }}</div>
+            <div class="score-display__podium-score">{{ topThree[0].score }}</div>
           </div>
-          <div class="score-display__podium-name">{{ topThree[0].name }}</div>
-          <div class="score-display__podium-score">{{ topThree[0].score }}</div>
-        </div>
-        <div class="score-display__podium-item score-display__podium--3" v-if="topThree.length >= 3">
-          <div class="score-display__podium-avatar">
-            <el-avatar :size="60">{{ topThree[2].name.charAt(0) }}</el-avatar>
-            <div class="score-display__medal score-display__medal--bronze">3</div>
+          <div class="score-display__podium-item score-display__podium--3" v-if="topThree.length >= 3">
+            <div class="score-display__podium-avatar">
+              <el-avatar :size="60">{{ topThree[2].name.charAt(0) }}</el-avatar>
+              <div class="score-display__medal score-display__medal--bronze">3</div>
+            </div>
+            <div class="score-display__podium-name">{{ topThree[2].name }}</div>
+            <div class="score-display__podium-score">{{ topThree[2].score }}</div>
           </div>
-          <div class="score-display__podium-name">{{ topThree[2].name }}</div>
-          <div class="score-display__podium-score">{{ topThree[2].score }}</div>
         </div>
+
+        <div class="score-display__list" v-if="restEntries.length > 0">
+          <div v-for="entry in restEntries" :key="entry.rank" class="score-display__item">
+            <span class="score-display__rank">{{ entry.rank }}</span>
+            <span class="score-display__name">{{ entry.name }}</span>
+            <span class="score-display__score">{{ entry.score }}</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- 卡片模式 -->
+      <div v-else-if="displayMode === 'Card'" class="score-display__grid score-display__grid--card">
+        <StudentCardDisplay
+          v-for="student in students"
+          :key="student.id"
+          :student="student"
+          @click="onStudentClick"
+        />
       </div>
 
-      <!-- 其余排名列表 -->
-      <div class="score-display__list" v-if="restEntries.length > 0">
-        <div v-for="entry in restEntries" :key="entry.rank" class="score-display__item">
-          <span class="score-display__rank">{{ entry.rank }}</span>
-          <span class="score-display__name">{{ entry.name }}</span>
-          <span class="score-display__score">{{ entry.score }}</span>
-        </div>
+      <!-- 圆形模式 -->
+      <div v-else-if="displayMode === 'Circle'" class="score-display__grid score-display__grid--circle">
+        <StudentCircleDisplay
+          v-for="student in students"
+          :key="student.id"
+          :student="student"
+          @click="onStudentClick"
+        />
+      </div>
+
+      <!-- 宠物模式 -->
+      <div v-else-if="displayMode === 'Pet'" class="score-display__grid score-display__grid--pet">
+        <PetDisplay
+          v-for="student in students"
+          :key="student.id"
+          :student="student"
+          @click="onStudentClick"
+        />
       </div>
     </div>
   </div>
@@ -64,12 +101,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Trophy } from '@element-plus/icons-vue'
-import type { LeaderboardEntry } from '@/types'
+import type { LeaderboardEntry, Student } from '@/types'
 import api from '@/services/api'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
+import { studentApi } from '@/services/student'
+import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
+import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
+import PetDisplay from '@/components/display/PetDisplay.vue'
 
 const leaderboard = ref<LeaderboardEntry[]>([])
+const students = ref<Student[]>([])
 const mode = ref<'personal' | 'group'>('personal')
+const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('leaderboard')
 const currentTime = ref('')
 
 let timeTimer: ReturnType<typeof setInterval> | null = null
@@ -97,14 +140,25 @@ function orbStyle(i: number) {
   }
 }
 
+function onStudentClick(_student: Student) {
+  // placeholder for future navigation or detail view
+}
+
 onMounted(async () => {
   updateTime()
   timeTimer = setInterval(updateTime, 1000)
   await fetchLeaderboard()
+  await fetchStudents()
   connectWebSocket({
-    onScoreUpdate: () => fetchLeaderboard(),
+    onScoreUpdate: () => {
+      fetchLeaderboard()
+      fetchStudents()
+    },
   })
-  refreshTimer = setInterval(fetchLeaderboard, 30000)
+  refreshTimer = setInterval(() => {
+    fetchLeaderboard()
+    fetchStudents()
+  }, 30000)
 })
 
 onUnmounted(() => {
@@ -118,6 +172,15 @@ async function fetchLeaderboard() {
     const endpoint = mode.value === 'personal' ? '/api/leaderboard/personal' : '/api/leaderboard/group'
     const response = await api.get<{ data: LeaderboardEntry[] }>(endpoint)
     leaderboard.value = response.data.data
+  } catch {
+    // silent
+  }
+}
+
+async function fetchStudents() {
+  try {
+    const response = await studentApi.getAll()
+    students.value = response.data.data
   } catch {
     // silent
   }
@@ -209,11 +272,13 @@ async function fetchLeaderboard() {
   letter-spacing: 2px;
 }
 
-.score-display__mode-toggle {
+.score-display__toggles {
   margin-left: auto;
+  display: flex;
+  gap: 12px;
 }
 
-.score-display__mode-toggle :deep(.el-radio-button__inner) {
+.score-display__toggles :deep(.el-radio-button__inner) {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.5);
@@ -221,7 +286,7 @@ async function fetchLeaderboard() {
   padding: 6px 16px;
 }
 
-.score-display__mode-toggle :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+.score-display__toggles :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
   background: linear-gradient(135deg, #0d9488, #14b8a6);
   border-color: #0d9488;
   color: #fff;
@@ -366,5 +431,80 @@ async function fetchLeaderboard() {
   background: linear-gradient(135deg, #2dd4bf, #5eead4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* 网格展示模式 */
+.score-display__grid {
+  flex: 1;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.score-display__grid--card {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.score-display__grid--circle {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  justify-items: center;
+}
+
+.score-display__grid--pet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+  justify-items: center;
+}
+
+/* 深色背景下调整子组件样式 */
+.score-display__grid :deep(.student-card-display) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.score-display__grid :deep(.student-card-display:hover) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(13, 148, 136, 0.3);
+}
+
+.score-display__grid :deep(.student-card-display__name) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.score-display__grid :deep(.student-card-display__score) {
+  color: #2dd4bf;
+}
+
+.score-display__grid :deep(.student-circle-display__name) {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.score-display__grid :deep(.pet-display) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.score-display__grid :deep(.pet-display:hover) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.score-display__grid :deep(.pet-display__name) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.score-display__grid :deep(.pet-display__score) {
+  color: #2dd4bf;
+}
+
+.score-display__grid :deep(.pet-display__pet-name) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.score-display__grid :deep(.pet-display__exp-text) {
+  color: rgba(255, 255, 255, 0.4);
 }
 </style>
