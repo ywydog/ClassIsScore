@@ -236,6 +236,7 @@
       :students="studentStore.students"
       :groups="groups"
       :records="scoreStore.scoreRecords"
+      :semester-start-date="settingsStore.settings.semesterStartDate"
     />
 
     <!-- 管理员密码验证对话框 -->
@@ -268,6 +269,7 @@ import { Operation, Upload, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useScoreStore } from '@/stores/score'
 import { useStudentStore } from '@/stores/student'
+import { useSettingsStore } from '@/stores/settings'
 import { groupApi } from '@/services/group'
 import type { EvaluationItem, StudentGroup } from '@/types'
 import api from '@/services/api'
@@ -278,6 +280,7 @@ import ExportReportDialog from '@/components/score/ExportReportDialog.vue'
 
 const scoreStore = useScoreStore()
 const studentStore = useStudentStore()
+const settingsStore = useSettingsStore()
 
 const showBatchDialog = ref(false)
 const showImportDialog = ref(false)
