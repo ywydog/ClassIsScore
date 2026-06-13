@@ -214,6 +214,16 @@ const canNext = computed(() => {
   if (step.value === 0) {
     return !!dateRange.value
   }
+  if (step.value === 1) {
+    // 积分显示方式必选（有默认值，但确保不为空）
+    if (!config.scoreDisplayMode) return false
+    // 周/学期维度时周列头格式必选
+    if ((config.dimension === 'week' || config.dimension === 'semester') && !config.weekHeaderFormat) return false
+  }
+  if (step.value === 3) {
+    // 预览必须成功生成
+    return !!preview.value && preview.value.rows.length > 0
+  }
   return true
 })
 
@@ -251,12 +261,28 @@ function buildPreview() {
 }
 
 function nextStep() {
-  if (step.value === 0 && !dateRange.value) {
-    ElMessage.warning('请选择日期范围')
-    return
+  if (step.value === 0) {
+    if (!dateRange.value) {
+      ElMessage.warning('请选择日期范围')
+      return
+    }
+  }
+  if (step.value === 1) {
+    if (!config.scoreDisplayMode) {
+      ElMessage.warning('请选择积分显示方式')
+      return
+    }
+    if ((config.dimension === 'week' || config.dimension === 'semester') && !config.weekHeaderFormat) {
+      ElMessage.warning('请选择周列头格式')
+      return
+    }
   }
   if (step.value === 2) {
     buildPreview()
+  }
+  if (step.value === 3 && (!preview.value || preview.value.rows.length === 0)) {
+    ElMessage.warning('预览数据为空，请返回检查配置')
+    return
   }
   step.value++
 }
