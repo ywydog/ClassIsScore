@@ -16,9 +16,17 @@ export const useScoreStore = defineStore('score', () => {
   })
 
   const recentRecords = computed(() => {
+    const now = Date.now()
+    const QUICK_REVERT_MS = 3 * 60 * 1000 // 3分钟
     return [...scoreRecords.value]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 50)
+      .map((r) => {
+        const createdTime = new Date(r.createdAt).getTime()
+        const canQuickRevert = !r.isReverted && (now - createdTime) < QUICK_REVERT_MS
+        const needsAdminRevert = !r.isReverted && !canQuickRevert
+        return { ...r, canQuickRevert, needsAdminRevert }
+      })
   })
 
   async function fetchRecords(studentId?: string) {
@@ -63,11 +71,11 @@ export const useScoreStore = defineStore('score', () => {
     }
   }
 
-  async function revertScore(recordId: string) {
+  async function revertScore(recordId: string, adminPassword?: string) {
     loading.value = true
     error.value = null
     try {
-      await scoreApi.revertScore(recordId)
+      await scoreApi.revertScore(recordId, adminPassword)
       const record = scoreRecords.value.find((r) => r.id === recordId)
       if (record) {
         record.isReverted = true

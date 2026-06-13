@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS auto_evaluation_config (
     target_group_id BIGINT,
     target_student_id BIGINT,
     is_enabled BOOLEAN DEFAULT FALSE,
+    last_executed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

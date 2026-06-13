@@ -11,14 +11,18 @@ export const settingsApi = {
   },
 
   getAdminSettings() {
-    return api.get<ApiResponse<AdminSettings>>('/api/admin-settings')
+    return api.get<ApiResponse<AdminSettings & { hasPassword?: boolean; usbDeviceId?: string }>>('/api/admin/settings')
   },
 
-  updateAdminSettings(settings: Partial<AdminSettings>) {
-    return api.put<ApiResponse<AdminSettings>>('/api/admin-settings', settings)
+  updateAdminSettings(settings: Partial<AdminSettings> & { usbDeviceId?: string }) {
+    return api.put<ApiResponse<void>>('/api/admin/settings', settings)
   },
 
-  verifyAdmin(password: string) {
-    return api.post<ApiResponse<boolean>>('/api/admin-settings/verify', { password })
+  verifyAdmin(method: string, credential: string) {
+    return api.post<ApiResponse<boolean>>('/api/admin/verify', { method, credential })
+  },
+
+  setPassword(password: string) {
+    return api.post<ApiResponse<void>>('/api/admin/set-password', { password })
   },
 }

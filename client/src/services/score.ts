@@ -13,6 +13,15 @@ interface BatchAddScoreRequest {
   reason: string
 }
 
+interface RevertScoreRequest {
+  adminPassword?: string
+}
+
+interface CanRevertResponse {
+  canQuickRevert: boolean
+  needsAdminVerification: boolean
+}
+
 export const scoreApi = {
   getRecords(studentId?: string) {
     const params = studentId ? { studentId } : {}
@@ -27,8 +36,16 @@ export const scoreApi = {
     return api.post<ApiResponse<ScoreRecord[]>>('/api/scores/batch', data)
   },
 
-  revertScore(recordId: string) {
-    return api.post<ApiResponse<void>>(`/api/scores/${recordId}/revert`)
+  revertScore(recordId: string, adminPassword?: string) {
+    const data: RevertScoreRequest = {}
+    if (adminPassword) {
+      data.adminPassword = adminPassword
+    }
+    return api.post<ApiResponse<void>>(`/api/scores/${recordId}/revert`, data)
+  },
+
+  canRevert(recordId: string) {
+    return api.get<ApiResponse<CanRevertResponse>>(`/api/scores/${recordId}/can-revert`)
   },
 
   getRecentRecords(limit: number = 50) {

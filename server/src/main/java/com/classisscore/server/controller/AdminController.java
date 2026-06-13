@@ -56,4 +56,55 @@ public class AdminController {
         studentService.resetAllScores();
         return ApiResult.success();
     }
+
+    /**
+     * 获取管理员验证设置
+     */
+    @GetMapping("/settings")
+    public ApiResult<Map<String, Object>> getAdminSettings() {
+        return ApiResult.success(adminService.getAdminSettings());
+    }
+
+    /**
+     * 更新管理员验证设置
+     */
+    @PutMapping("/settings")
+    public ApiResult<Void> updateAdminSettings(@RequestBody Map<String, Object> settings) {
+        adminService.updateAdminSettings(settings);
+        return ApiResult.success();
+    }
+
+    /**
+     * 验证管理员身份
+     */
+    @PostMapping("/verify")
+    public ApiResult<Boolean> verifyAdmin(@RequestBody Map<String, String> body) {
+        String method = body.get("method");
+        String credential = body.get("credential");
+        if (credential == null || credential.isEmpty()) {
+            return ApiResult.error("验证凭据不能为空");
+        }
+        boolean result = adminService.verifyAdmin(method, credential);
+        if (result) {
+            return ApiResult.success(true);
+        }
+        return ApiResult.error("验证失败");
+    }
+
+    /**
+     * 设置管理员密码
+     */
+    @PostMapping("/set-password")
+    public ApiResult<Void> setPassword(@RequestBody Map<String, String> body) {
+        String password = body.get("password");
+        if (password == null || password.isEmpty()) {
+            return ApiResult.error("密码不能为空");
+        }
+        try {
+            adminService.setPassword(password);
+            return ApiResult.success();
+        } catch (IllegalArgumentException e) {
+            return ApiResult.error(e.getMessage());
+        }
+    }
 }

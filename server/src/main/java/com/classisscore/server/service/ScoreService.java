@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +26,14 @@ public class ScoreService extends ServiceImpl<ScoreRecordMapper, ScoreRecord> {
 
     @Autowired
     private ScoreWebSocketHandler webSocketHandler;
+
+    @Autowired
+    private AdminService adminService;
+
+    @Autowired
+    private SettingsService settingsService;
+
+    private static final long QUICK_REVERT_WINDOW_MINUTES = 3;
 
     public List<ScoreRecord> listScoreRecords(Long studentId, String category, String startTime, String endTime) {
         LambdaQueryWrapper<ScoreRecord> wrapper = new LambdaQueryWrapper<>();
@@ -46,7 +55,7 @@ public class ScoreService extends ServiceImpl<ScoreRecordMapper, ScoreRecord> {
                 .reason(request.getReason())
                 .category(request.getCategory())
                 .operatorId(request.getOperatorId())
-                .canQuickRevert(request.getCanQuickRevert() != null ? request.getCanQuickRevert() : true)
+                .canQuickRevert(true)
                 .reverted(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -88,7 +97,7 @@ public class ScoreService extends ServiceImpl<ScoreRecordMapper, ScoreRecord> {
     }
 
     @Transactional
-    public ScoreRecord revertScore(Long id) {
+    public ScoreRecord revertScore(Long id, String adminPassword) {
         ScoreRecord record = this.getById(id);
         if (record == null) {
             return null;
@@ -96,6 +105,25 @@ public class ScoreService extends ServiceImpl<ScoreRecordMapper, ScoreRecord> {
         if (record.getReverted()) {
             return record;
         }
+
+        // 检查是否在3分钟快速撤销窗口内
+        boolean quickRevert = canQuickRevert(id);
+
+        if (!quickRevert) {
+            // 超过3分钟，需要管理员密码验证
+            if (adminPassword == null || adminPassword.isEmpty()) {
+                throw new RuntimeException("超过3分钟快速撤销窗口，需要管理员密码验证");
+            }
+            // 验证管理员密码
+            String storedPassword = settingsService.getSetting("admin_password");
+            if (storedPassword == null) {
+                storedPassword = "admin123";
+            }
+            if (!storedPassword.equals(adminPassword)) {
+                throw new RuntimeException("管理员密码错误");
+            }
+        }
+
         record.setReverted(true);
         this.updateById(record);
 
@@ -113,6 +141,18 @@ public class ScoreService extends ServiceImpl<ScoreRecordMapper, ScoreRecord> {
         }
 
         return record;
+    }
+
+    public boolean canQuickRevert(Long recordId) {
+        ScoreRecord record = this.getById(recordId);
+        if (record == null || record.getReverted()) {
+            return false;
+        }
+        if (record.getCreatedAt() == null) {
+            return false;
+        }
+        Duration duration = Duration.between(record.getCreatedAt(), LocalDateTime.now());
+        return duration.toMinutes() < QUICK_REVERT_WINDOW_MINUTES;
     }
 
     public List<ScoreRecord> getStudentScoreHistory(Long studentId) {

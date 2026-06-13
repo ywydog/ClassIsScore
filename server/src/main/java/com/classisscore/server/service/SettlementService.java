@@ -6,6 +6,7 @@ import com.classisscore.server.dto.SettlementRequest;
 import com.classisscore.server.entity.SettlementRecord;
 import com.classisscore.server.entity.Student;
 import com.classisscore.server.mapper.SettlementRecordMapper;
+import com.classisscore.server.scheduler.AutoEvaluationScheduler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,9 @@ public class SettlementService extends ServiceImpl<SettlementRecordMapper, Settl
     @Autowired
     private ScoreService scoreService;
 
+    @Autowired
+    private AutoEvaluationScheduler autoEvaluationScheduler;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public java.util.List<SettlementRecord> listSettlements() {
@@ -36,6 +40,9 @@ public class SettlementService extends ServiceImpl<SettlementRecordMapper, Settl
 
     @Transactional
     public SettlementRecord createSettlement(SettlementRequest request) {
+        // 执行结算前的自动评价配置
+        autoEvaluationScheduler.executeBeforeSettlementConfigs();
+
         List<Student> students = studentService.list();
         List<Map<String, Object>> snapshot = students.stream().map(student -> {
             Map<String, Object> item = new HashMap<>();

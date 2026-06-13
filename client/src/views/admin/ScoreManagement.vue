@@ -35,6 +35,7 @@
         <ScoreHistory
           :records="scoreStore.recentRecords"
           @revert="handleRevert"
+          @admin-revert="handleAdminRevert"
         />
       </div>
     </div>
@@ -233,6 +234,28 @@
         <el-button type="primary" @click="handleExport">导出</el-button>
       </template>
     </el-dialog>
+
+    <!-- 管理员密码验证对话框 -->
+    <el-dialog v-model="showAdminRevertDialog" title="管理员验证" width="400px" destroy-on-close>
+      <el-alert type="warning" :closable="false" style="margin-bottom: 16px">
+        该积分记录已超过3分钟快速撤销窗口，需要管理员密码验证才能撤销
+      </el-alert>
+      <el-form label-width="100px">
+        <el-form-item label="管理员密码" required>
+          <el-input
+            v-model="adminRevertPassword"
+            type="password"
+            placeholder="请输入管理员密码"
+            show-password
+            @keyup.enter="confirmAdminRevert"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showAdminRevertDialog = false">取消</el-button>
+        <el-button type="danger" :loading="scoreStore.loading" @click="confirmAdminRevert">确认撤销</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -257,6 +280,9 @@ const showAddDialog = ref(false)
 const showBatchDialog = ref(false)
 const showImportDialog = ref(false)
 const showExportDialog = ref(false)
+const showAdminRevertDialog = ref(false)
+const adminRevertPassword = ref('')
+const pendingRevertRecordId = ref<string | null>(null)
 const evaluationItems = ref<EvaluationItem[]>([])
 const groups = ref<StudentGroup[]>([])
 
@@ -382,6 +408,29 @@ async function handleRevert(recordId: string) {
     await scoreStore.revertScore(recordId)
     ElMessage.success('已撤销')
   } catch { /* error handled in store */ }
+}
+
+function handleAdminRevert(recordId: string) {
+  pendingRevertRecordId.value = recordId
+  adminRevertPassword.value = ''
+  showAdminRevertDialog.value = true
+}
+
+async function confirmAdminRevert() {
+  if (!adminRevertPassword.value) {
+    ElMessage.warning('请输入管理员密码')
+    return
+  }
+  if (!pendingRevertRecordId.value) return
+  try {
+    await scoreStore.revertScore(pendingRevertRecordId.value, adminRevertPassword.value)
+    ElMessage.success('已撤销')
+    showAdminRevertDialog.value = false
+    pendingRevertRecordId.value = null
+    adminRevertPassword.value = ''
+  } catch {
+    ElMessage.error('管理员密码错误或撤销失败')
+  }
 }
 
 // ========== 导入功能 ==========

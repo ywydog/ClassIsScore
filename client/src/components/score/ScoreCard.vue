@@ -28,6 +28,15 @@
         >
           撤销
         </el-button>
+        <el-button
+          v-else-if="needsAdminRevert"
+          type="warning"
+          size="small"
+          text
+          @click="$emit('adminRevert', id)"
+        >
+          申请撤销
+        </el-button>
       </div>
     </div>
   </div>
@@ -41,11 +50,13 @@ defineProps<{
   reason: string
   createdAt: string
   canQuickRevert: boolean
+  needsAdminRevert?: boolean
   isReverted?: boolean
 }>()
 
 defineEmits<{
   revert: [id: string]
+  adminRevert: [id: string]
 }>()
 
 function formatTime(dateStr: string): string {

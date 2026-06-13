@@ -43,6 +43,8 @@ public class AutoEvaluationConfig {
     @Builder.Default
     private Boolean isEnabled = false;
 
+    private LocalDateTime lastExecutedAt;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 }

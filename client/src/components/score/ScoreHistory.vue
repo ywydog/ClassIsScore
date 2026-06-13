@@ -37,8 +37,10 @@
           :reason="record.reason"
           :created-at="record.createdAt"
           :can-quick-revert="record.canQuickRevert && !record.isReverted"
+          :needs-admin-revert="record.needsAdminRevert && !record.isReverted && !record.canQuickRevert"
           :is-reverted="record.isReverted"
           @revert="$emit('revert', $event)"
+          @admin-revert="$emit('adminRevert', $event)"
         />
       </template>
       <el-empty v-else description="暂无积分记录" :image-size="80" />
@@ -69,6 +71,7 @@ const props = defineProps<{
 
 defineEmits<{
   revert: [id: string]
+  adminRevert: [id: string]
 }>()
 
 const searchText = ref('')
