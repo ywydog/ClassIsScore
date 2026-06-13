@@ -933,10 +933,6 @@ async function fetchScoreStats() {
   }
 }
 
-function getStudentStats(studentId: string | number): StudentScoreStats | undefined {
-  return scoreStats.value.find(s => String(s.studentId) === String(studentId))
-}
-
 function formatNet(val: number | undefined): string {
   if (val === undefined || val === 0) return '0'
   return val > 0 ? `+${val}` : `${val}`
