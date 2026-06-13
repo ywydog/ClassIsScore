@@ -44,7 +44,16 @@ const pageTitles: Record<string, string> = {
   '/admin/about': '关于',
 }
 
-const pageTitle = computed(() => pageTitles[route.path] || 'ClassIsScore')
+const routeNameTitles: Record<string, string> = {
+  'StudentProfile': '学生详情',
+}
+
+const pageTitle = computed(() => {
+  if (route.name && routeNameTitles[route.name as string]) {
+    return routeNameTitles[route.name as string]
+  }
+  return pageTitles[route.path] || 'ClassIsScore'
+})
 
 function openDisplayWindow() {
   window.electronAPI?.openWindow?.('display')

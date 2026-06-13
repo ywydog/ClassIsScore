@@ -24,6 +24,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '学生管理', icon: 'User' },
       },
       {
+        path: 'students/:id',
+        name: 'StudentProfile',
+        component: () => import('@/views/admin/StudentProfile.vue'),
+        meta: { title: '学生详情', icon: 'User' },
+      },
+      {
         path: 'groups',
         name: 'GroupManagement',
         component: () => import('@/views/admin/GroupManagement.vue'),

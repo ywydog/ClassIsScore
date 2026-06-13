@@ -53,8 +53,9 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
+            <el-button type="success" size="small" text @click="viewProfile(row.id)">查看</el-button>
             <el-button type="primary" size="small" text @click="openEditDialog(row)">编辑</el-button>
             <el-button type="danger" size="small" text @click="handleDelete(row.id)">删除</el-button>
           </template>
@@ -95,6 +96,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Plus, Upload, Search } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useStudentStore } from '@/stores/student'
@@ -102,6 +104,7 @@ import { groupApi } from '@/services/group'
 import type { Student, StudentGroup } from '@/types'
 import StudentForm from '@/components/student/StudentForm.vue'
 
+const router = useRouter()
 const studentStore = useStudentStore()
 
 const searchText = ref('')
@@ -142,6 +145,10 @@ function getGroupName(groupId?: string): string {
 function openAddDialog() {
   editingStudent.value = undefined
   showFormDialog.value = true
+}
+
+function viewProfile(studentId: string) {
+  router.push(`/admin/students/${studentId}`)
 }
 
 function openEditDialog(student: Student) {
