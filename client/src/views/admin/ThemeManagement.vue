@@ -13,7 +13,7 @@
         <div class="theme-list">
           <div v-for="theme in themes" :key="theme.id" class="theme-card">
             <div class="theme-card__preview">
-              <div class="theme-card__preview-bg" :style="{ background: theme.previewGradient || 'var(--cis-gradient-primary)' }">
+              <div class="theme-card__preview-bg" :style="{ background: (theme as any).previewGradient || 'var(--cis-gradient-primary)' }">
                 <span class="theme-card__preview-label">Aa</span>
               </div>
             </div>
