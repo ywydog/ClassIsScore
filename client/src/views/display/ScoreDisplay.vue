@@ -115,17 +115,6 @@
           >
             <span class="score-display__rank" v-if="displaySettings.showRank">{{ entry.rank }}</span>
             <span class="score-display__name">{{ entry.name }}</span>
-            <span class="score-display__period-stats" v-if="displaySettings.showScore">
-              <span class="score-display__period-stat score-display__period-stat--day" :title="`今日 +${getEntryStats(entry)?.dayPlus || 0} / ${getEntryStats(entry)?.dayMinus || 0}`">
-                日{{ formatNet(getEntryStats(entry)?.dayNet) }}
-              </span>
-              <span class="score-display__period-stat score-display__period-stat--week" :title="`本周 +${getEntryStats(entry)?.weekPlus || 0} / ${getEntryStats(entry)?.weekMinus || 0}`">
-                周{{ formatNet(getEntryStats(entry)?.weekNet) }}
-              </span>
-              <span class="score-display__period-stat score-display__period-stat--month" :title="`本月 +${getEntryStats(entry)?.monthPlus || 0} / ${getEntryStats(entry)?.monthMinus || 0}`">
-                月{{ formatNet(getEntryStats(entry)?.monthNet) }}
-              </span>
-            </span>
             <span class="score-display__score" v-if="displaySettings.showScore">{{ entry.score }}</span>
           </div>
         </div>
@@ -192,6 +181,41 @@
         {{ anim.change > 0 ? '+' : '' }}{{ anim.change }}
       </div>
     </transition-group>
+
+    <!-- 周期积分面板（右下角） -->
+    <div class="score-display__period-panel">
+      <div class="score-display__period-panel__header">
+        <span class="score-display__period-panel__title">积分统计</span>
+        <div class="score-display__period-panel__toggles">
+          <button
+            v-for="p in periodOptions"
+            :key="p.key"
+            :class="['score-display__period-panel__toggle', { 'score-display__period-panel__toggle--active': activePeriod === p.key }]"
+            @click="activePeriod = p.key"
+          >{{ p.label }}</button>
+        </div>
+      </div>
+      <div class="score-display__period-panel__body">
+        <div
+          v-for="stat in topPeriodStats"
+          :key="stat.studentId"
+          class="score-display__period-panel__row"
+        >
+          <span class="score-display__period-panel__name">{{ stat.studentName }}</span>
+          <span class="score-display__period-panel__detail">
+            <span class="score-display__period-panel__plus">+{{ stat.plus }}</span>
+            <span class="score-display__period-panel__slash">/</span>
+            <span class="score-display__period-panel__minus">{{ stat.minus }}</span>
+          </span>
+          <span class="score-display__period-panel__net" :class="stat.net > 0 ? 'score-display__period-panel__net--pos' : stat.net < 0 ? 'score-display__period-panel__net--neg' : ''">
+            {{ formatNet(stat.net) }}
+          </span>
+        </div>
+        <div v-if="topPeriodStats.length === 0" class="score-display__period-panel__empty">
+          暂无数据
+        </div>
+      </div>
+    </div>
 
     <!-- 显示设置面板 -->
     <transition name="settings-slide">
@@ -615,6 +639,45 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const settingsStore = useSettingsStore()
 
+// ===== 周期积分面板 =====
+type PeriodKey = 'day' | 'week' | 'month' | 'semester'
+const activePeriod = ref<PeriodKey>('week')
+const periodOptions = computed(() => {
+  const opts: { key: PeriodKey; label: string }[] = [
+    { key: 'day', label: '日' },
+    { key: 'week', label: '周' },
+    { key: 'month', label: '月' },
+  ]
+  if (scoreStats.value.some(s => s.semesterNet !== undefined)) {
+    opts.push({ key: 'semester', label: '学期' })
+  }
+  return opts
+})
+
+interface PeriodStatRow {
+  studentId: number
+  studentName: string
+  plus: number
+  minus: number
+  net: number
+}
+
+const topPeriodStats = computed<PeriodStatRow[]>(() => {
+  return scoreStats.value
+    .map(s => {
+      let plus = 0, minus = 0, net = 0
+      switch (activePeriod.value) {
+        case 'day': plus = s.dayPlus; minus = s.dayMinus; net = s.dayNet; break
+        case 'week': plus = s.weekPlus; minus = s.weekMinus; net = s.weekNet; break
+        case 'month': plus = s.monthPlus; minus = s.monthMinus; net = s.monthNet; break
+        case 'semester': plus = s.semesterPlus || 0; minus = s.semesterMinus || 0; net = s.semesterNet || 0; break
+      }
+      return { studentId: s.studentId, studentName: s.studentName, plus, minus, net }
+    })
+    .sort((a, b) => b.net - a.net)
+    .slice(0, 10)
+})
+
 // ===== 计算属性 =====
 const fontSizeMap: Record<string, string> = {
   small: '14px',
@@ -872,11 +935,6 @@ async function fetchScoreStats() {
 
 function getStudentStats(studentId: string | number): StudentScoreStats | undefined {
   return scoreStats.value.find(s => String(s.studentId) === String(studentId))
-}
-
-function getEntryStats(entry: LeaderboardEntry): StudentScoreStats | undefined {
-  // 通过名字匹配（排行榜没有 studentId）
-  return scoreStats.value.find(s => s.studentName === entry.name)
 }
 
 function formatNet(val: number | undefined): string {
@@ -1272,35 +1330,6 @@ function formatNet(val: number | undefined): string {
   flex: 1;
   font-size: 15px;
   font-weight: 500;
-}
-
-.score-display__period-stats {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.score-display__period-stat {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.score-display__period-stat--day {
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
-}
-
-.score-display__period-stat--week {
-  background: rgba(168, 85, 247, 0.12);
-  color: #c084fc;
-}
-
-.score-display__period-stat--month {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
 }
 
 .score-display__score {
@@ -1856,6 +1885,145 @@ function formatNet(val: number | undefined): string {
 
 .score-float-leave-to {
   opacity: 0;
+}
+
+/* ===== 周期积分面板（右下角） ===== */
+.score-display__period-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 120;
+  width: 260px;
+  background: rgba(10, 22, 40, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(13, 148, 136, 0.08);
+  overflow: hidden;
+}
+
+.score-display__period-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.score-display__period-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.score-display__period-panel__toggles {
+  display: flex;
+  gap: 3px;
+}
+
+.score-display__period-panel__toggle {
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.score-display__period-panel__toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.score-display__period-panel__toggle--active {
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}
+
+.score-display__period-panel__body {
+  padding: 8px 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.score-display__period-panel__body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.score-display__period-panel__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.score-display__period-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  transition: background 0.12s;
+}
+
+.score-display__period-panel__row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.score-display__period-panel__name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score-display__period-panel__detail {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.score-display__period-panel__plus {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.score-display__period-panel__slash {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.score-display__period-panel__minus {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.score-display__period-panel__net {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 36px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.score-display__period-panel__net--pos {
+  color: #4ade80;
+}
+
+.score-display__period-panel__net--neg {
+  color: #f87171;
+}
+
+.score-display__period-panel__empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
 }
 
 /* ===== 显示设置面板 ===== */
