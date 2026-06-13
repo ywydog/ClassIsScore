@@ -2,6 +2,10 @@
   <div class="score-history">
     <div class="score-history__header">
       <span class="score-history__title">积分记录</span>
+      <span class="score-history__count">共 {{ filteredRecords.length }} 条</span>
+    </div>
+
+    <div class="score-history__filters">
       <el-input
         v-model="searchText"
         placeholder="搜索学生..."
@@ -10,11 +14,22 @@
         class="score-history__search"
         :prefix-icon="Search"
       />
+      <el-date-picker
+        v-model="dateRange"
+        type="daterange"
+        range-separator="至"
+        start-placeholder="开始日期"
+        end-placeholder="结束日期"
+        size="small"
+        clearable
+        class="score-history__date-picker"
+      />
     </div>
+
     <div class="score-history__list">
-      <template v-if="filteredRecords.length > 0">
+      <template v-if="paginatedRecords.length > 0">
         <ScoreCard
-          v-for="record in filteredRecords"
+          v-for="record in paginatedRecords"
           :key="record.id"
           :id="record.id"
           :student-name="record.studentName"
@@ -27,6 +42,17 @@
         />
       </template>
       <el-empty v-else description="暂无积分记录" :image-size="80" />
+    </div>
+
+    <div v-if="filteredRecords.length > pageSize" class="score-history__pagination">
+      <el-pagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        :total="filteredRecords.length"
+        layout="prev, pager, next"
+        small
+        background
+      />
     </div>
   </div>
 </template>
@@ -46,11 +72,34 @@ defineEmits<{
 }>()
 
 const searchText = ref('')
+const dateRange = ref<[Date, Date] | null>(null)
+const currentPage = ref(1)
+const pageSize = 10
 
 const filteredRecords = computed(() => {
-  if (!searchText.value) return props.records
-  const keyword = searchText.value.toLowerCase()
-  return props.records.filter(r => r.studentName.toLowerCase().includes(keyword))
+  let result = props.records
+
+  // 学生名搜索过滤
+  if (searchText.value) {
+    const keyword = searchText.value.toLowerCase()
+    result = result.filter(r => r.studentName.toLowerCase().includes(keyword))
+  }
+
+  // 日期范围过滤
+  if (dateRange.value) {
+    const [start, end] = dateRange.value
+    result = result.filter(r => {
+      const date = new Date(r.createdAt)
+      return date >= start && date <= end
+    })
+  }
+
+  return result
+})
+
+const paginatedRecords = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredRecords.value.slice(start, start + pageSize)
 })
 </script>
 
@@ -75,8 +124,24 @@ const filteredRecords = computed(() => {
   color: var(--cis-text-primary);
 }
 
+.score-history__count {
+  font-size: 12px;
+  color: var(--cis-text-tertiary);
+}
+
+.score-history__filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
 .score-history__search {
-  width: 180px;
+  width: 160px;
+}
+
+.score-history__date-picker {
+  width: 240px;
 }
 
 .score-history__list {
@@ -94,5 +159,13 @@ const filteredRecords = computed(() => {
 .score-history__list::-webkit-scrollbar-thumb {
   background-color: var(--cis-border-color);
   border-radius: 2px;
+}
+
+.score-history__pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cis-border-color-light);
 }
 </style>
