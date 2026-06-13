@@ -20,4 +20,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     if (name === 'main') return ipcRenderer.invoke('show-main-window')
     return Promise.resolve()
   },
+  relaunchApp: () => ipcRenderer.invoke('relaunch-app'),
 })

@@ -19,5 +19,6 @@ interface Window {
     closeFloatingWindow: () => Promise<void>
     openWindow: (name: string) => Promise<void>
     openPath: (path: string) => Promise<void>
+    relaunchApp: () => Promise<void>
   }
 }

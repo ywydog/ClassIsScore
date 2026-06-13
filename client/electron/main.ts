@@ -56,6 +56,11 @@ app.whenReady().then(async () => {
     }
   })
 
+  ipcMain.handle('relaunch-app', () => {
+    app.relaunch()
+    app.exit(0)
+  })
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createMainWindow()

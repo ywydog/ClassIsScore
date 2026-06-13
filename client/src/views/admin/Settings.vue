@@ -193,6 +193,27 @@ import * as XLSX from 'xlsx'
 const settingsStore = useSettingsStore()
 const activeTab = ref('general')
 
+async function promptRelaunch(reason: string) {
+  try {
+    await ElMessageBox.confirm(
+      `${reason}需要重启应用才能完全生效。是否立即重启？`,
+      '需要重启',
+      {
+        confirmButtonText: '立即重启',
+        cancelButtonText: '稍后手动重启',
+        type: 'info',
+      }
+    )
+    if (window.electronAPI?.relaunchApp) {
+      await window.electronAPI.relaunchApp()
+    } else {
+      ElMessage.info('当前环境不支持自动重启，请手动关闭并重新打开应用')
+    }
+  } catch {
+    // 用户选择稍后重启，不做任何操作
+  }
+}
+
 const settings = reactive({
   theme: 'light' as 'light' | 'dark' | 'system',
   fontSize: 14,
@@ -293,6 +314,7 @@ async function handleFloatingSave() {
       'floating.accentColor': floatingSettings.accentColor,
     })
     ElMessage.success('悬浮窗设置已保存')
+    promptRelaunch('悬浮窗设置')
   } catch {
     ElMessage.error('保存悬浮窗设置失败')
   }
@@ -302,6 +324,7 @@ async function handlePluginToggle(plugin: PluginManifest & { enabled: boolean })
   try {
     await api.put(`/api/plugins/${plugin.id}/toggle`, { enabled: plugin.enabled })
     ElMessage.success(plugin.enabled ? '已启用插件' : '已禁用插件')
+    promptRelaunch('插件状态变更')
   } catch { /* ignore */ }
 }
 
@@ -309,6 +332,7 @@ async function handleThemeToggle(theme: ThemeManifest & { enabled: boolean }) {
   try {
     await api.put(`/api/themes/${theme.id}/toggle`, { enabled: theme.enabled })
     ElMessage.success(theme.enabled ? '已启用主题' : '已禁用主题')
+    promptRelaunch('主题包状态变更')
   } catch { /* ignore */ }
 }
 
@@ -318,6 +342,7 @@ async function handleDeleteTheme(id: string) {
     await api.delete(`/api/themes/${id}`)
     ElMessage.success('已删除')
     await fetchThemes()
+    promptRelaunch('删除主题包')
   } catch { /* ignore */ }
 }
 
