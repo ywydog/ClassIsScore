@@ -5,7 +5,7 @@
       <div class="score-management__actions">
         <el-button @click="showExportDialog = true">
           <el-icon><Download /></el-icon>
-          导出记录
+          导出报表
         </el-button>
         <el-button @click="showImportDialog = true">
           <el-icon><Upload /></el-icon>
@@ -230,31 +230,13 @@
       </template>
     </el-dialog>
 
-    <!-- 导出对话框 -->
-    <el-dialog v-model="showExportDialog" title="导出积分记录" width="420px">
-      <el-form :model="exportForm" label-width="80px">
-        <el-form-item label="日期范围">
-          <el-date-picker
-            v-model="exportForm.dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="导出格式">
-          <el-radio-group v-model="exportForm.format">
-            <el-radio-button value="xlsx">Excel</el-radio-button>
-            <el-radio-button value="csv">CSV</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showExportDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleExport">导出</el-button>
-      </template>
-    </el-dialog>
+    <!-- 导出报表向导 -->
+    <ExportReportDialog
+      v-model="showExportDialog"
+      :students="studentStore.students"
+      :groups="groups"
+      :records="scoreStore.scoreRecords"
+    />
 
     <!-- 管理员密码验证对话框 -->
     <el-dialog v-model="showAdminRevertDialog" title="管理员验证" width="400px" destroy-on-close>
@@ -289,9 +271,10 @@ import { useStudentStore } from '@/stores/student'
 import { groupApi } from '@/services/group'
 import type { EvaluationItem, StudentGroup } from '@/types'
 import api from '@/services/api'
-import { readExcelFile, exportToExcel, exportToCSV } from '@/utils/excelHelper'
+import { readExcelFile } from '@/utils/excelHelper'
 import type { UploadFile } from 'element-plus'
 import ScoreHistory from '@/components/score/ScoreHistory.vue'
+import ExportReportDialog from '@/components/score/ExportReportDialog.vue'
 
 const scoreStore = useScoreStore()
 const studentStore = useStudentStore()
@@ -335,12 +318,6 @@ const importPreviewEntries = ref<ImportPreviewEntry[]>([])
 const importResultTitle = computed(() => {
   if (importResult.failCount === 0) return '导入完成'
   return '导入完成（部分失败）'
-})
-
-// 导出相关状态
-const exportForm = reactive({
-  dateRange: null as [Date, Date] | null,
-  format: 'xlsx' as 'xlsx' | 'csv',
 })
 
 onMounted(async () => {
@@ -578,53 +555,6 @@ function closeImportDialog() {
   importMapping.numberColumnIndex = -1
   importMapping.scoreColumnIndex = -1
   importMapping.reasonColumnIndex = -1
-}
-
-// ========== 导出功能 ==========
-
-function handleExport() {
-  let records = scoreStore.recentRecords
-
-  // 日期过滤
-  if (exportForm.dateRange) {
-    const [start, end] = exportForm.dateRange
-    records = records.filter(r => {
-      const date = new Date(r.createdAt)
-      return date >= start && date <= end
-    })
-  }
-
-  if (records.length === 0) {
-    ElMessage.warning('没有可导出的记录')
-    return
-  }
-
-  const columns = [
-    { header: '学生姓名', key: 'studentName' },
-    { header: '积分变动', key: 'scoreChange' },
-    { header: '原因', key: 'reason' },
-    { header: '时间', key: 'createdAt' },
-    { header: '是否撤销', key: 'isReverted' },
-  ]
-
-  const data = records.map(r => ({
-    studentName: r.studentName,
-    scoreChange: r.scoreChange,
-    reason: r.reason,
-    createdAt: new Date(r.createdAt).toLocaleString('zh-CN'),
-    isReverted: r.isReverted ? '是' : '否',
-  }))
-
-  const filename = `积分记录_${new Date().toISOString().slice(0, 10)}`
-
-  if (exportForm.format === 'xlsx') {
-    exportToExcel(data, columns, filename)
-  } else {
-    exportToCSV(data, columns, filename)
-  }
-
-  ElMessage.success(`已导出 ${records.length} 条记录`)
-  showExportDialog.value = false
 }
 </script>
 
