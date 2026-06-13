@@ -260,6 +260,7 @@ export function generateReport(
 
     row.push(student.name)
 
+    const periodMap = studentPeriodData.get(student.id)!
     let rangeNet = 0
     for (const key of periodKeys) {
       const data = periodMap.get(key)!
