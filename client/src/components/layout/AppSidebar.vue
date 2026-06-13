@@ -59,6 +59,14 @@
             <el-icon><Setting /></el-icon>
             <template #title>设置</template>
           </el-menu-item>
+          <el-menu-item index="/admin/plugins">
+            <el-icon><Box /></el-icon>
+            <template #title>插件管理</template>
+          </el-menu-item>
+          <el-menu-item index="/admin/themes">
+            <el-icon><Brush /></el-icon>
+            <template #title>主题包</template>
+          </el-menu-item>
           <el-menu-item index="/admin/admin-settings">
             <el-icon><Lock /></el-icon>
             <template #title>管理员设置</template>
@@ -87,6 +95,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   Trophy, User, Grid, Rank, Timer, Finished, Setting, Lock, InfoFilled,
+  Box, Brush,
 } from '@element-plus/icons-vue'
 import { Expand, Fold } from '@element-plus/icons-vue'
 

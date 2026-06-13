@@ -41,6 +41,8 @@ const pageTitles: Record<string, string> = {
   '/admin/evaluation': '自动评估',
   '/admin/settlement': '结算',
   '/admin/settings': '设置',
+  '/admin/plugins': '插件管理',
+  '/admin/themes': '主题包',
   '/admin/admin-settings': '管理员设置',
   '/admin/about': '关于',
 }

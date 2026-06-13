@@ -66,6 +66,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '设置', icon: 'Setting' },
       },
       {
+        path: 'plugins',
+        name: 'PluginManagement',
+        component: () => import('@/views/admin/PluginManagement.vue'),
+        meta: { title: '插件管理', icon: 'Box' },
+      },
+      {
+        path: 'themes',
+        name: 'ThemeManagement',
+        component: () => import('@/views/admin/ThemeManagement.vue'),
+        meta: { title: '主题包', icon: 'Brush' },
+      },
+      {
         path: 'admin-settings',
         name: 'AdminSettings',
         component: () => import('@/views/admin/AdminSettings.vue'),

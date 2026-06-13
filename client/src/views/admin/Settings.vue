@@ -196,69 +196,17 @@
         </el-card>
       </el-tab-pane>
 
-      <el-tab-pane label="插件管理" name="plugins">
-        <el-card class="settings-page__card">
-          <div class="plugin-list">
-            <div v-for="plugin in plugins" :key="plugin.id" class="plugin-item">
-              <div class="plugin-item__info">
-                <div class="plugin-item__header">
-                  <el-icon color="var(--cis-primary)"><Box /></el-icon>
-                  <span class="plugin-item__name">{{ plugin.name }}</span>
-                  <el-tag size="small" type="info">v{{ plugin.version }}</el-tag>
-                </div>
-                <div class="plugin-item__meta">
-                  <span>作者: {{ plugin.author }}</span>
-                  <span>{{ plugin.description }}</span>
-                </div>
-              </div>
-              <el-switch v-model="plugin.enabled" @change="handlePluginToggle(plugin)" />
-            </div>
-            <el-empty v-if="plugins.length === 0" description="暂无已安装插件" />
-          </div>
-        </el-card>
-      </el-tab-pane>
-
-      <el-tab-pane label="主题包" name="themes">
-        <el-card class="settings-page__card">
-          <div class="theme-list">
-            <div v-for="theme in themes" :key="theme.id" class="theme-item">
-              <div class="theme-item__info">
-                <div class="theme-item__header">
-                  <el-icon color="var(--cis-primary)"><Brush /></el-icon>
-                  <span class="theme-item__name">{{ theme.name }}</span>
-                  <el-tag size="small" type="info">v{{ theme.version }}</el-tag>
-                </div>
-                <div class="theme-item__meta">
-                  <span>作者: {{ theme.author }}</span>
-                  <span>{{ theme.description }}</span>
-                </div>
-              </div>
-              <div class="theme-item__actions">
-                <el-switch v-model="theme.enabled" @change="handleThemeToggle(theme)" />
-                <el-button type="danger" size="small" text @click="handleDeleteTheme(theme.id)">删除</el-button>
-              </div>
-            </div>
-            <el-empty v-if="themes.length === 0" description="暂无已安装主题包" />
-          </div>
-          <div class="theme-import">
-            <el-button @click="handleImportTheme">
-              <el-icon><Upload /></el-icon>
-              导入主题包 (.cisui)
-            </el-button>
-          </div>
-        </el-card>
-      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { Box, Brush, Upload, Download, Plus } from '@element-plus/icons-vue'
+import { Upload, Download, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSettingsStore } from '@/stores/settings'
 import { DisplayMode } from '@/types'
-import type { PluginManifest, ThemeManifest, Student, StudentGroup, EvaluationItem } from '@/types'
+import type { Student, StudentGroup, EvaluationItem } from '@/types'
 import { ALL_PET_TYPES } from '@/utils/petSystem'
 import api from '@/services/api'
 import { studentApi } from '@/services/student'
@@ -308,8 +256,6 @@ const floatingSettings = reactive({
   accentColor: '#409EFF',
 })
 
-const plugins = ref<Array<PluginManifest & { enabled: boolean }>>([])
-const themes = ref<Array<ThemeManifest & { enabled: boolean }>>([])
 const dataLoading = ref(false)
 const dataFolderPath = ref('')
 const importFileInput = ref<HTMLInputElement | null>(null)
@@ -330,24 +276,10 @@ const petSettings = reactive({
 onMounted(async () => {
   await settingsStore.fetchSettings()
   Object.assign(settings, settingsStore.settings)
-  await Promise.all([fetchPlugins(), fetchThemes(), fetchFloatingSettings(), fetchDataFolderPath()])
+  await Promise.all([fetchFloatingSettings(), fetchDataFolderPath()])
   loadCustomQuickScores()
   loadPetSettings()
 })
-
-async function fetchPlugins() {
-  try {
-    const response = await api.get<{ data: Array<PluginManifest & { enabled: boolean }> }>('/api/plugins')
-    plugins.value = response.data.data
-  } catch { /* ignore */ }
-}
-
-async function fetchThemes() {
-  try {
-    const response = await api.get<{ data: Array<ThemeManifest & { enabled: boolean }> }>('/api/themes')
-    themes.value = response.data.data
-  } catch { /* ignore */ }
-}
 
 async function fetchFloatingSettings() {
   try {
@@ -408,36 +340,6 @@ async function handleFloatingSave() {
   } catch {
     ElMessage.error('保存悬浮窗设置失败')
   }
-}
-
-async function handlePluginToggle(plugin: PluginManifest & { enabled: boolean }) {
-  try {
-    await api.put(`/api/plugins/${plugin.id}/toggle`, { enabled: plugin.enabled })
-    ElMessage.success(plugin.enabled ? '已启用插件' : '已禁用插件')
-    promptRelaunch('插件状态变更')
-  } catch { /* ignore */ }
-}
-
-async function handleThemeToggle(theme: ThemeManifest & { enabled: boolean }) {
-  try {
-    await api.put(`/api/themes/${theme.id}/toggle`, { enabled: theme.enabled })
-    ElMessage.success(theme.enabled ? '已启用主题' : '已禁用主题')
-    promptRelaunch('主题包状态变更')
-  } catch { /* ignore */ }
-}
-
-async function handleDeleteTheme(id: string) {
-  await ElMessageBox.confirm('确定删除该主题包？', '确认删除', { type: 'warning' })
-  try {
-    await api.delete(`/api/themes/${id}`)
-    ElMessage.success('已删除')
-    await fetchThemes()
-    promptRelaunch('删除主题包')
-  } catch { /* ignore */ }
-}
-
-function handleImportTheme() {
-  ElMessage.info('请将 .cisui 主题包文件放入主题目录')
 }
 
 // ===== 数据管理 =====
@@ -730,66 +632,6 @@ function handleOpenDataFolder() {
 
 .settings-page__card:hover {
   box-shadow: var(--cis-shadow-card-hover);
-}
-
-/* 插件列表 */
-.plugin-list, .theme-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.plugin-item, .theme-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border: 1px solid var(--cis-border-color-light);
-  border-radius: var(--cis-radius-lg);
-  background: var(--cis-card-bg);
-  box-shadow: var(--cis-shadow-card);
-  transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
-}
-
-.plugin-item:hover, .theme-item:hover {
-  box-shadow: var(--cis-shadow-card-hover);
-  transform: translateY(-1px);
-}
-
-.plugin-item__info, .theme-item__info {
-  flex: 1;
-}
-
-.plugin-item__header, .theme-item__header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.plugin-item__name, .theme-item__name {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--cis-text-primary);
-}
-
-.plugin-item__meta, .theme-item__meta {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: var(--cis-text-tertiary);
-}
-
-.theme-item__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.theme-import {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--cis-border-color-light);
 }
 
 /* 数据管理 */
