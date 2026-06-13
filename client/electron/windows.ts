@@ -1,12 +1,14 @@
-import { BrowserWindow, screen } from 'electron'
+import { BrowserWindow, screen, nativeImage } from 'electron'
 import path from 'path'
 
 export function createMainWindow(): BrowserWindow {
+  const iconPath = path.join(__dirname, '../resources/icon.png')
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     center: true,
     title: 'ClassIsScore',
+    icon: nativeImage.createFromPath(iconPath),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -31,6 +33,7 @@ export function createMainWindow(): BrowserWindow {
 export function createDisplayWindow(): BrowserWindow {
   const primaryDisplay = screen.getPrimaryDisplay()
   const { width, height } = primaryDisplay.workAreaSize
+  const iconPath = path.join(__dirname, '../resources/icon.png')
 
   const displayWindow = new BrowserWindow({
     width,
@@ -39,6 +42,7 @@ export function createDisplayWindow(): BrowserWindow {
     focusable: false,
     skipTaskbar: true,
     title: 'ClassIsScore - 大屏展示',
+    icon: nativeImage.createFromPath(iconPath),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
