@@ -15,38 +15,19 @@
           <el-icon><Operation /></el-icon>
           批量操作
         </el-button>
-        <el-button type="primary" @click="showAddDialog = true">
-          <el-icon><Plus /></el-icon>
-          自定义积分
-        </el-button>
       </div>
     </div>
 
-    <div class="score-management__content">
-      <div class="score-management__panel">
-        <QuickScorePanel
-          :evaluation-items="evaluationItems"
-          :students="studentStore.students"
-          @score="handleQuickScore"
-        />
-      </div>
-
-      <div class="score-management__history">
-        <ScoreHistory
-          :records="scoreStore.recentRecords"
-          :evaluation-items="evaluationItems"
-          :loading="scoreStore.loading"
-          @revert="handleRevert"
-          @admin-revert="handleAdminRevert"
-        />
-      </div>
-    </div>
-
-    <!-- 自定义积分对话框 -->
-    <el-dialog v-model="showAddDialog" title="自定义积分" width="480px" destroy-on-close>
-      <el-form :model="addForm" label-width="80px">
-        <el-form-item label="学生" required>
-          <el-select v-model="addForm.studentId" placeholder="选择学生" filterable style="width: 100%">
+    <!-- 内联积分操作区 -->
+    <div class="score-management__operator">
+      <div class="score-operator">
+        <div class="score-operator__row">
+          <el-select
+            v-model="addForm.studentId"
+            placeholder="选择学生"
+            filterable
+            class="score-operator__student-select"
+          >
             <el-option
               v-for="s in studentStore.students"
               :key="s.id"
@@ -57,19 +38,57 @@
               <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px">{{ s.score }}分</span>
             </el-option>
           </el-select>
-        </el-form-item>
-        <el-form-item label="积分变动" required>
-          <el-input-number v-model="addForm.scoreChange" :step="1" :min="-100" :max="100" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="原因" required>
-          <el-input v-model="addForm.reason" placeholder="请输入原因" maxlength="50" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddDialog = false">取消</el-button>
-        <el-button type="primary" :loading="scoreStore.loading" @click="handleAddScore">确定</el-button>
-      </template>
-    </el-dialog>
+          <el-input-number
+            v-model="addForm.scoreChange"
+            :step="1"
+            :min="-100"
+            :max="100"
+            controls-position="right"
+            class="score-operator__score-input"
+          />
+          <el-input
+            v-model="addForm.reason"
+            placeholder="请输入原因"
+            maxlength="50"
+            class="score-operator__reason-input"
+            @keyup.enter="handleAddScore"
+          />
+          <el-button type="success" :loading="scoreStore.loading" @click="handleAddScore">
+            加分
+          </el-button>
+          <el-button type="danger" :loading="scoreStore.loading" @click="handleSubtractScore">
+            减分
+          </el-button>
+        </div>
+        <!-- 快捷评价项 -->
+        <div class="score-operator__quick">
+          <span class="score-operator__quick-label">快捷：</span>
+          <div class="score-operator__quick-items">
+            <div
+              v-for="item in evaluationItems"
+              :key="item.id"
+              :class="['score-operator__quick-item', item.isPositive ? 'score-operator__quick-item--positive' : 'score-operator__quick-item--negative']"
+              @click="applyEvaluationItem(item)"
+            >
+              <span class="score-operator__quick-item-name">{{ item.name }}</span>
+              <span class="score-operator__quick-item-value">{{ item.isPositive ? '+' : '' }}{{ item.scoreChange }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="score-management__content">
+      <div class="score-management__history">
+        <ScoreHistory
+          :records="scoreStore.recentRecords"
+          :evaluation-items="evaluationItems"
+          :loading="scoreStore.loading"
+          @revert="handleRevert"
+          @admin-revert="handleAdminRevert"
+        />
+      </div>
+    </div>
 
     <!-- 批量操作对话框 -->
     <el-dialog v-model="showBatchDialog" title="批量积分" width="520px" destroy-on-close>
@@ -263,7 +282,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { Plus, Operation, Upload, Download } from '@element-plus/icons-vue'
+import { Operation, Upload, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useScoreStore } from '@/stores/score'
 import { useStudentStore } from '@/stores/student'
@@ -272,13 +291,11 @@ import type { EvaluationItem, StudentGroup } from '@/types'
 import api from '@/services/api'
 import { readExcelFile, exportToExcel, exportToCSV } from '@/utils/excelHelper'
 import type { UploadFile } from 'element-plus'
-import QuickScorePanel from '@/components/score/QuickScorePanel.vue'
 import ScoreHistory from '@/components/score/ScoreHistory.vue'
 
 const scoreStore = useScoreStore()
 const studentStore = useStudentStore()
 
-const showAddDialog = ref(false)
 const showBatchDialog = ref(false)
 const showImportDialog = ref(false)
 const showExportDialog = ref(false)
@@ -359,24 +376,49 @@ async function fetchGroups() {
   } catch { /* ignore */ }
 }
 
-async function handleQuickScore(studentId: string, item: EvaluationItem) {
-  try {
-    await scoreStore.addScore(studentId, item.scoreChange, item.name)
-    ElMessage.success(`已为 ${studentStore.getStudentById(studentId)?.name || '学生'} ${item.isPositive ? '加' : '扣'}${Math.abs(item.scoreChange)}分`)
-  } catch { /* error handled in store */ }
+function applyEvaluationItem(item: EvaluationItem) {
+  addForm.scoreChange = Math.abs(item.scoreChange)
+  addForm.reason = item.name
 }
 
 async function handleAddScore() {
-  if (!addForm.studentId || !addForm.reason) {
-    ElMessage.warning('请填写完整信息')
+  if (!addForm.studentId) {
+    ElMessage.warning('请选择学生')
+    return
+  }
+  if (!addForm.reason) {
+    ElMessage.warning('请输入原因')
+    return
+  }
+  if (addForm.scoreChange <= 0) {
+    ElMessage.warning('加分分数必须大于0')
     return
   }
   try {
+    const student = studentStore.getStudentById(addForm.studentId)
     await scoreStore.addScore(addForm.studentId, addForm.scoreChange, addForm.reason)
-    ElMessage.success('积分已添加')
-    showAddDialog.value = false
-    addForm.studentId = ''
-    addForm.scoreChange = 1
+    ElMessage.success(`已为 ${student?.name || '学生'} 加 ${addForm.scoreChange} 分`)
+    addForm.reason = ''
+  } catch { /* error handled in store */ }
+}
+
+async function handleSubtractScore() {
+  if (!addForm.studentId) {
+    ElMessage.warning('请选择学生')
+    return
+  }
+  if (!addForm.reason) {
+    ElMessage.warning('请输入原因')
+    return
+  }
+  if (addForm.scoreChange <= 0) {
+    ElMessage.warning('减分分数必须大于0')
+    return
+  }
+  try {
+    const student = studentStore.getStudentById(addForm.studentId)
+    await scoreStore.addScore(addForm.studentId, -addForm.scoreChange, addForm.reason)
+    ElMessage.success(`已为 ${student?.name || '学生'} 减 ${addForm.scoreChange} 分`)
     addForm.reason = ''
   } catch { /* error handled in store */ }
 }
@@ -614,29 +656,142 @@ function handleExport() {
   gap: 8px;
 }
 
-.score-management__content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  align-items: start;
+/* 内联积分操作区 */
+.score-management__operator {
+  margin-bottom: 20px;
 }
 
-.score-management__panel,
-.score-management__history {
+.score-operator {
+  background: var(--cis-card-bg);
+  border-radius: var(--cis-radius-lg);
+  box-shadow: var(--cis-shadow-card);
+  padding: 16px 20px;
+  border: 1px solid var(--cis-border-color-light);
+  transition: box-shadow var(--cis-transition-fast);
+}
+
+.score-operator:hover {
+  box-shadow: var(--cis-shadow-card-hover);
+}
+
+.score-operator__row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.score-operator__student-select {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.score-operator__score-input {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.score-operator__reason-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.score-operator__quick {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cis-border-color-lighter, rgba(0, 0, 0, 0.06));
+}
+
+.score-operator__quick-label {
+  font-size: 13px;
+  color: var(--cis-text-secondary);
+  line-height: 32px;
+  flex-shrink: 0;
+}
+
+.score-operator__quick-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.score-operator__quick-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: var(--cis-radius-md, 6px);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all var(--cis-transition-fast, 0.15s);
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.score-operator__quick-item:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--cis-shadow-card);
+}
+
+.score-operator__quick-item:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.score-operator__quick-item--positive {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.15));
+  color: var(--cis-success, #22c55e);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.score-operator__quick-item--positive:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.2));
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+}
+
+.score-operator__quick-item--negative {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.15));
+  color: var(--cis-danger, #ef4444);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.score-operator__quick-item--negative:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.2));
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.score-operator__quick-item-name {
+  font-weight: 500;
+}
+
+.score-operator__quick-item-value {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.score-management__content {
   background: var(--cis-card-bg);
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
 }
 
-.score-management__panel:hover,
-.score-management__history:hover {
+.score-management__content:hover {
   box-shadow: var(--cis-shadow-card-hover);
 }
 
 @media (max-width: 900px) {
-  .score-management__content {
-    grid-template-columns: 1fr;
+  .score-operator__row {
+    flex-wrap: wrap;
+  }
+  .score-operator__student-select {
+    width: 100%;
+  }
+  .score-operator__score-input {
+    width: 120px;
   }
 }
 </style>
