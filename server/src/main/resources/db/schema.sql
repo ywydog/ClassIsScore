@@ -60,6 +60,23 @@ MERGE INTO admin_settings (setting_key, setting_value) KEY(setting_key) VALUES (
 MERGE INTO admin_settings (setting_key, setting_value) KEY(setting_key) VALUES ('default_score', '0');
 MERGE INTO admin_settings (setting_key, setting_value) KEY(setting_key) VALUES ('enable_websocket', 'true');
 
+CREATE TABLE IF NOT EXISTS auto_evaluation_config (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    trigger_type VARCHAR(30) NOT NULL DEFAULT 'Daily',
+    trigger_time VARCHAR(10),
+    day_of_week INT,
+    day_of_month INT,
+    evaluation_item_id BIGINT,
+    score_change DOUBLE,
+    reason VARCHAR(500),
+    target_type VARCHAR(30) NOT NULL DEFAULT 'AllStudents',
+    target_group_id BIGINT,
+    target_student_id BIGINT,
+    is_enabled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 默认评估项
 MERGE INTO evaluation_item (id, name, score_change, category, is_quick_access) KEY(id) VALUES (1, '按时交作业', 2, '作业', TRUE);
 MERGE INTO evaluation_item (id, name, score_change, category, is_quick_access) KEY(id) VALUES (2, '未交作业', -2, '作业', TRUE);

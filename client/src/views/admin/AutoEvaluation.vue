@@ -5,25 +5,8 @@
     </div>
 
     <div class="auto-evaluation__content">
-      <el-card class="auto-evaluation__config-card">
-        <template #header>
-          <div class="card-header">
-            <span>评估配置</span>
-            <el-switch v-model="config.enabled" active-text="启用" inactive-text="停用" />
-          </div>
-        </template>
-        <el-form label-width="100px">
-          <el-form-item label="评估周期">
-            <el-select v-model="config.period">
-              <el-option label="每日" value="daily" />
-              <el-option label="每周" value="weekly" />
-              <el-option label="每月" value="monthly" />
-            </el-select>
-          </el-form-item>
-        </el-form>
-      </el-card>
-
-      <el-card class="auto-evaluation__items-card">
+      <!-- 评估项目 Section -->
+      <el-card class="auto-evaluation__card">
         <template #header>
           <div class="card-header">
             <span>评估项目</span>
@@ -37,15 +20,15 @@
           <el-table-column prop="name" label="名称" />
           <el-table-column prop="scoreChange" label="积分变动" width="120">
             <template #default="{ row }">
-              <span :class="row.isPositive ? 'score-positive' : 'score-negative'">
-                {{ row.isPositive ? '+' : '' }}{{ row.scoreChange }}
+              <span :class="row.scoreChange >= 0 ? 'score-positive' : 'score-negative'">
+                {{ row.scoreChange >= 0 ? '+' : '' }}{{ row.scoreChange }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="类型" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.isPositive ? 'success' : 'danger'" size="small">
-                {{ row.isPositive ? '加分' : '扣分' }}
+              <el-tag :type="row.scoreChange >= 0 ? 'success' : 'danger'" size="small">
+                {{ row.scoreChange >= 0 ? '加分' : '扣分' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -57,8 +40,65 @@
           </el-table-column>
         </el-table>
       </el-card>
+
+      <!-- 自动评估配置 Section -->
+      <el-card class="auto-evaluation__card">
+        <template #header>
+          <div class="card-header">
+            <span>自动评估配置</span>
+            <el-button type="primary" size="small" @click="openConfigDialog()">
+              <el-icon><Plus /></el-icon>
+              添加配置
+            </el-button>
+          </div>
+        </template>
+        <el-table :data="configList" stripe empty-text="暂无自动评估配置">
+          <el-table-column prop="name" label="名称" min-width="120" />
+          <el-table-column label="触发方式" width="120">
+            <template #default="{ row }">
+              <el-tag size="small" :type="triggerTagType(row.triggerType)">
+                {{ triggerLabel(row.triggerType) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="触发时间" width="100">
+            <template #default="{ row }">
+              {{ formatTriggerTime(row) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="目标" width="120">
+            <template #default="{ row }">
+              {{ targetLabel(row) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="积分变动" width="100">
+            <template #default="{ row }">
+              <span :class="(row.scoreChange ?? 0) >= 0 ? 'score-positive' : 'score-negative'">
+                {{ (row.scoreChange ?? 0) >= 0 ? '+' : '' }}{{ row.scoreChange }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="reason" label="原因" min-width="120" show-overflow-tooltip />
+          <el-table-column label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <el-switch
+                :model-value="row.isEnabled"
+                size="small"
+                @change="handleToggleConfig(row)"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="140">
+            <template #default="{ row }">
+              <el-button type="primary" size="small" text @click="openConfigDialog(row)">编辑</el-button>
+              <el-button type="danger" size="small" text @click="handleDeleteConfig(row.id)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
     </div>
 
+    <!-- 评估项目对话框 -->
     <el-dialog v-model="showItemDialog" :title="editingItem ? '编辑评估项' : '添加评估项'" width="420px">
       <el-form :model="itemForm" label-width="80px">
         <el-form-item label="名称" required>
@@ -79,6 +119,101 @@
         <el-button type="primary" @click="handleSaveItem">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 自动评估配置对话框 -->
+    <el-dialog v-model="showConfigDialog" :title="editingConfig ? '编辑自动评估配置' : '添加自动评估配置'" width="520px">
+      <el-form :model="configForm" label-width="100px">
+        <el-form-item label="配置名称" required>
+          <el-input v-model="configForm.name" placeholder="如：每日签到加分" />
+        </el-form-item>
+        <el-form-item label="触发方式" required>
+          <el-select v-model="configForm.triggerType" placeholder="选择触发方式" style="width: 100%">
+            <el-option label="每天" value="Daily" />
+            <el-option label="每周" value="Weekly" />
+            <el-option label="每月" value="Monthly" />
+            <el-option label="结算前" value="BeforeSettlement" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="configForm.triggerType !== 'BeforeSettlement'" label="触发时间">
+          <el-time-picker
+            v-model="configForm.triggerTimeObj"
+            format="HH:mm"
+            placeholder="选择时间"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item v-if="configForm.triggerType === 'Weekly'" label="星期">
+          <el-select v-model="configForm.dayOfWeek" placeholder="选择星期" style="width: 100%">
+            <el-option label="周一" :value="1" />
+            <el-option label="周二" :value="2" />
+            <el-option label="周三" :value="3" />
+            <el-option label="周四" :value="4" />
+            <el-option label="周五" :value="5" />
+            <el-option label="周六" :value="6" />
+            <el-option label="周日" :value="7" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="configForm.triggerType === 'Monthly'" label="日期">
+          <el-input-number v-model="configForm.dayOfMonth" :min="1" :max="31" placeholder="几号" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="评估项目">
+          <el-select
+            v-model="configForm.evaluationItemId"
+            placeholder="选择评估项目（可选）"
+            clearable
+            style="width: 100%"
+            @change="onEvaluationItemChange"
+          >
+            <el-option
+              v-for="item in evaluationItems"
+              :key="item.id"
+              :label="item.name"
+              :value="Number(item.id)"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="积分变动">
+          <el-input-number v-model="configForm.scoreChange" :min="-1000" :max="1000" :precision="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="原因">
+          <el-input v-model="configForm.reason" placeholder="评估原因" />
+        </el-form-item>
+        <el-form-item label="目标类型" required>
+          <el-select v-model="configForm.targetType" placeholder="选择目标类型" style="width: 100%">
+            <el-option label="所有学生" value="AllStudents" />
+            <el-option label="指定小组" value="SpecificGroup" />
+            <el-option label="指定学生" value="SpecificStudent" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="configForm.targetType === 'SpecificGroup'" label="目标小组">
+          <el-select v-model="configForm.targetGroupId" placeholder="选择小组" style="width: 100%">
+            <el-option
+              v-for="g in groups"
+              :key="g.id"
+              :label="g.name"
+              :value="Number(g.id)"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="configForm.targetType === 'SpecificStudent'" label="目标学生">
+          <el-select v-model="configForm.targetStudentId" placeholder="选择学生" filterable style="width: 100%">
+            <el-option
+              v-for="s in students"
+              :key="s.id"
+              :label="s.name"
+              :value="Number(s.id)"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="启用">
+          <el-switch v-model="configForm.isEnabled" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showConfigDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleSaveConfig">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -86,14 +221,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { EvaluationItem } from '@/types'
+import type { EvaluationItem, AutoEvaluationConfig, StudentGroup, Student } from '@/types'
 import api from '@/services/api'
 
-const config = reactive({
-  enabled: false,
-  period: 'daily',
-})
-
+// ==================== 评估项目 ====================
 const evaluationItems = ref<EvaluationItem[]>([])
 const showItemDialog = ref(false)
 const editingItem = ref<EvaluationItem | null>(null)
@@ -104,17 +235,11 @@ const itemForm = reactive({
   isPositive: true,
 })
 
-onMounted(async () => {
-  await fetchItems()
-})
-
 async function fetchItems() {
   try {
-    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluations')
+    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluation/items')
     evaluationItems.value = response.data.data
-  } catch {
-    // use defaults
-  }
+  } catch { /* ignore */ }
 }
 
 function openItemDialog(item?: EvaluationItem) {
@@ -122,7 +247,7 @@ function openItemDialog(item?: EvaluationItem) {
   if (item) {
     itemForm.name = item.name
     itemForm.scoreChange = item.scoreChange
-    itemForm.isPositive = item.isPositive
+    itemForm.isPositive = item.scoreChange >= 0
   } else {
     itemForm.name = ''
     itemForm.scoreChange = 1
@@ -136,11 +261,16 @@ async function handleSaveItem() {
     ElMessage.warning('请输入名称')
     return
   }
+  const payload = {
+    name: itemForm.name,
+    scoreChange: itemForm.isPositive ? Math.abs(itemForm.scoreChange) : -Math.abs(itemForm.scoreChange),
+    isPositive: itemForm.isPositive,
+  }
   try {
     if (editingItem.value) {
-      await api.put(`/api/evaluations/${editingItem.value.id}`, itemForm)
+      await api.put(`/api/evaluation/items/${editingItem.value.id}`, payload)
     } else {
-      await api.post('/api/evaluations', itemForm)
+      await api.post('/api/evaluation/items', payload)
     }
     ElMessage.success('已保存')
     showItemDialog.value = false
@@ -151,11 +281,211 @@ async function handleSaveItem() {
 async function handleDeleteItem(id: string) {
   await ElMessageBox.confirm('确定删除该评估项？', '确认', { type: 'warning' })
   try {
-    await api.delete(`/api/evaluations/${id}`)
+    await api.delete(`/api/evaluation/items/${id}`)
     ElMessage.success('已删除')
     await fetchItems()
   } catch { /* ignore */ }
 }
+
+// ==================== 自动评估配置 ====================
+const configList = ref<AutoEvaluationConfig[]>([])
+const showConfigDialog = ref(false)
+const editingConfig = ref<AutoEvaluationConfig | null>(null)
+const groups = ref<StudentGroup[]>([])
+const students = ref<Student[]>([])
+
+const configForm = reactive({
+  name: '',
+  triggerType: 'Daily' as AutoEvaluationConfig['triggerType'],
+  triggerTimeObj: null as Date | null,
+  dayOfWeek: null as number | null,
+  dayOfMonth: null as number | null,
+  evaluationItemId: null as number | null,
+  scoreChange: null as number | null,
+  reason: '',
+  targetType: 'AllStudents' as AutoEvaluationConfig['targetType'],
+  targetGroupId: null as number | null,
+  targetStudentId: null as number | null,
+  isEnabled: false,
+})
+
+async function fetchConfigs() {
+  try {
+    const response = await api.get<{ data: AutoEvaluationConfig[] }>('/api/auto-evaluation-configs')
+    configList.value = response.data.data
+  } catch { /* ignore */ }
+}
+
+async function fetchGroups() {
+  try {
+    const response = await api.get<{ data: StudentGroup[] }>('/api/groups')
+    groups.value = response.data.data
+  } catch { /* ignore */ }
+}
+
+async function fetchStudents() {
+  try {
+    const response = await api.get<{ data: { records: Student[] } }>('/api/students?current=1&size=9999')
+    students.value = response.data.data.records || []
+  } catch { /* ignore */ }
+}
+
+function triggerLabel(type: string): string {
+  const map: Record<string, string> = {
+    Daily: '每天',
+    Weekly: '每周',
+    Monthly: '每月',
+    BeforeSettlement: '结算前',
+  }
+  return map[type] || type
+}
+
+function triggerTagType(type: string): string {
+  const map: Record<string, string> = {
+    Daily: '',
+    Weekly: 'success',
+    Monthly: 'warning',
+    BeforeSettlement: 'danger',
+  }
+  return map[type] || ''
+}
+
+function formatTriggerTime(row: AutoEvaluationConfig): string {
+  if (row.triggerType === 'BeforeSettlement') return '—'
+  if (row.triggerType === 'Weekly' && row.dayOfWeek) {
+    const days = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    return `${days[row.dayOfWeek] || ''} ${row.triggerTime || ''}`
+  }
+  if (row.triggerType === 'Monthly' && row.dayOfMonth) {
+    return `${row.dayOfMonth}日 ${row.triggerTime || ''}`
+  }
+  return row.triggerTime || '—'
+}
+
+function targetLabel(row: AutoEvaluationConfig): string {
+  if (row.targetType === 'AllStudents') return '所有学生'
+  if (row.targetType === 'SpecificGroup') {
+    const g = groups.value.find(g => String(g.id) === String(row.targetGroupId))
+    return g ? g.name : '未知小组'
+  }
+  if (row.targetType === 'SpecificStudent') {
+    const s = students.value.find(s => String(s.id) === String(row.targetStudentId))
+    return s ? s.name : '未知学生'
+  }
+  return '—'
+}
+
+function onEvaluationItemChange(itemId: number | null) {
+  if (!itemId) return
+  const item = evaluationItems.value.find(i => Number(i.id) === itemId)
+  if (item) {
+    configForm.scoreChange = item.scoreChange
+    configForm.reason = item.name
+  }
+}
+
+function resetConfigForm() {
+  configForm.name = ''
+  configForm.triggerType = 'Daily'
+  configForm.triggerTimeObj = null
+  configForm.dayOfWeek = null
+  configForm.dayOfMonth = null
+  configForm.evaluationItemId = null
+  configForm.scoreChange = null
+  configForm.reason = ''
+  configForm.targetType = 'AllStudents'
+  configForm.targetGroupId = null
+  configForm.targetStudentId = null
+  configForm.isEnabled = false
+}
+
+function openConfigDialog(config?: AutoEvaluationConfig) {
+  editingConfig.value = config || null
+  if (config) {
+    configForm.name = config.name
+    configForm.triggerType = config.triggerType
+    configForm.triggerTimeObj = config.triggerTime ? parseTime(config.triggerTime) : null
+    configForm.dayOfWeek = config.dayOfWeek
+    configForm.dayOfMonth = config.dayOfMonth
+    configForm.evaluationItemId = config.evaluationItemId ? Number(config.evaluationItemId) : null
+    configForm.scoreChange = config.scoreChange
+    configForm.reason = config.reason || ''
+    configForm.targetType = config.targetType
+    configForm.targetGroupId = config.targetGroupId ? Number(config.targetGroupId) : null
+    configForm.targetStudentId = config.targetStudentId ? Number(config.targetStudentId) : null
+    configForm.isEnabled = config.isEnabled
+  } else {
+    resetConfigForm()
+  }
+  showConfigDialog.value = true
+}
+
+function parseTime(timeStr: string): Date | null {
+  const parts = timeStr.split(':')
+  if (parts.length < 2) return null
+  const d = new Date()
+  d.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0)
+  return d
+}
+
+function formatTimeObj(date: Date | null): string {
+  if (!date) return ''
+  const h = String(date.getHours()).padStart(2, '0')
+  const m = String(date.getMinutes()).padStart(2, '0')
+  return `${h}:${m}`
+}
+
+async function handleSaveConfig() {
+  if (!configForm.name) {
+    ElMessage.warning('请输入配置名称')
+    return
+  }
+  const payload = {
+    name: configForm.name,
+    triggerType: configForm.triggerType,
+    triggerTime: configForm.triggerType !== 'BeforeSettlement' ? formatTimeObj(configForm.triggerTimeObj) : null,
+    dayOfWeek: configForm.triggerType === 'Weekly' ? configForm.dayOfWeek : null,
+    dayOfMonth: configForm.triggerType === 'Monthly' ? configForm.dayOfMonth : null,
+    evaluationItemId: configForm.evaluationItemId,
+    scoreChange: configForm.scoreChange,
+    reason: configForm.reason,
+    targetType: configForm.targetType,
+    targetGroupId: configForm.targetType === 'SpecificGroup' ? configForm.targetGroupId : null,
+    targetStudentId: configForm.targetType === 'SpecificStudent' ? configForm.targetStudentId : null,
+    isEnabled: configForm.isEnabled,
+  }
+  try {
+    if (editingConfig.value) {
+      await api.put(`/api/auto-evaluation-configs/${editingConfig.value.id}`, payload)
+    } else {
+      await api.post('/api/auto-evaluation-configs', payload)
+    }
+    ElMessage.success('已保存')
+    showConfigDialog.value = false
+    await fetchConfigs()
+  } catch { /* ignore */ }
+}
+
+async function handleToggleConfig(row: AutoEvaluationConfig) {
+  try {
+    await api.put(`/api/auto-evaluation-configs/${row.id}/toggle`)
+    await fetchConfigs()
+  } catch { /* ignore */ }
+}
+
+async function handleDeleteConfig(id: string) {
+  await ElMessageBox.confirm('确定删除该自动评估配置？', '确认', { type: 'warning' })
+  try {
+    await api.delete(`/api/auto-evaluation-configs/${id}`)
+    ElMessage.success('已删除')
+    await fetchConfigs()
+  } catch { /* ignore */ }
+}
+
+// ==================== 初始化 ====================
+onMounted(async () => {
+  await Promise.all([fetchItems(), fetchConfigs(), fetchGroups(), fetchStudents()])
+})
 </script>
 
 <style scoped>
@@ -185,19 +515,17 @@ async function handleDeleteItem(id: string) {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 800px;
+  max-width: 900px;
 }
 
-.auto-evaluation__config-card,
-.auto-evaluation__items-card {
+.auto-evaluation__card {
   background: var(--cis-card-bg);
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
 }
 
-.auto-evaluation__config-card:hover,
-.auto-evaluation__items-card:hover {
+.auto-evaluation__card:hover {
   box-shadow: var(--cis-shadow-card-hover);
 }
 

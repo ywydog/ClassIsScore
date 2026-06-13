@@ -2,6 +2,7 @@ package com.classisscore.server.controller;
 
 import com.classisscore.server.dto.ApiResult;
 import com.classisscore.server.service.AdminService;
+import com.classisscore.server.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private StudentService studentService;
 
     @PostMapping("/login")
     public ApiResult<Map<String, Object>> login(@RequestBody Map<String, String> body) {
@@ -45,5 +49,11 @@ public class AdminController {
     @GetMapping("/info")
     public ApiResult<Map<String, Object>> info() {
         return ApiResult.success(adminService.getAdminInfo());
+    }
+
+    @PostMapping("/reset")
+    public ApiResult<Void> reset() {
+        studentService.resetAllScores();
+        return ApiResult.success();
     }
 }

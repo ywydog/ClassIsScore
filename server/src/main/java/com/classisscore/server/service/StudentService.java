@@ -89,4 +89,14 @@ public class StudentService extends ServiceImpl<StudentMapper, Student> {
             this.updateById(student);
         }
     }
+
+    @Transactional
+    public void resetAllScores() {
+        List<Student> students = this.list();
+        for (Student student : students) {
+            student.setTotalScore(0);
+            student.setUpdatedAt(LocalDateTime.now());
+        }
+        this.updateBatchById(students);
+    }
 }

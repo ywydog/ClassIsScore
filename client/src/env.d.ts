@@ -18,5 +18,6 @@ interface Window {
     closeDisplayWindow: () => Promise<void>
     closeFloatingWindow: () => Promise<void>
     openWindow: (name: string) => Promise<void>
+    openPath: (path: string) => Promise<void>
   }
 }

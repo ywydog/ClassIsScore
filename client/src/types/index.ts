@@ -40,9 +40,31 @@ export interface EvaluationItem {
   createdAt: string
 }
 
+export interface AutoEvaluationConfig {
+  id: string
+  name: string
+  triggerType: 'Daily' | 'Weekly' | 'Monthly' | 'BeforeSettlement'
+  triggerTime: string
+  dayOfWeek: number | null
+  dayOfMonth: number | null
+  evaluationItemId: number | null
+  scoreChange: number | null
+  reason: string
+  targetType: 'AllStudents' | 'SpecificGroup' | 'SpecificStudent'
+  targetGroupId: number | null
+  targetStudentId: number | null
+  isEnabled: boolean
+  createdAt: string
+}
+
 export interface SettlementRecord {
   id: string
+  name?: string
+  period?: string
+  snapshotData?: string
+  status?: number
   settledAt: string
+  createdAt?: string
   studentCount: number
   totalScore: number
   backupFilePath: string

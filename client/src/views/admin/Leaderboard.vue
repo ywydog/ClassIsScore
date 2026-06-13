@@ -7,7 +7,16 @@
           <el-radio-button value="personal">个人</el-radio-button>
           <el-radio-button value="group">小组</el-radio-button>
         </el-radio-group>
+        <el-radio-group v-model="timeRange" size="small" @change="handleTimeRangeChange">
+          <el-radio-button value="today">今日</el-radio-button>
+          <el-radio-button value="week">本周</el-radio-button>
+          <el-radio-button value="month">本月</el-radio-button>
+          <el-radio-button value="all">全部</el-radio-button>
+        </el-radio-group>
         <el-button size="small" text :icon="Refresh" @click="fetchLeaderboard" />
+        <el-button size="small" type="primary" :icon="Download" @click="handleExport">
+          导出
+        </el-button>
       </div>
     </div>
 
@@ -57,12 +66,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Download } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry } from '@/types'
 import api from '@/services/api'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
+import { exportToExcel, type ExcelColumn } from '@/utils/excelHelper'
 
 const mode = ref<'personal' | 'group'>('personal')
+const timeRange = ref<'today' | 'week' | 'month' | 'all'>('all')
 const entries = ref<LeaderboardEntry[]>([])
 
 const topThree = computed(() => entries.value.slice(0, 3))
@@ -83,14 +95,81 @@ onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
 })
 
+function getTimeRangeParams(): { startTime?: string; endTime?: string } {
+  const now = new Date()
+  let startTime: Date | undefined
+
+  switch (timeRange.value) {
+    case 'today': {
+      startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+      break
+    }
+    case 'week': {
+      const day = now.getDay() || 7
+      startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1, 0, 0, 0)
+      break
+    }
+    case 'month': {
+      startTime = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0)
+      break
+    }
+    case 'all':
+    default:
+      return {}
+  }
+
+  return {
+    startTime: startTime!.toISOString().slice(0, 19),
+    endTime: now.toISOString().slice(0, 19),
+  }
+}
+
+function handleTimeRangeChange() {
+  fetchLeaderboard()
+}
+
 async function fetchLeaderboard() {
   try {
     const endpoint = mode.value === 'personal' ? '/api/leaderboard/personal' : '/api/leaderboard/group'
-    const response = await api.get<{ data: LeaderboardEntry[] }>(endpoint)
-    entries.value = response.data.data
+    const params = getTimeRangeParams()
+    const response = await api.get<{ data: LeaderboardEntry[] }>(endpoint, { params })
+    const data = response.data.data
+    // 为每条数据添加 rank
+    entries.value = data.map((item: any, index: number) => ({
+      rank: index + 1,
+      name: item.name,
+      score: item.score ?? item.totalScore ?? 0,
+      isGroup: mode.value === 'group',
+    }))
   } catch {
     // silent
   }
+}
+
+function handleExport() {
+  if (entries.value.length === 0) {
+    ElMessage.warning('暂无数据可导出')
+    return
+  }
+
+  const columns: ExcelColumn[] = [
+    { header: '排名', key: 'rank' },
+    { header: '名称', key: 'name' },
+    { header: '积分', key: 'score' },
+  ]
+
+  const data = entries.value.map(entry => ({
+    rank: entry.rank,
+    name: entry.name,
+    score: entry.score,
+  }))
+
+  const modeLabel = mode.value === 'personal' ? '个人' : '小组'
+  const rangeLabel = { today: '今日', week: '本周', month: '本月', all: '全部' }[timeRange.value]
+  const filename = `排行榜_${modeLabel}_${rangeLabel}_${new Date().toISOString().slice(0, 10)}`
+
+  exportToExcel(data, columns, filename)
+  ElMessage.success('导出成功')
 }
 </script>
 

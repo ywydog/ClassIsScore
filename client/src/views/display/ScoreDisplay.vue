@@ -13,6 +13,16 @@
         </div>
         <div class="score-display__time">{{ currentTime }}</div>
         <div class="score-display__toggles">
+          <!-- 多选模式切换 -->
+          <el-button
+            :type="multiSelectMode ? 'primary' : 'default'"
+            size="small"
+            @click="toggleMultiSelect"
+            class="score-display__multi-btn"
+          >
+            <el-icon style="margin-right: 4px"><Check /></el-icon>
+            {{ multiSelectMode ? '退出多选' : '多选' }}
+          </el-button>
           <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard">
             <el-radio-button value="personal">个人</el-radio-button>
             <el-radio-button value="group">小组</el-radio-button>
@@ -24,6 +34,21 @@
             <el-radio-button value="Pet">宠物</el-radio-button>
           </el-radio-group>
         </div>
+      </div>
+
+      <!-- 多选工具栏 -->
+      <div v-if="multiSelectMode" class="score-display__multi-toolbar">
+        <el-button size="small" @click="selectAll">全选</el-button>
+        <el-button size="small" @click="clearSelection">清除</el-button>
+        <span class="score-display__multi-count">已选 {{ selectedStudentIds.length }} 人</span>
+        <el-button
+          type="primary"
+          size="small"
+          :disabled="selectedStudentIds.length === 0"
+          @click="showBatchScorePanel = true"
+        >
+          批量评分
+        </el-button>
       </div>
 
       <!-- 排行榜模式：领奖台 + 列表 -->
@@ -67,44 +92,202 @@
 
       <!-- 卡片模式 -->
       <div v-else-if="displayMode === 'Card'" class="score-display__grid score-display__grid--card">
-        <StudentCardDisplay
+        <div
           v-for="student in students"
           :key="student.id"
-          :student="student"
-          @click="onStudentClick"
-        />
+          class="score-display__selectable-wrapper"
+          :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
+          @click="handleStudentClick(student)"
+        >
+          <div v-if="multiSelectMode" class="score-display__select-check">
+            <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+          </div>
+          <StudentCardDisplay :student="student" />
+        </div>
       </div>
 
       <!-- 圆形模式 -->
       <div v-else-if="displayMode === 'Circle'" class="score-display__grid score-display__grid--circle">
-        <StudentCircleDisplay
+        <div
           v-for="student in students"
           :key="student.id"
-          :student="student"
-          @click="onStudentClick"
-        />
+          class="score-display__selectable-wrapper score-display__selectable-wrapper--circle"
+          :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
+          @click="handleStudentClick(student)"
+        >
+          <div v-if="multiSelectMode" class="score-display__select-check">
+            <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+          </div>
+          <StudentCircleDisplay :student="student" />
+        </div>
       </div>
 
       <!-- 宠物模式 -->
       <div v-else-if="displayMode === 'Pet'" class="score-display__grid score-display__grid--pet">
-        <PetDisplay
+        <div
           v-for="student in students"
           :key="student.id"
-          :student="student"
-          @click="onStudentClick"
-        />
+          class="score-display__selectable-wrapper score-display__selectable-wrapper--pet"
+          :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
+          @click="handleStudentClick(student)"
+          @contextmenu.prevent="onPetRightClick(student)"
+        >
+          <div v-if="multiSelectMode" class="score-display__select-check">
+            <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+          </div>
+          <PetDisplay :student="student" />
+        </div>
       </div>
     </div>
+
+    <!-- 快速评分底部栏 -->
+    <transition name="quick-score-slide">
+      <div v-if="quickScoreStudent && !multiSelectMode" class="quick-score-bar">
+        <div class="quick-score-bar__inner">
+          <div class="quick-score-bar__student">
+            <span class="quick-score-bar__student-name">{{ quickScoreStudent.name }}</span>
+            <span class="quick-score-bar__student-score">当前 {{ quickScoreStudent.score }} 分</span>
+          </div>
+          <div class="quick-score-bar__actions">
+            <div class="quick-score-bar__preset-btns">
+              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(1)">+1</button>
+              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(2)">+2</button>
+              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(5)">+5</button>
+              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="quickScore(-1)">-1</button>
+              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="quickScore(-2)">-2</button>
+              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="quickScore(-5)">-5</button>
+            </div>
+            <div class="quick-score-bar__custom">
+              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="customScoreChange--">−</button>
+              <input
+                v-model.number="customScoreChange"
+                type="number"
+                class="quick-score-bar__input"
+                placeholder="自定义"
+              />
+              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="customScoreChange++">+</button>
+              <button
+                class="quick-score-bar__btn quick-score-bar__btn--apply"
+                :disabled="!customScoreChange"
+                @click="quickScore(customScoreChange)"
+              >
+                应用
+              </button>
+            </div>
+            <div class="quick-score-bar__reason">
+              <input
+                v-model="quickScoreReason"
+                type="text"
+                class="quick-score-bar__reason-input"
+                placeholder="原因（可选）"
+              />
+            </div>
+          </div>
+          <button class="quick-score-bar__close" @click="closeQuickScore">
+            <el-icon :size="18"><Close /></el-icon>
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 批量评分对话框 -->
+    <el-dialog
+      v-model="showBatchScorePanel"
+      title="批量评分"
+      width="420px"
+      :close-on-click-modal="false"
+      class="score-display__batch-dialog"
+      append-to-body
+    >
+      <div class="batch-score-form">
+        <div class="batch-score-form__info">
+          已选择 <strong>{{ selectedStudentIds.length }}</strong> 名学生
+        </div>
+        <div class="batch-score-form__presets">
+          <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 1">+1</button>
+          <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 2">+2</button>
+          <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 5">+5</button>
+          <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="batchScoreChange = -1">-1</button>
+          <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="batchScoreChange = -2">-2</button>
+          <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="batchScoreChange = -5">-5</button>
+        </div>
+        <el-input-number
+          v-model="batchScoreChange"
+          :step="1"
+          controls-position="right"
+          style="width: 100%"
+        />
+        <el-input
+          v-model="batchScoreReason"
+          placeholder="原因（可选）"
+          style="margin-top: 12px"
+        />
+      </div>
+      <template #footer>
+        <el-button @click="showBatchScorePanel = false">取消</el-button>
+        <el-button type="primary" :disabled="!batchScoreChange" @click="submitBatchScore">确认评分</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 宠物选择对话框 -->
+    <el-dialog
+      v-model="showPetDialog"
+      title="选择宠物"
+      width="520px"
+      class="score-display__pet-dialog"
+      append-to-body
+    >
+      <div class="pet-select-grid">
+        <div class="pet-select-grid__section">
+          <div class="pet-select-grid__section-title">普通动物</div>
+          <div class="pet-select-grid__items">
+            <div
+              v-for="pet in normalPets"
+              :key="pet.id"
+              class="pet-select-item"
+              :class="{ 'pet-select-item--active': pet.id === petDialogStudent?.petType }"
+              @click="selectPet(pet.id)"
+            >
+              <span class="pet-select-item__emoji">{{ pet.emoji }}</span>
+              <span class="pet-select-item__name">{{ pet.name }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="pet-select-grid__section">
+          <div class="pet-select-grid__section-title">神兽</div>
+          <div class="pet-select-grid__items">
+            <div
+              v-for="pet in mythicalPets"
+              :key="pet.id"
+              class="pet-select-item"
+              :class="{ 'pet-select-item--active': pet.id === petDialogStudent?.petType }"
+              @click="selectPet(pet.id)"
+            >
+              <span class="pet-select-item__emoji">{{ pet.emoji }}</span>
+              <span class="pet-select-item__name">{{ pet.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showPetDialog = false">取消</el-button>
+        <el-button type="danger" plain @click="selectPet('')">移除宠物</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Trophy } from '@element-plus/icons-vue'
+import { Trophy, Check, Close } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry, Student } from '@/types'
+import { PetCategory } from '@/types'
 import api from '@/services/api'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
+import { scoreApi } from '@/services/score'
+import { ALL_PET_TYPES } from '@/utils/petSystem'
 import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
 import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
 import PetDisplay from '@/components/display/PetDisplay.vue'
@@ -115,11 +298,32 @@ const mode = ref<'personal' | 'group'>('personal')
 const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('leaderboard')
 const currentTime = ref('')
 
+// 多选模式
+const multiSelectMode = ref(false)
+const selectedStudentIds = ref<string[]>([])
+
+// 快速评分
+const quickScoreStudent = ref<Student | null>(null)
+const customScoreChange = ref<number>(0)
+const quickScoreReason = ref('')
+
+// 批量评分
+const showBatchScorePanel = ref(false)
+const batchScoreChange = ref<number>(1)
+const batchScoreReason = ref('')
+
+// 宠物选择
+const showPetDialog = ref(false)
+const petDialogStudent = ref<Student | null>(null)
+
 let timeTimer: ReturnType<typeof setInterval> | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const topThree = computed(() => leaderboard.value.slice(0, 3))
 const restEntries = computed(() => leaderboard.value.slice(3))
+
+const normalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Normal))
+const mythicalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Mythical))
 
 function updateTime() {
   currentTime.value = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -140,8 +344,105 @@ function orbStyle(i: number) {
   }
 }
 
-function onStudentClick(_student: Student) {
-  // placeholder for future navigation or detail view
+// 学生点击处理
+function handleStudentClick(student: Student) {
+  if (multiSelectMode.value) {
+    toggleStudentSelection(student.id)
+  } else {
+    quickScoreStudent.value = student
+    customScoreChange.value = 0
+    quickScoreReason.value = ''
+  }
+}
+
+// 多选相关
+function toggleMultiSelect() {
+  multiSelectMode.value = !multiSelectMode.value
+  if (!multiSelectMode.value) {
+    selectedStudentIds.value = []
+  }
+  closeQuickScore()
+}
+
+function toggleStudentSelection(id: string) {
+  const idx = selectedStudentIds.value.indexOf(id)
+  if (idx >= 0) {
+    selectedStudentIds.value.splice(idx, 1)
+  } else {
+    selectedStudentIds.value.push(id)
+  }
+}
+
+function isSelected(id: string): boolean {
+  return selectedStudentIds.value.includes(id)
+}
+
+function selectAll() {
+  selectedStudentIds.value = students.value.map(s => s.id)
+}
+
+function clearSelection() {
+  selectedStudentIds.value = []
+}
+
+// 快速评分
+async function quickScore(change: number) {
+  if (!quickScoreStudent.value || change === 0) return
+  try {
+    await scoreApi.addScore({
+      studentId: quickScoreStudent.value.id,
+      scoreChange: change,
+      reason: quickScoreReason.value || (change > 0 ? `加分${change}` : `扣分${Math.abs(change)}`),
+    })
+    ElMessage.success(`${quickScoreStudent.value.name} ${change > 0 ? '+' : ''}${change} 分`)
+    quickScoreStudent.value = null
+    await fetchLeaderboard()
+    await fetchStudents()
+  } catch {
+    // error handled by interceptor
+  }
+}
+
+function closeQuickScore() {
+  quickScoreStudent.value = null
+}
+
+// 批量评分
+async function submitBatchScore() {
+  if (selectedStudentIds.value.length === 0 || !batchScoreChange.value) return
+  try {
+    await scoreApi.batchAddScore({
+      studentIds: selectedStudentIds.value,
+      scoreChange: batchScoreChange.value,
+      reason: batchScoreReason.value || (batchScoreChange.value > 0 ? `批量加分${batchScoreChange.value}` : `批量扣分${Math.abs(batchScoreChange.value)}`),
+    })
+    ElMessage.success(`已为 ${selectedStudentIds.value.length} 名学生评分`)
+    showBatchScorePanel.value = false
+    selectedStudentIds.value = []
+    await fetchLeaderboard()
+    await fetchStudents()
+  } catch {
+    // error handled by interceptor
+  }
+}
+
+// 宠物右键
+function onPetRightClick(student: Student) {
+  petDialogStudent.value = student
+  showPetDialog.value = true
+}
+
+async function selectPet(petTypeId: string) {
+  if (!petDialogStudent.value) return
+  try {
+    await studentApi.update(petDialogStudent.value.id, { petType: petTypeId || undefined })
+    ElMessage.success(petTypeId ? `已为 ${petDialogStudent.value.name} 选择宠物` : `已移除 ${petDialogStudent.value.name} 的宠物`)
+    showPetDialog.value = false
+    petDialogStudent.value = null
+    await fetchStudents()
+  } catch {
+    // error handled by interceptor
+  }
 }
 
 onMounted(async () => {
@@ -276,6 +577,19 @@ async function fetchStudents() {
   margin-left: auto;
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.score-display__multi-btn {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.score-display__multi-btn:hover {
+  border-color: rgba(13, 148, 136, 0.4);
+  background: rgba(13, 148, 136, 0.1);
+  color: #fff;
 }
 
 .score-display__toggles :deep(.el-radio-button__inner) {
@@ -291,6 +605,75 @@ async function fetchStudents() {
   border-color: #0d9488;
   color: #fff;
   box-shadow: 0 0 16px rgba(13, 148, 136, 0.3);
+}
+
+/* 多选工具栏 */
+.score-display__multi-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  background: rgba(13, 148, 136, 0.1);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  border-radius: var(--cis-radius-lg, 12px);
+}
+
+.score-display__multi-toolbar :deep(.el-button) {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.score-display__multi-toolbar :deep(.el-button:hover) {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.score-display__multi-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 可选择包装器 */
+.score-display__selectable-wrapper {
+  position: relative;
+  cursor: pointer;
+  transition: all var(--cis-transition-fast, 0.15s ease);
+}
+
+.score-display__selectable-wrapper--selected {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+  border-radius: var(--cis-radius-lg, 12px);
+}
+
+.score-display__selectable-wrapper--selected :deep(.student-card-display),
+.score-display__selectable-wrapper--selected :deep(.pet-display) {
+  background: rgba(13, 148, 136, 0.12);
+  border-color: rgba(13, 148, 136, 0.4);
+}
+
+.score-display__selectable-wrapper--circle.score-display__selectable-wrapper--selected :deep(.student-circle-display__avatar) {
+  box-shadow: 0 0 0 3px #0d9488;
+}
+
+.score-display__select-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(13, 148, 136, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* 领奖台 */
@@ -506,5 +889,329 @@ async function fetchStudents() {
 
 .score-display__grid :deep(.pet-display__exp-text) {
   color: rgba(255, 255, 255, 0.4);
+}
+
+/* ===== 快速评分底部栏 ===== */
+.quick-score-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 32px 24px;
+  pointer-events: none;
+}
+
+.quick-score-bar__inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 24px;
+  background: rgba(10, 22, 40, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.4), 0 0 24px rgba(13, 148, 136, 0.1);
+}
+
+.quick-score-bar__student {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 100px;
+}
+
+.quick-score-bar__student-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.quick-score-bar__student-score {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.quick-score-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.quick-score-bar__preset-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.quick-score-bar__btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.quick-score-bar__btn:hover {
+  transform: translateY(-1px);
+}
+
+.quick-score-bar__btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.quick-score-bar__btn--pos {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.quick-score-bar__btn--pos:hover {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+}
+
+.quick-score-bar__btn--neg {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.quick-score-bar__btn--neg:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.quick-score-bar__btn--apply {
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  color: #fff;
+  border-color: transparent;
+}
+
+.quick-score-bar__btn--apply:hover {
+  box-shadow: 0 2px 12px rgba(13, 148, 136, 0.35);
+}
+
+.quick-score-bar__btn--apply:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.quick-score-bar__custom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quick-score-bar__input {
+  width: 60px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 4px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.quick-score-bar__input:focus {
+  border-color: rgba(13, 148, 136, 0.5);
+}
+
+.quick-score-bar__input::-webkit-inner-spin-button,
+.quick-score-bar__input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quick-score-bar__input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.quick-score-bar__reason {
+  flex: 1;
+  min-width: 120px;
+}
+
+.quick-score-bar__reason-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.quick-score-bar__reason-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.quick-score-bar__reason-input:focus {
+  border-color: rgba(13, 148, 136, 0.5);
+}
+
+.quick-score-bar__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.quick-score-bar__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* 底部栏动画 */
+.quick-score-slide-enter-active,
+.quick-score-slide-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+.quick-score-slide-enter-from,
+.quick-score-slide-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
+/* ===== 批量评分对话框 ===== */
+.batch-score-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.batch-score-form__info {
+  font-size: 14px;
+  color: var(--cis-text-secondary);
+}
+
+.batch-score-form__presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ===== 宠物选择对话框 ===== */
+.pet-select-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pet-select-grid__section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cis-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.pet-select-grid__items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+.pet-select-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: var(--cis-radius-md, 8px);
+  border: 1px solid var(--cis-border-color-light);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--cis-card-bg);
+}
+
+.pet-select-item:hover {
+  border-color: rgba(13, 148, 136, 0.4);
+  background: rgba(13, 148, 136, 0.06);
+  transform: translateY(-1px);
+}
+
+.pet-select-item--active {
+  border-color: #0d9488;
+  background: rgba(13, 148, 136, 0.1);
+  box-shadow: 0 0 0 1px #0d9488;
+}
+
+.pet-select-item__emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.pet-select-item__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cis-text-primary);
+  text-align: center;
+}
+
+/* 对话框深色主题适配 */
+.score-display :deep(.el-dialog) {
+  background: #0d2137;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.score-display :deep(.el-dialog__title) {
+  color: #fff;
+}
+
+.score-display :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.score-display :deep(.el-dialog__body) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.score-display :deep(.el-input-number .el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+.score-display :deep(.el-input-number .el-input__inner) {
+  color: #fff;
+}
+
+.score-display :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+.score-display :deep(.el-input__inner) {
+  color: #fff;
+}
+
+.score-display :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.3);
 }
 </style>
