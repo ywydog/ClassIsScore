@@ -4,7 +4,6 @@ import com.classisscore.server.dto.ApiResult;
 import com.classisscore.server.theme.ThemeManifest;
 import com.classisscore.server.service.ThemeService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +23,7 @@ public class ThemeController {
         return ApiResult.success(themeService.listThemes());
     }
 
-    @GetMapping(value = "/{id}/css", produces = MediaType.TEXT_CSS_VALUE)
+    @GetMapping(value = "/{id}/css", produces = "text/css")
     public ApiResult<String> getCss(@PathVariable Long id) {
         String css = themeService.getThemeCss(id);
         if (css == null) {
