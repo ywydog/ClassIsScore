@@ -149,6 +149,33 @@
             <span class="quick-score-bar__student-score">当前 {{ quickScoreStudent.score }} 分</span>
           </div>
           <div class="quick-score-bar__actions">
+            <!-- 评价项预设 -->
+            <div v-if="evaluationItems.length > 0" class="quick-score-bar__eval-presets">
+              <div v-if="positiveEvalItems.length > 0" class="quick-score-bar__eval-group">
+                <button
+                  v-for="item in positiveEvalItems.slice(0, 6)"
+                  :key="item.id"
+                  class="quick-score-bar__btn quick-score-bar__btn--eval-pos"
+                  @click="applyQuickPreset(item)"
+                  :title="item.name + ' +' + item.scoreChange"
+                >
+                  {{ item.name }}
+                </button>
+              </div>
+              <div v-if="negativeEvalItems.length > 0" class="quick-score-bar__eval-group">
+                <button
+                  v-for="item in negativeEvalItems.slice(0, 4)"
+                  :key="item.id"
+                  class="quick-score-bar__btn quick-score-bar__btn--eval-neg"
+                  @click="applyQuickPreset(item)"
+                  :title="item.name + ' ' + item.scoreChange"
+                >
+                  {{ item.name }}
+                </button>
+              </div>
+            </div>
+            <div class="quick-score-bar__divider" v-if="evaluationItems.length > 0"></div>
+            <!-- 快捷分值 -->
             <div class="quick-score-bar__preset-btns">
               <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(1)">+1</button>
               <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(2)">+2</button>
@@ -194,7 +221,7 @@
     <el-dialog
       v-model="showBatchScorePanel"
       title="批量评分"
-      width="420px"
+      width="480px"
       :close-on-click-modal="false"
       class="score-display__batch-dialog"
       append-to-body
@@ -203,6 +230,34 @@
         <div class="batch-score-form__info">
           已选择 <strong>{{ selectedStudentIds.length }}</strong> 名学生
         </div>
+        <!-- 评价项预设 -->
+        <div v-if="evaluationItems.length > 0" class="batch-score-form__eval-section">
+          <div class="batch-score-form__eval-label">常用评价</div>
+          <div class="batch-score-form__eval-groups">
+            <div v-if="positiveEvalItems.length > 0" class="batch-score-form__eval-group">
+              <button
+                v-for="item in positiveEvalItems"
+                :key="item.id"
+                class="quick-score-bar__btn quick-score-bar__btn--eval-pos"
+                @click="applyBatchPreset(item)"
+              >
+                {{ item.name }} +{{ item.scoreChange }}
+              </button>
+            </div>
+            <div v-if="negativeEvalItems.length > 0" class="batch-score-form__eval-group">
+              <button
+                v-for="item in negativeEvalItems"
+                :key="item.id"
+                class="quick-score-bar__btn quick-score-bar__btn--eval-neg"
+                @click="applyBatchPreset(item)"
+              >
+                {{ item.name }} {{ item.scoreChange }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <el-divider v-if="evaluationItems.length > 0" style="margin: 8px 0" />
+        <!-- 快捷分值 -->
         <div class="batch-score-form__presets">
           <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 1">+1</button>
           <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 2">+2</button>
@@ -219,7 +274,7 @@
         />
         <el-input
           v-model="batchScoreReason"
-          placeholder="原因（可选）"
+          placeholder="原因（可选，选择预设后可修改）"
           style="margin-top: 12px"
         />
       </div>
@@ -281,7 +336,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Trophy, Check, Close } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import type { LeaderboardEntry, Student } from '@/types'
+import type { LeaderboardEntry, Student, EvaluationItem } from '@/types'
 import { PetCategory } from '@/types'
 import api from '@/services/api'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
@@ -294,6 +349,7 @@ import PetDisplay from '@/components/display/PetDisplay.vue'
 
 const leaderboard = ref<LeaderboardEntry[]>([])
 const students = ref<Student[]>([])
+const evaluationItems = ref<EvaluationItem[]>([])
 const mode = ref<'personal' | 'group'>('personal')
 const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('leaderboard')
 const currentTime = ref('')
@@ -325,6 +381,9 @@ const restEntries = computed(() => leaderboard.value.slice(3))
 const normalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Normal))
 const mythicalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Mythical))
 
+const positiveEvalItems = computed(() => evaluationItems.value.filter(i => i.isPositive))
+const negativeEvalItems = computed(() => evaluationItems.value.filter(i => !i.isPositive))
+
 function updateTime() {
   currentTime.value = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
@@ -353,6 +412,18 @@ function handleStudentClick(student: Student) {
     customScoreChange.value = 0
     quickScoreReason.value = ''
   }
+}
+
+// 评价项预设选择（快速评分栏）
+function applyQuickPreset(item: EvaluationItem) {
+  customScoreChange.value = item.scoreChange
+  quickScoreReason.value = item.name
+}
+
+// 评价项预设选择（批量评分对话框）
+function applyBatchPreset(item: EvaluationItem) {
+  batchScoreChange.value = item.scoreChange
+  batchScoreReason.value = item.name
 }
 
 // 多选相关
@@ -448,8 +519,7 @@ async function selectPet(petTypeId: string) {
 onMounted(async () => {
   updateTime()
   timeTimer = setInterval(updateTime, 1000)
-  await fetchLeaderboard()
-  await fetchStudents()
+  await Promise.all([fetchLeaderboard(), fetchStudents(), fetchEvaluationItems()])
   connectWebSocket({
     onScoreUpdate: () => {
       fetchLeaderboard()
@@ -482,6 +552,15 @@ async function fetchStudents() {
   try {
     const response = await studentApi.getAll()
     students.value = response.data.data
+  } catch {
+    // silent
+  }
+}
+
+async function fetchEvaluationItems() {
+  try {
+    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluation/items')
+    evaluationItems.value = response.data.data || []
   } catch {
     // silent
   }
@@ -1007,6 +1086,53 @@ async function fetchStudents() {
   transform: none;
 }
 
+/* 评价项预设按钮 */
+.quick-score-bar__eval-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 320px;
+}
+
+.quick-score-bar__eval-group {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.quick-score-bar__btn--eval-pos {
+  background: rgba(34, 197, 94, 0.08);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.18);
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.quick-score-bar__btn--eval-pos:hover {
+  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.quick-score-bar__btn--eval-neg {
+  background: rgba(239, 68, 68, 0.08);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.18);
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.quick-score-bar__btn--eval-neg:hover {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.quick-score-bar__divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
 .quick-score-bar__custom {
   display: flex;
   align-items: center;
@@ -1113,6 +1239,31 @@ async function fetchStudents() {
 .batch-score-form__presets {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.batch-score-form__eval-section {
+  margin-bottom: 4px;
+}
+
+.batch-score-form__eval-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.batch-score-form__eval-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.batch-score-form__eval-group {
+  display: flex;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
