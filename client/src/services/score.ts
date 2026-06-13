@@ -1,5 +1,5 @@
 import api from './api'
-import type { ApiResponse, ScoreRecord } from '@/types'
+import type { ApiResponse, ScoreRecord, StudentScoreStats } from '@/types'
 
 interface AddScoreRequest {
   studentId: string
@@ -50,5 +50,10 @@ export const scoreApi = {
 
   getRecentRecords(limit: number = 50) {
     return api.get<ApiResponse<ScoreRecord[]>>('/api/scores/recent', { params: { limit } })
+  },
+
+  getStats(semesterStartDate?: string) {
+    const params = semesterStartDate ? { semesterStartDate } : {}
+    return api.get<ApiResponse<StudentScoreStats[]>>('/api/scores/stats', { params })
   },
 }

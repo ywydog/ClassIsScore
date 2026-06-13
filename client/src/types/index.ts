@@ -182,3 +182,21 @@ export interface ScoreUpdateEvent {
   reason: string
   newScore: number
 }
+
+export interface StudentScoreStats {
+  studentId: number
+  studentName: string
+  totalScore: number
+  dayPlus: number
+  dayMinus: number
+  dayNet: number
+  weekPlus: number
+  weekMinus: number
+  weekNet: number
+  monthPlus: number
+  monthMinus: number
+  monthNet: number
+  semesterPlus?: number
+  semesterMinus?: number
+  semesterNet?: number
+}

@@ -60,6 +60,21 @@
             减分
           </el-button>
         </div>
+        <!-- 选中学生的周期积分 -->
+        <div v-if="selectedStudentStats" class="score-operator__stats">
+          <span class="score-operator__stats-item score-operator__stats-item--day">
+            今日 <em>+{{ selectedStudentStats.dayPlus }}</em> / <em>{{ selectedStudentStats.dayMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.dayNet) }}</strong>
+          </span>
+          <span class="score-operator__stats-item score-operator__stats-item--week">
+            本周 <em>+{{ selectedStudentStats.weekPlus }}</em> / <em>{{ selectedStudentStats.weekMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.weekNet) }}</strong>
+          </span>
+          <span class="score-operator__stats-item score-operator__stats-item--month">
+            本月 <em>+{{ selectedStudentStats.monthPlus }}</em> / <em>{{ selectedStudentStats.monthMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.monthNet) }}</strong>
+          </span>
+          <span v-if="selectedStudentStats.semesterNet !== undefined" class="score-operator__stats-item score-operator__stats-item--semester">
+            学期 <em>+{{ selectedStudentStats.semesterPlus }}</em> / <em>{{ selectedStudentStats.semesterMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.semesterNet) }}</strong>
+          </span>
+        </div>
         <!-- 快捷评价项 -->
         <div class="score-operator__quick">
           <span class="score-operator__quick-label">快捷：</span>
@@ -271,9 +286,10 @@ import { useScoreStore } from '@/stores/score'
 import { useStudentStore } from '@/stores/student'
 import { useSettingsStore } from '@/stores/settings'
 import { groupApi } from '@/services/group'
-import type { EvaluationItem, StudentGroup } from '@/types'
+import type { EvaluationItem, StudentGroup, StudentScoreStats } from '@/types'
 import api from '@/services/api'
 import { readExcelFile } from '@/utils/excelHelper'
+import { scoreApi } from '@/services/score'
 import type { UploadFile } from 'element-plus'
 import ScoreHistory from '@/components/score/ScoreHistory.vue'
 import ExportReportDialog from '@/components/score/ExportReportDialog.vue'
@@ -290,6 +306,11 @@ const adminRevertPassword = ref('')
 const pendingRevertRecordId = ref<string | null>(null)
 const evaluationItems = ref<EvaluationItem[]>([])
 const groups = ref<StudentGroup[]>([])
+const scoreStats = ref<StudentScoreStats[]>([])
+const selectedStudentStats = computed(() => {
+  if (!addForm.studentId) return null
+  return scoreStats.value.find(s => String(s.studentId) === String(addForm.studentId))
+})
 
 const addForm = reactive({ studentId: '', scoreChange: 1, reason: '' })
 const batchForm = reactive({ studentIds: [] as string[], groupId: '', scoreChange: 1, reason: '' })
@@ -329,6 +350,7 @@ onMounted(async () => {
     studentStore.fetchStudents(),
     fetchEvaluationItems(),
     fetchGroups(),
+    fetchScoreStats(),
   ])
 })
 
@@ -354,6 +376,19 @@ async function fetchGroups() {
     const response = await groupApi.getAll()
     groups.value = response.data.data
   } catch { /* ignore */ }
+}
+
+async function fetchScoreStats() {
+  try {
+    const semesterStartDate = settingsStore.settings.semesterStartDate
+    const response = await scoreApi.getStats(semesterStartDate)
+    scoreStats.value = response.data.data || []
+  } catch { /* ignore */ }
+}
+
+function formatStatNet(val: number | undefined): string {
+  if (val === undefined || val === 0) return '0'
+  return val > 0 ? `+${val}` : `${val}`
 }
 
 function applyEvaluationItem(item: EvaluationItem) {
@@ -704,6 +739,41 @@ function closeImportDialog() {
   font-weight: 700;
   font-size: 12px;
 }
+
+.score-operator__stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cis-border-color-lighter, rgba(0, 0, 0, 0.06));
+  flex-wrap: wrap;
+}
+
+.score-operator__stats-item {
+  font-size: 12px;
+  color: var(--cis-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--cis-fill-color-light, #f5f7fa);
+}
+
+.score-operator__stats-item em {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.score-operator__stats-item strong {
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.score-operator__stats-item--day strong { color: #3b82f6; }
+.score-operator__stats-item--week strong { color: #a855f7; }
+.score-operator__stats-item--month strong { color: #f59e0b; }
+.score-operator__stats-item--semester strong { color: #0d9488; }
 
 .score-management__content {
   background: var(--cis-card-bg);

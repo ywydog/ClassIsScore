@@ -115,6 +115,17 @@
           >
             <span class="score-display__rank" v-if="displaySettings.showRank">{{ entry.rank }}</span>
             <span class="score-display__name">{{ entry.name }}</span>
+            <span class="score-display__period-stats" v-if="displaySettings.showScore">
+              <span class="score-display__period-stat score-display__period-stat--day" :title="`今日 +${getEntryStats(entry)?.dayPlus || 0} / ${getEntryStats(entry)?.dayMinus || 0}`">
+                日{{ formatNet(getEntryStats(entry)?.dayNet) }}
+              </span>
+              <span class="score-display__period-stat score-display__period-stat--week" :title="`本周 +${getEntryStats(entry)?.weekPlus || 0} / ${getEntryStats(entry)?.weekMinus || 0}`">
+                周{{ formatNet(getEntryStats(entry)?.weekNet) }}
+              </span>
+              <span class="score-display__period-stat score-display__period-stat--month" :title="`本月 +${getEntryStats(entry)?.monthPlus || 0} / ${getEntryStats(entry)?.monthMinus || 0}`">
+                月{{ formatNet(getEntryStats(entry)?.monthNet) }}
+              </span>
+            </span>
             <span class="score-display__score" v-if="displaySettings.showScore">{{ entry.score }}</span>
           </div>
         </div>
@@ -465,12 +476,13 @@
 import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 import { Trophy, Check, Close, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent } from '@/types'
+import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent, StudentScoreStats } from '@/types'
 import { PetCategory } from '@/types'
 import api from '@/services/api'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
 import { scoreApi } from '@/services/score'
+import { useSettingsStore } from '@/stores/settings'
 import { ALL_PET_TYPES } from '@/utils/petSystem'
 import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
 import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
@@ -575,6 +587,7 @@ const mounted = ref(false)
 const leaderboard = ref<LeaderboardEntry[]>([])
 const students = ref<Student[]>([])
 const evaluationItems = ref<EvaluationItem[]>([])
+const scoreStats = ref<StudentScoreStats[]>([])
 const mode = ref<'personal' | 'group'>('personal')
 const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('leaderboard')
 const currentTime = ref('')
@@ -599,6 +612,8 @@ const petDialogStudent = ref<Student | null>(null)
 
 let timeTimer: ReturnType<typeof setInterval> | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
+
+const settingsStore = useSettingsStore()
 
 // ===== 计算属性 =====
 const fontSizeMap: Record<string, string> = {
@@ -669,6 +684,7 @@ function restartRefreshTimer() {
     refreshTimer = setInterval(() => {
       fetchLeaderboard()
       fetchStudents()
+      fetchScoreStats()
     }, displaySettings.refreshInterval * 1000)
   }
 }
@@ -789,7 +805,7 @@ async function selectPet(petTypeId: string) {
 onMounted(async () => {
   updateTime()
   timeTimer = setInterval(updateTime, 1000)
-  await Promise.all([fetchLeaderboard(), fetchStudents(), fetchEvaluationItems()])
+  await Promise.all([fetchLeaderboard(), fetchStudents(), fetchEvaluationItems(), fetchScoreStats()])
   // 触发入场动画
   requestAnimationFrame(() => {
     mounted.value = true
@@ -801,6 +817,7 @@ onMounted(async () => {
       }
       fetchLeaderboard()
       fetchStudents()
+      fetchScoreStats()
     },
   })
   restartRefreshTimer()
@@ -841,6 +858,30 @@ async function fetchEvaluationItems() {
   } catch {
     // silent
   }
+}
+
+async function fetchScoreStats() {
+  try {
+    const semesterStartDate = settingsStore.settings.semesterStartDate
+    const response = await scoreApi.getStats(semesterStartDate)
+    scoreStats.value = response.data.data || []
+  } catch {
+    // silent
+  }
+}
+
+function getStudentStats(studentId: string | number): StudentScoreStats | undefined {
+  return scoreStats.value.find(s => String(s.studentId) === String(studentId))
+}
+
+function getEntryStats(entry: LeaderboardEntry): StudentScoreStats | undefined {
+  // 通过名字匹配（排行榜没有 studentId）
+  return scoreStats.value.find(s => s.studentName === entry.name)
+}
+
+function formatNet(val: number | undefined): string {
+  if (val === undefined || val === 0) return '0'
+  return val > 0 ? `+${val}` : `${val}`
 }
 </script>
 
@@ -1231,6 +1272,35 @@ async function fetchEvaluationItems() {
   flex: 1;
   font-size: 15px;
   font-weight: 500;
+}
+
+.score-display__period-stats {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.score-display__period-stat {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.score-display__period-stat--day {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+
+.score-display__period-stat--week {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+}
+
+.score-display__period-stat--month {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
 }
 
 .score-display__score {

@@ -161,4 +161,84 @@ public class ScoreService extends ServiceImpl<ScoreRecordMapper, ScoreRecord> {
         wrapper.orderByDesc(ScoreRecord::getCreatedAt);
         return this.list(wrapper);
     }
+
+    public List<ScoreRecord> getRecentScores(int limit) {
+        LambdaQueryWrapper<ScoreRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ScoreRecord::getReverted, false);
+        wrapper.orderByDesc(ScoreRecord::getCreatedAt);
+        wrapper.last("LIMIT " + Math.min(limit, 200));
+        return this.list(wrapper);
+    }
+
+    public List<Map<String, Object>> getScoreStats(String semesterStartDate) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+        LocalDateTime weekStart = now.minusDays(now.getDayOfWeek().getValue() - 1).toLocalDate().atStartOfDay();
+        LocalDateTime monthStart = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
+        LocalDateTime semesterStart = null;
+        if (semesterStartDate != null && !semesterStartDate.isEmpty()) {
+            try {
+                semesterStart = java.time.LocalDate.parse(semesterStartDate).atStartOfDay();
+            } catch (Exception ignored) {}
+        }
+
+        List<Student> students = studentService.list();
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Student student : students) {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("studentId", student.getId());
+            stats.put("studentName", student.getName());
+            stats.put("totalScore", student.getTotalScore());
+
+            // 日统计
+            int[] dayStats = calcPeriodStats(student.getId(), todayStart, now);
+            stats.put("dayPlus", dayStats[0]);
+            stats.put("dayMinus", dayStats[1]);
+            stats.put("dayNet", dayStats[0] + dayStats[1]);
+
+            // 周统计
+            int[] weekStats = calcPeriodStats(student.getId(), weekStart, now);
+            stats.put("weekPlus", weekStats[0]);
+            stats.put("weekMinus", weekStats[1]);
+            stats.put("weekNet", weekStats[0] + weekStats[1]);
+
+            // 月统计
+            int[] monthStats = calcPeriodStats(student.getId(), monthStart, now);
+            stats.put("monthPlus", monthStats[0]);
+            stats.put("monthMinus", monthStats[1]);
+            stats.put("monthNet", monthStats[0] + monthStats[1]);
+
+            // 学期统计
+            if (semesterStart != null) {
+                int[] semStats = calcPeriodStats(student.getId(), semesterStart, now);
+                stats.put("semesterPlus", semStats[0]);
+                stats.put("semesterMinus", semStats[1]);
+                stats.put("semesterNet", semStats[0] + semStats[1]);
+            }
+
+            result.add(stats);
+        }
+
+        return result;
+    }
+
+    private int[] calcPeriodStats(Long studentId, LocalDateTime start, LocalDateTime end) {
+        LambdaQueryWrapper<ScoreRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ScoreRecord::getStudentId, studentId);
+        wrapper.eq(ScoreRecord::getReverted, false);
+        wrapper.ge(ScoreRecord::getCreatedAt, start);
+        wrapper.le(ScoreRecord::getCreatedAt, end);
+        List<ScoreRecord> records = this.list(wrapper);
+
+        int plus = 0, minus = 0;
+        for (ScoreRecord r : records) {
+            if (r.getScoreChange() > 0) {
+                plus += r.getScoreChange();
+            } else if (r.getScoreChange() < 0) {
+                minus += r.getScoreChange();
+            }
+        }
+        return new int[]{plus, minus};
+    }
 }

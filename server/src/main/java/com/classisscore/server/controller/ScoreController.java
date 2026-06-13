@@ -65,4 +65,15 @@ public class ScoreController {
     public ApiResult<List<ScoreRecord>> studentHistory(@PathVariable Long studentId) {
         return ApiResult.success(scoreService.getStudentScoreHistory(studentId));
     }
+
+    @GetMapping("/stats")
+    public ApiResult<List<Map<String, Object>>> scoreStats(
+            @RequestParam(required = false) String semesterStartDate) {
+        return ApiResult.success(scoreService.getScoreStats(semesterStartDate));
+    }
+
+    @GetMapping("/recent")
+    public ApiResult<List<ScoreRecord>> recentScores(@RequestParam(defaultValue = "50") int limit) {
+        return ApiResult.success(scoreService.getRecentScores(limit));
+    }
 }
