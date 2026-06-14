@@ -24,7 +24,6 @@ import { Trophy } from '@element-plus/icons-vue'
 import type { LeaderboardEntry } from '@/types'
 import { leaderboardApi } from '@/services/leaderboard'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
-import { Window } from '@tauri-apps/api/window'
 
 const topStudents = ref<LeaderboardEntry[]>([])
 
@@ -50,19 +49,24 @@ async function fetchTopStudents() {
 
 async function openMainWindow() {
   try {
-    const mainWindow = await Window.getByLabel('main')
+    const { getAllWindows } = await import('@tauri-apps/api/window')
+    const windows = await getAllWindows()
+    const mainWindow = windows.find((w: { label: string }) => w.label === 'main')
     if (mainWindow) {
       await mainWindow.setFocus()
-    } else {
-      window.close()
     }
   } catch {
-    window.close()
+    // fallback: 无法获取主窗口
   }
 }
 </script>
 
 <style scoped>
+/* 悬浮窗需要透明背景 */
+:global(html), :global(body) {
+  background: transparent !important;
+}
+
 .floating-bar {
   width: 100%;
   height: 100%;

@@ -57,6 +57,8 @@ pub async fn open_floating_window(app_handle: tauri::AppHandle) -> Result<(), St
     .inner_size(400.0, 60.0)
     .always_on_top(true)
     .decorations(false)
+    .transparent(true)
+    .focused(false)
     .skip_taskbar(true)
     .build()
     .map_err(|e| format!("创建浮动窗口失败: {}", e))?;
