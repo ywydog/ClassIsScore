@@ -3,6 +3,13 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('electronAPI', {
   getServerUrl: () => ipcRenderer.invoke('get-server-url'),
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  isBackendReady: () => ipcRenderer.invoke('is-backend-ready'),
+  onBackendReady: (callback: () => void) => {
+    ipcRenderer.on('backend-ready', () => callback())
+  },
+  removeBackendReadyListener: () => {
+    ipcRenderer.removeAllListeners('backend-ready')
+  },
   invokeServer: (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args),
   onScoreUpdate: (callback: (data: unknown) => void) => {
     ipcRenderer.on('score-update', (_event, data) => callback(data))

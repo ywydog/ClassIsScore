@@ -2,23 +2,36 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { createMainWindow, createDisplayWindow, createFloatingWindow } from './windows'
 import { createTray } from './tray'
 import { startServer, stopServer, getServerUrl } from './server'
+import { initLogger } from './logger'
 
 let mainWindow: BrowserWindow | null = null
 let displayWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
+let backendReady = false
 
 app.whenReady().then(async () => {
+  // 初始化日志系统
+  initLogger()
+
   // 尝试启动后端，失败不阻止前端打开
-  try {
-    await startServer()
-  } catch (err) {
-    console.warn('后端启动失败，前端仍可使用:', err)
-  }
+  startServer()
+    .then(() => {
+      backendReady = true
+      console.log('后端已就绪，通知所有窗口')
+      // 通知所有已打开的窗口后端已就绪
+      BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('backend-ready')
+      })
+    })
+    .catch(err => {
+      console.warn('后端启动失败，前端仍可使用:', err)
+    })
 
   mainWindow = createMainWindow()
   createTray(mainWindow, displayWindow, floatingWindow)
 
   ipcMain.handle('get-server-url', () => getServerUrl())
+  ipcMain.handle('is-backend-ready', () => backendReady)
 
   ipcMain.handle('open-display-window', () => {
     if (displayWindow) {

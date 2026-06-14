@@ -10,6 +10,9 @@ interface Window {
   electronAPI?: {
     getServerUrl: () => Promise<string>
     getAppInfo: () => Promise<{ version: string; platform: string }>
+    isBackendReady: () => Promise<boolean>
+    onBackendReady: (callback: () => void) => void
+    removeBackendReadyListener: () => void
     invokeServer: (channel: string, ...args: unknown[]) => Promise<unknown>
     onScoreUpdate: (callback: (data: unknown) => void) => void
     removeScoreUpdateListener: () => void
