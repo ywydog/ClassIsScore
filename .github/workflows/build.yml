@@ -77,6 +77,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create Windows Portable ZIP
+        if: matrix.os == 'windows'
+        run: |
+          $exePath = "${{ env.CLIENT_DIR }}\src-tauri\target\release\ClassIsScore.exe"
+          $zipDir = "${{ env.CLIENT_DIR }}\src-tauri\target\release\bundle\portable"
+          New-Item -ItemType Directory -Force -Path $zipDir
+          Compress-Archive -Path $exePath -DestinationPath "$zipDir\ClassIsScore-Portable.zip"
+        shell: pwsh
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -84,6 +93,7 @@ jobs:
           path: |
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.exe
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.msi
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.zip
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.AppImage
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.deb
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.dmg
@@ -109,7 +119,7 @@ jobs:
       - name: Collect Release Files
         run: |
           mkdir -p ./release
-          find ./artifacts -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} ./release/ \;
+          find ./artifacts -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} ./release/ \;
 
       - name: Determine Tag
         id: tag
