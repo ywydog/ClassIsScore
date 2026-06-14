@@ -8,7 +8,6 @@ interface RustEvaluationItem {
   category: string | null
   is_quick_access: boolean
   created_at: string
-  updated_at: string
 }
 
 function toEvaluationItem(r: RustEvaluationItem): EvaluationItem {
@@ -40,15 +39,15 @@ export const evaluationApi = {
   },
 
   async update(id: string, item: { name?: string; scoreChange?: number; category?: string; isQuickAccess?: boolean }) {
-    const result = await invoke<RustEvaluationItem>('evaluation_update', {
-      input: {
-        id: Number(id),
-        name: item.name ?? null,
-        score_change: item.scoreChange ?? null,
-        category: item.category ?? null,
-        is_quick_access: item.isQuickAccess ?? null,
-      }
-    })
+    const input: Record<string, unknown> = {
+      id: Number(id),
+    }
+    if (item.name !== undefined) input.name = item.name
+    if (item.scoreChange !== undefined) input.score_change = item.scoreChange
+    if (item.category !== undefined) input.category = item.category ?? null
+    if (item.isQuickAccess !== undefined) input.is_quick_access = item.isQuickAccess
+
+    const result = await invoke<RustEvaluationItem>('evaluation_update', { input })
     return { data: { data: toEvaluationItem(result) } }
   },
 

@@ -16,7 +16,6 @@ interface RustAutoEvalConfig {
   target_student_id: number | null
   is_enabled: boolean
   created_at: string
-  updated_at: string
 }
 
 function toAutoEvalConfig(r: RustAutoEvalConfig): AutoEvaluationConfig {
