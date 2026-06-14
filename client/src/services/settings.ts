@@ -101,4 +101,66 @@ export const settingsApi = {
       return { data: { data: { path: '' } } }
     }
   },
+
+  async exportSettings() {
+    const data = await invoke<RustSettingsExportData>('settings_export')
+    return data
+  },
+
+  async importSettings(data: SettingsImportData) {
+    const result = await invoke<string>('settings_import', { data })
+    return result
+  },
+}
+
+// Rust 端导出数据类型
+interface RustSettingsExportData {
+  version: string
+  exported_at: string
+  settings: RustSetting[]
+  evaluation_items: {
+    id: number
+    name: string
+    score_change: number
+    category: string | null
+    is_quick_access: boolean
+    created_at: string
+  }[]
+  auto_evaluation_configs: {
+    id: number
+    name: string
+    trigger_type: string
+    trigger_time: string | null
+    day_of_week: number | null
+    day_of_month: number | null
+    evaluation_item_id: number | null
+    score_change: number | null
+    reason: string | null
+    target_type: string | null
+    target_group_id: number | null
+    target_student_id: number | null
+    is_enabled: boolean
+    last_executed_at: string | null
+    created_at: string
+  }[]
+}
+
+// 导入数据类型（不含 id 和时间戳）
+export interface SettingsImportData {
+  settings: { setting_key: string; setting_value: string | null }[]
+  evaluation_items: { name: string; score_change: number; category: string | null; is_quick_access: boolean }[]
+  auto_evaluation_configs: {
+    name: string
+    trigger_type: string
+    trigger_time: string | null
+    day_of_week: number | null
+    day_of_month: number | null
+    evaluation_item_id: number | null
+    score_change: number | null
+    reason: string | null
+    target_type: string | null
+    target_group_id: number | null
+    target_student_id: number | null
+    is_enabled: boolean
+  }[]
 }

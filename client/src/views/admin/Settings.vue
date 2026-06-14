@@ -202,6 +202,22 @@
               <input ref="importStudentFileInput" type="file" accept=".xlsx,.xls" style="display: none" @change="onImportStudentFileChange" />
             </el-form-item>
             <el-divider />
+            <el-form-item label="导出设置文件">
+              <el-button type="success" @click="handleExportSettings" :loading="settingsIoLoading">
+                <el-icon><Download /></el-icon>
+                导出设置
+              </el-button>
+              <span class="data-hint">导出通用设置、评价项、自动评估规则（不含学生数据）</span>
+            </el-form-item>
+            <el-form-item label="导入设置文件">
+              <el-button @click="handleImportSettings" :loading="settingsIoLoading">
+                <el-icon><Upload /></el-icon>
+                导入设置
+              </el-button>
+              <input ref="importSettingsFileInput" type="file" accept=".json" style="display: none" @change="onImportSettingsFileChange" />
+              <span class="data-hint">从 JSON 文件导入设置，已有设置会被覆盖</span>
+            </el-form-item>
+            <el-divider />
             <el-form-item label="数据目录">
               <div class="data-folder-row">
                 <el-input :model-value="dataFolderPath" readonly style="flex: 1" />
@@ -227,6 +243,7 @@ import { DisplayMode } from '@/types'
 import type { Student, StudentGroup, EvaluationItem } from '@/types'
 import { ALL_PET_TYPES } from '@/utils/petSystem'
 import { settingsApi } from '@/services/settings'
+import type { SettingsImportData } from '@/services/settings'
 import { evaluationApi } from '@/services/evaluation'
 import { studentApi } from '@/services/student'
 import { groupApi } from '@/services/group'
@@ -288,9 +305,11 @@ const floatingSettings = reactive({
 })
 
 const dataLoading = ref(false)
+const settingsIoLoading = ref(false)
 const dataFolderPath = ref('')
 const importFileInput = ref<HTMLInputElement | null>(null)
 const importStudentFileInput = ref<HTMLInputElement | null>(null)
+const importSettingsFileInput = ref<HTMLInputElement | null>(null)
 
 // 自定义快捷分值
 const customQuickScores = ref<number[]>([])
@@ -632,6 +651,105 @@ function handlePetSave() {
     levelThresholds: petSettings.levelThresholds,
   }))
   ElMessage.success('宠物设置已保存')
+}
+
+// ===== 设置导出导入 =====
+
+async function handleExportSettings() {
+  settingsIoLoading.value = true
+  try {
+    const data = await settingsApi.exportSettings()
+    // 转换为导入格式（去掉 id 和时间戳）
+    const exportData: SettingsImportData & { version: string; exported_at: string } = {
+      version: data.version,
+      exported_at: data.exported_at,
+      settings: data.settings.map(s => ({
+        setting_key: s.setting_key,
+        setting_value: s.setting_value,
+      })),
+      evaluation_items: data.evaluation_items.map(e => ({
+        name: e.name,
+        score_change: e.score_change,
+        category: e.category,
+        is_quick_access: e.is_quick_access,
+      })),
+      auto_evaluation_configs: data.auto_evaluation_configs.map(a => ({
+        name: a.name,
+        trigger_type: a.trigger_type,
+        trigger_time: a.trigger_time,
+        day_of_week: a.day_of_week,
+        day_of_month: a.day_of_month,
+        evaluation_item_id: a.evaluation_item_id,
+        score_change: a.score_change,
+        reason: a.reason,
+        target_type: a.target_type,
+        target_group_id: a.target_group_id,
+        target_student_id: a.target_student_id,
+        is_enabled: a.is_enabled,
+      })),
+    }
+    const json = JSON.stringify(exportData, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ClassIsScore_设置_${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('设置导出成功')
+  } catch {
+    ElMessage.error('导出设置失败')
+  } finally {
+    settingsIoLoading.value = false
+  }
+}
+
+function handleImportSettings() {
+  importSettingsFileInput.value?.click()
+}
+
+async function onImportSettingsFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  settingsIoLoading.value = true
+  try {
+    const text = await file.text()
+    const data = JSON.parse(text) as SettingsImportData & { version?: string; exported_at?: string }
+
+    // 基本校验
+    if (!data.settings && !data.evaluation_items && !data.auto_evaluation_configs) {
+      ElMessage.warning('无效的设置文件格式')
+      return
+    }
+
+    await ElMessageBox.confirm(
+      '导入设置将覆盖已有的通用设置，并追加评价项和自动评估规则。是否继续？',
+      '确认导入',
+      { confirmButtonText: '导入', cancelButtonText: '取消', type: 'warning' }
+    )
+
+    const importData: SettingsImportData = {
+      settings: data.settings || [],
+      evaluation_items: data.evaluation_items || [],
+      auto_evaluation_configs: data.auto_evaluation_configs || [],
+    }
+
+    const result = await settingsApi.importSettings(importData)
+    ElMessage.success(result)
+    // 重新加载设置
+    await settingsStore.fetchSettings()
+    Object.assign(settings, settingsStore.settings)
+    themeMode.value = settingsStore.settings.themeMode || 'default'
+  } catch (err) {
+    if (err !== 'cancel') {
+      ElMessage.error('导入设置失败')
+    }
+  } finally {
+    settingsIoLoading.value = false
+    input.value = ''
+  }
 }
 
 function handleOpenDataFolder() {
