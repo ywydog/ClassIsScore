@@ -15,6 +15,9 @@
           <el-icon><Operation /></el-icon>
           批量操作
         </el-button>
+        <el-button v-if="isXianxiaMode" type="warning" @click="openBattleDialog">
+          ⚔️ 道友切磋
+        </el-button>
       </div>
     </div>
 
@@ -311,6 +314,14 @@
         <el-button type="danger" :loading="scoreStore.loading" @click="confirmAdminRevert">确认撤销</el-button>
       </template>
     </el-dialog>
+
+    <!-- 道友切磋对话框 -->
+    <BattleDialog
+      v-if="isXianxiaMode"
+      v-model="showBattleDialog"
+      :challenger="battleChallenger"
+      :opponents="battleOpponents"
+    />
   </div>
 </template>
 
@@ -329,6 +340,7 @@ import { scoreApi } from '@/services/score'
 import type { UploadFile } from 'element-plus'
 import ScoreHistory from '@/components/score/ScoreHistory.vue'
 import ExportReportDialog from '@/components/score/ExportReportDialog.vue'
+import BattleDialog from '@/components/xianxia/BattleDialog.vue'
 
 const scoreStore = useScoreStore()
 const studentStore = useStudentStore()
@@ -338,6 +350,7 @@ const showBatchDialog = ref(false)
 const showImportDialog = ref(false)
 const showExportDialog = ref(false)
 const showAdminRevertDialog = ref(false)
+const showBattleDialog = ref(false)
 const adminRevertPassword = ref('')
 const pendingRevertRecordId = ref<string | null>(null)
 const evaluationItems = ref<EvaluationItem[]>([])
@@ -347,6 +360,25 @@ const selectedStudentStats = computed(() => {
   if (!addForm.studentId) return null
   return scoreStats.value.find(s => String(s.studentId) === String(addForm.studentId))
 })
+
+// 修仙模式 & 道友切磋
+const isXianxiaMode = computed(() => settingsStore.settings.themeMode === 'xianxia')
+const battleChallenger = computed(() => {
+  if (!addForm.studentId) return null
+  return studentStore.students.find(s => String(s.id) === String(addForm.studentId)) || null
+})
+const battleOpponents = computed(() => {
+  if (!addForm.studentId) return studentStore.students
+  return studentStore.students.filter(s => String(s.id) !== String(addForm.studentId))
+})
+
+function openBattleDialog() {
+  if (studentStore.students.length < 2) {
+    ElMessage.warning('至少需要两名道友才能切磋')
+    return
+  }
+  showBattleDialog.value = true
+}
 
 // 周期积分面板
 type PeriodKey = 'day' | 'week' | 'month' | 'semester'

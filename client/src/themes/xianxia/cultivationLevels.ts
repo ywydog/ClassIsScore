@@ -81,3 +81,39 @@ export const MAX_CULTIVATION_LEVEL = 64
 
 /** 需要渡劫的境界（level_id >= 41） */
 export const TRIBULATION_THRESHOLD = 41
+
+/**
+ * 根据积分/修为判定当前境界
+ * @param score 学生积分（修为）
+ * @returns 当前境界信息
+ */
+export function getCultivationLevel(score: number): { level: number; name: string; exp: number } {
+  const absScore = Math.max(0, score)
+
+  let currentLevel = CULTIVATION_LEVELS[0]
+  for (const level of CULTIVATION_LEVELS) {
+    if (absScore >= level.exp) {
+      currentLevel = level
+    } else {
+      break
+    }
+  }
+
+  return {
+    level: currentLevel.levelId,
+    name: currentLevel.name,
+    exp: currentLevel.exp,
+  }
+}
+
+/**
+ * 计算学生的修为值（用于战斗）
+ * 修为 = 积分 * (1 + 仙宠加成%) + 仙宠等级 * 5
+ */
+export function calculateCultivationFromScore(
+  score: number,
+  petLevel: number
+): number {
+  const bonusPercent = 0.03 * petLevel
+  return Math.floor(score * (1 + bonusPercent) + petLevel * 5)
+}

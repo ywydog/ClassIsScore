@@ -58,6 +58,15 @@
         >
           {{ isXianxia ? '批量悟道' : '批量评分' }}
         </el-button>
+        <el-button
+          v-if="isXianxia"
+          type="warning"
+          size="small"
+          :disabled="selectedStudentIds.length === 0 || students.length < 2"
+          @click="openBattleDialog"
+        >
+          ⚔️ 道友切磋
+        </el-button>
       </div>
 
       <!-- 排行榜模式：领奖台 + 列表 -->
@@ -497,6 +506,14 @@
         <el-button type="danger" plain @click="selectPet('')">{{ isXianxia ? '移除仙宠' : '移除宠物' }}</el-button>
       </template>
     </el-dialog>
+
+    <!-- 道友切磋对话框 -->
+    <BattleDialog
+      v-if="isXianxia"
+      v-model="showBattleDialog"
+      :challenger="battleChallenger"
+      :opponents="battleOpponents"
+    />
   </div>
 </template>
 
@@ -517,6 +534,7 @@ import { calculateCultivation, getCultivationLevel, formatCultivationNumber } fr
 import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
 import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
 import PetDisplay from '@/components/display/PetDisplay.vue'
+import BattleDialog from '@/components/xianxia/BattleDialog.vue'
 
 // ===== 显示设置 =====
 interface DisplaySettings {
@@ -646,6 +664,26 @@ const batchScoreReason = ref('')
 // 宠物选择
 const showPetDialog = ref(false)
 const petDialogStudent = ref<Student | null>(null)
+
+// 道友切磋
+const showBattleDialog = ref(false)
+const battleChallenger = computed(() => {
+  if (selectedStudentIds.value.length === 0) return null
+  const id = selectedStudentIds.value[0]
+  return students.value.find(s => s.id === id) || null
+})
+const battleOpponents = computed(() => {
+  const selectedIds = new Set(selectedStudentIds.value)
+  return students.value.filter(s => !selectedIds.has(s.id))
+})
+
+function openBattleDialog() {
+  if (students.value.length < 2) {
+    ElMessage.warning('至少需要两名道友才能切磋')
+    return
+  }
+  showBattleDialog.value = true
+}
 
 let timeTimer: ReturnType<typeof setInterval> | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
