@@ -280,7 +280,7 @@ async function handleVerify() {
     const method = adminSettings.verificationMethod
     const credential = verifyCredential.value || 'face-placeholder'
     const response = await settingsApi.verifyAdmin(method, credential)
-    if (response.data.code === 0) {
+    if (response.data.data) {
       ElMessage.success('验证成功')
       showVerifyDialog.value = false
       verifyCredential.value = ''

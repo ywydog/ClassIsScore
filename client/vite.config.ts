@@ -1,24 +1,13 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import electron from 'vite-plugin-electron'
 import { resolve } from 'path'
+
+// Tauri 配置：https://v2.tauri.app/start/frontend/vite/
+const host = process.env.TAURI_DEV_HOST
 
 export default defineConfig({
   plugins: [
     vue(),
-    electron([
-      {
-        // 主进程入口
-        entry: 'electron/main.ts',
-      },
-      {
-        // preload 脚本
-        entry: 'electron/preload.ts',
-        onstart(args) {
-          args.reload()
-        },
-      },
-    ]),
   ],
   resolve: {
     alias: {
@@ -33,5 +22,17 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    host: host || false,
+    hmr: host
+      ? {
+          protocol: 'ws',
+          host,
+          port: 5174,
+        }
+      : undefined,
+    watch: {
+      ignored: ['**/src-tauri/**'],
+    },
   },
+  envPrefix: ['VITE_', 'TAURI_ENV_*'],
 })

@@ -1,11 +1,5 @@
 <template>
-  <div v-if="waitingBackend" class="backend-waiting">
-    <div class="waiting-content">
-      <div class="waiting-spinner"></div>
-      <p>正在连接服务器...</p>
-    </div>
-  </div>
-  <router-view v-else v-slot="{ Component }">
+  <router-view v-slot="{ Component }">
     <transition name="fade-slide" mode="out-in">
       <component :is="Component" />
     </transition>
@@ -13,35 +7,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 
 const appStore = useAppStore()
-const waitingBackend = ref(false)
 
 onMounted(async () => {
-  // Electron环境下等待后端就绪
-  if (window.electronAPI) {
-    const ready = await window.electronAPI.isBackendReady()
-    if (!ready) {
-      waitingBackend.value = true
-      // 等待后端就绪事件
-      await new Promise<void>((resolve) => {
-        const onReady = () => {
-          window.electronAPI?.removeBackendReadyListener()
-          resolve()
-        }
-        window.electronAPI?.onBackendReady(onReady)
-        // 超时保底：30秒后无论如何继续
-        setTimeout(() => {
-          window.electronAPI?.removeBackendReadyListener()
-          resolve()
-        }, 30000)
-      })
-      waitingBackend.value = false
-    }
-  }
-
+  // Tauri 模式下后端已在 setup() 中同步初始化，无需等待
   await appStore.initialize()
 })
 
@@ -68,34 +40,6 @@ body,
   color: var(--cis-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* 后端等待页面 */
-.backend-waiting {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  width: 100vw;
-}
-
-.waiting-content {
-  text-align: center;
-  color: var(--cis-text-secondary);
-}
-
-.waiting-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--cis-border-light);
-  border-top-color: var(--cis-primary);
-  border-radius: 50%;
-  margin: 0 auto 16px;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* 全局滚动条美化 */

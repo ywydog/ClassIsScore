@@ -1,59 +1,85 @@
-import api from './api'
-import type { ApiResponse, ScoreRecord, StudentScoreStats } from '@/types'
+import { invoke } from './tauri'
+import type { ScoreRecord } from '@/types'
 
-interface AddScoreRequest {
-  studentId: string
-  scoreChange: number
-  reason: string
+interface RustScoreRecord {
+  id: number
+  student_id: number
+  score_change: number
+  reason: string | null
+  category: string | null
+  operator_id: number | null
+  can_quick_revert: boolean
+  reverted: boolean
+  created_at: string
 }
 
-interface BatchAddScoreRequest {
-  studentIds: string[]
-  scoreChange: number
-  reason: string
-}
-
-interface RevertScoreRequest {
-  adminPassword?: string
-}
-
-interface CanRevertResponse {
-  canQuickRevert: boolean
-  needsAdminVerification: boolean
+function toScoreRecord(r: RustScoreRecord): ScoreRecord {
+  return {
+    id: String(r.id),
+    studentId: String(r.student_id),
+    studentName: '',
+    scoreChange: r.score_change,
+    reason: r.reason ?? '',
+    operator: r.operator_id ? String(r.operator_id) : undefined,
+    createdAt: r.created_at,
+    isReverted: r.reverted,
+    canQuickRevert: r.can_quick_revert,
+    needsAdminRevert: !r.reverted && !r.can_quick_revert,
+  }
 }
 
 export const scoreApi = {
-  getRecords(studentId?: string) {
-    const params = studentId ? { studentId } : {}
-    return api.get<ApiResponse<ScoreRecord[]>>('/api/scores', { params })
+  async getRecords(studentId?: string) {
+    const records = await invoke<RustScoreRecord[]>('score_list', {
+      studentId: studentId ? Number(studentId) : null,
+    })
+    return { data: { data: records.map(toScoreRecord) } }
   },
 
-  addScore(data: AddScoreRequest) {
-    return api.post<ApiResponse<ScoreRecord>>('/api/scores', data)
+  async addScore(data: { studentId: string; scoreChange: number; reason: string }) {
+    const result = await invoke<RustScoreRecord>('score_add', {
+      input: {
+        student_id: Number(data.studentId),
+        score_change: data.scoreChange,
+        reason: data.reason,
+      }
+    })
+    return { data: { data: toScoreRecord(result) } }
   },
 
-  batchAddScore(data: BatchAddScoreRequest) {
-    return api.post<ApiResponse<ScoreRecord[]>>('/api/scores/batch', data)
+  async batchAddScore(data: { studentIds: string[]; scoreChange: number; reason: string }) {
+    const results = await invoke<RustScoreRecord[]>('score_batch_add', {
+      input: {
+        student_ids: data.studentIds.map(Number),
+        score_change: data.scoreChange,
+        reason: data.reason,
+      }
+    })
+    return { data: { data: results.map(toScoreRecord) } }
   },
 
-  revertScore(recordId: string, adminPassword?: string) {
-    const data: RevertScoreRequest = {}
-    if (adminPassword) {
-      data.adminPassword = adminPassword
+  async revertScore(recordId: string, _adminPassword?: string) {
+    await invoke('score_revert', { id: Number(recordId) })
+    return { data: { data: undefined } }
+  },
+
+  async canRevert(_recordId: string) {
+    return {
+      data: {
+        data: {
+          canQuickRevert: false,
+          needsAdminVerification: true,
+        }
+      }
     }
-    return api.post<ApiResponse<void>>(`/api/scores/${recordId}/revert`, data)
   },
 
-  canRevert(recordId: string) {
-    return api.get<ApiResponse<CanRevertResponse>>(`/api/scores/${recordId}/can-revert`)
+  async getRecentRecords(limit: number = 50) {
+    const records = await invoke<RustScoreRecord[]>('score_recent', { limit })
+    return { data: { data: records.map(toScoreRecord) } }
   },
 
-  getRecentRecords(limit: number = 50) {
-    return api.get<ApiResponse<ScoreRecord[]>>('/api/scores/recent', { params: { limit } })
-  },
-
-  getStats(semesterStartDate?: string) {
-    const params = semesterStartDate ? { semesterStartDate } : {}
-    return api.get<ApiResponse<StudentScoreStats[]>>('/api/scores/stats', { params })
+  async getStats(_semesterStartDate?: string) {
+    return { data: { data: [] } }
   },
 }

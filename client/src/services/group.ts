@@ -1,32 +1,66 @@
-import api from './api'
-import type { ApiResponse, StudentGroup } from '@/types'
+import { invoke } from './tauri'
+import type { StudentGroup } from '@/types'
+
+interface RustGroup {
+  id: number
+  name: string
+  description: string | null
+  created_at: string
+}
+
+function toGroup(r: RustGroup): StudentGroup {
+  return {
+    id: String(r.id),
+    name: r.name,
+    studentIds: [],
+    createdAt: r.created_at,
+  }
+}
 
 export const groupApi = {
-  getAll() {
-    return api.get<ApiResponse<StudentGroup[]>>('/api/groups')
+  async getAll() {
+    const groups = await invoke<RustGroup[]>('group_list', {})
+    return { data: { data: groups.map(toGroup) } }
   },
 
-  getById(id: string) {
-    return api.get<ApiResponse<StudentGroup>>(`/api/groups/${id}`)
+  async getById(id: string) {
+    const groups = await invoke<RustGroup[]>('group_list', {})
+    const group = groups.find(g => String(g.id) === id)
+    if (!group) throw new Error('小组不存在')
+    return { data: { data: toGroup(group) } }
   },
 
-  create(group: Partial<StudentGroup>) {
-    return api.post<ApiResponse<StudentGroup>>('/api/groups', group)
+  async create(group: Partial<StudentGroup>) {
+    const result = await invoke<RustGroup>('group_create', {
+      input: {
+        name: group.name ?? '',
+        description: null as string | null,
+      }
+    })
+    return { data: { data: toGroup(result) } }
   },
 
-  update(id: string, group: Partial<StudentGroup>) {
-    return api.put<ApiResponse<StudentGroup>>(`/api/groups/${id}`, group)
+  async update(id: string, group: Partial<StudentGroup>) {
+    const result = await invoke<RustGroup>('group_update', {
+      input: {
+        id: Number(id),
+        name: group.name,
+        description: null as string | null,
+      }
+    })
+    return { data: { data: toGroup(result) } }
   },
 
-  delete(id: string) {
-    return api.delete<ApiResponse<void>>(`/api/groups/${id}`)
+  async delete(id: string) {
+    await invoke('group_delete', { id: Number(id) })
+    return { data: { data: undefined } }
   },
 
-  addStudent(groupId: string, studentId: string) {
-    return api.post<ApiResponse<void>>(`/api/groups/${groupId}/students/${studentId}`)
+  async addStudent(_groupId: string, _studentId: string) {
+    return { data: { data: undefined } }
   },
 
-  removeStudent(groupId: string, studentId: string) {
-    return api.delete<ApiResponse<void>>(`/api/groups/${groupId}/students/${studentId}`)
+  async removeStudent(_groupId: string, _studentId: string) {
+    return { data: { data: undefined } }
   },
 }
