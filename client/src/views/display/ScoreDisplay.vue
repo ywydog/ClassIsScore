@@ -14,7 +14,7 @@
           <div class="score-display__brand-icon">
             <el-icon :size="20"><Trophy /></el-icon>
           </div>
-          <h1 class="score-display__title">{{ isXianxia ? '仙榜' : '积分排行榜' }}</h1>
+          <h1 class="score-display__title">{{ t('leaderboardTitle') }}</h1>
         </div>
         <div class="score-display__time" v-if="displaySettings.showClock">{{ currentTime }}</div>
         <div class="score-display__toggles">
@@ -56,7 +56,7 @@
           :disabled="selectedStudentIds.length === 0"
           @click="showBatchScorePanel = true"
         >
-          {{ isXianxia ? '批量悟道' : '批量评分' }}
+          {{ t('batchScoreAction') }}
         </el-button>
         <el-button
           v-if="isXianxia"
@@ -198,7 +198,7 @@
     <!-- 周期积分面板（右下角） -->
     <div class="score-display__period-panel">
       <div class="score-display__period-panel__header">
-        <span class="score-display__period-panel__title">{{ isXianxia ? '灵力统计' : '积分统计' }}</span>
+        <span class="score-display__period-panel__title">{{ t('scoreStats') }}</span>
         <div class="score-display__period-panel__toggles">
           <button
             v-for="p in periodOptions"
@@ -323,7 +323,7 @@
         <div class="quick-score-bar__inner">
           <div class="quick-score-bar__student">
             <span class="quick-score-bar__student-name">{{ quickScoreStudent.name }}</span>
-            <span class="quick-score-bar__student-score">当前 {{ quickScoreStudent.score }} {{ isXianxia ? '灵力' : '分' }}</span>
+            <span class="quick-score-bar__student-score">当前 {{ quickScoreStudent.score }} {{ t('scoreUnit') }}</span>
           </div>
           <div class="quick-score-bar__actions">
             <!-- 评价项预设 -->
@@ -397,7 +397,7 @@
     <!-- 批量评分对话框 -->
     <el-dialog
       v-model="showBatchScorePanel"
-      :title="isXianxia ? '批量悟道' : '批量评分'"
+      :title="t('batchScoreAction')"
       width="480px"
       :close-on-click-modal="false"
       class="score-display__batch-dialog"
@@ -405,7 +405,7 @@
     >
       <div class="batch-score-form">
         <div class="batch-score-form__info">
-          已选择 <strong>{{ selectedStudentIds.length }}</strong> 名{{ isXianxia ? '道友' : '学生' }}
+          已选择 <strong>{{ selectedStudentIds.length }}</strong> 名{{ t('student') }}
         </div>
         <!-- 评价项预设 -->
         <div v-if="evaluationItems.length > 0" class="batch-score-form__eval-section">
@@ -457,14 +457,14 @@
       </div>
       <template #footer>
         <el-button @click="showBatchScorePanel = false">取消</el-button>
-        <el-button type="primary" :disabled="!batchScoreChange" @click="submitBatchScore">{{ isXianxia ? '确认悟道' : '确认评分' }}</el-button>
+        <el-button type="primary" :disabled="!batchScoreChange" @click="submitBatchScore">{{ t('confirmScore') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 宠物选择对话框 -->
     <el-dialog
       v-model="showPetDialog"
-      :title="isXianxia ? '选择仙宠' : '选择宠物'"
+      :title="t('selectPet')"
       width="520px"
       class="score-display__pet-dialog"
       append-to-body
@@ -503,7 +503,7 @@
       </div>
       <template #footer>
         <el-button @click="showPetDialog = false">取消</el-button>
-        <el-button type="danger" plain @click="selectPet('')">{{ isXianxia ? '移除仙宠' : '移除宠物' }}</el-button>
+        <el-button type="danger" plain @click="selectPet('')">{{ t('removePet') }}</el-button>
       </template>
     </el-dialog>
 
