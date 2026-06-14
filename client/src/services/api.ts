@@ -36,8 +36,12 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
-    const message = error.response?.data?.message || error.message || '网络请求失败'
-    ElMessage.error(message)
+    if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+      ElMessage.error('无法连接到服务器，请确认后端服务已启动')
+    } else {
+      const message = error.response?.data?.message || error.message || '网络请求失败'
+      ElMessage.error(message)
+    }
     return Promise.reject(error)
   }
 )
