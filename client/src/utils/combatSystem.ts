@@ -167,7 +167,7 @@ function calculateDamage(attacker: Combatant, defender: Combatant): { damage: nu
 
 /**
  * 生成战斗描述文字
- * 参考诸天修仙的战斗描述风格
+ * 参考诸天修仙的战斗描述风格，加入血量变化和修仙术语
  */
 function generateBattleDescription(
   attacker: Combatant,
@@ -176,35 +176,56 @@ function generateBattleDescription(
   isCritical: boolean,
   isDodge: boolean
 ): string {
+  // 修仙风格攻击技能名
+  const attackSkills = [
+    '灵力冲击', '法力凝拳', '御气斩', '灵光一击', '真元掌',
+    '玄气破', '道韵一指', '灵压碾压', '法印轰击', '仙力横扫',
+  ]
+  const critSkills = [
+    '天雷诀', '破灭一击', '灭世神拳', '万剑归宗', '天罡正气',
+    '九天玄雷', '混沌一击', '太虚神掌', '乾坤碎裂', '星辰坠落',
+  ]
+  const dodgeSkills = [
+    '幻影步', '虚空遁', '凌波微步', '瞬息万变', '影遁术',
+  ]
+
+  const skill = attackSkills[Math.floor(Math.random() * attackSkills.length)]
+  const critSkill = critSkills[Math.floor(Math.random() * critSkills.length)]
+  const dodgeSkill = dodgeSkills[Math.floor(Math.random() * dodgeSkills.length)]
+
+  const attackerHpPercent = Math.round((attacker.currentHp / attacker.maxHp) * 100)
+  const defenderHpPercent = Math.round((defender.currentHp / defender.maxHp) * 100)
+
   if (isDodge) {
     const dodgeTexts = [
-      `${defender.name}身影一闪，巧妙避开了攻击！`,
-      `${defender.name}施展身法，躲开了这一击！`,
-      `${defender.name}身形微侧，${attacker.name}的攻击落了空！`,
-      `${defender.name}一个滑步，躲开了攻击！`,
-      `只见${defender.name}身形飘移，${attacker.name}的攻击未能命中！`,
+      `${attacker.name}施展【${skill}】，但${defender.name}以【${dodgeSkill}】闪避！`,
+      `${attacker.name}发动【${skill}】，${defender.name}身形飘忽，巧妙避开！`,
+      `${attacker.name}一记【${skill}】打出，${defender.name}施展【${dodgeSkill}】躲开！`,
+      `${defender.name}以【${dodgeSkill}】化解了${attacker.name}的【${skill}】！`,
     ]
-    return dodgeTexts[Math.floor(Math.random() * dodgeTexts.length)]
+    const text = dodgeTexts[Math.floor(Math.random() * dodgeTexts.length)]
+    return `${text}（${attacker.name} ${attackerHpPercent}% | ${defender.name} ${defenderHpPercent}%）`
   }
 
   if (isCritical) {
     const critTexts = [
-      `轰！${attacker.name}发动暴击，对${defender.name}造成${formatNumber(damage)}点伤害！`,
-      `砰！${attacker.name}一击命中要害，${defender.name}受到${formatNumber(damage)}点重创！`,
-      `${attacker.name}的攻势凌厉！${defender.name}被击中要害，损失${formatNumber(damage)}点血！`,
-      `暴击！${attacker.name}的攻击正中${defender.name}要害，造成${formatNumber(damage)}点伤害！`,
+      `${attacker.name}施展【${critSkill}】！暴击！${defender.name}受到${formatNumber(damage)}点重创！`,
+      `轰！${attacker.name}的【${critSkill}】正中${defender.name}要害！造成${formatNumber(damage)}点伤害！`,
+      `${attacker.name}怒喝一声，【${critSkill}】爆发！${defender.name}被轰飞，损失${formatNumber(damage)}点血！`,
+      `暴击！${attacker.name}的【${critSkill}】势不可挡，${defender.name}遭受${formatNumber(damage)}点重创！`,
     ]
-    return critTexts[Math.floor(Math.random() * critTexts.length)]
+    const text = critTexts[Math.floor(Math.random() * critTexts.length)]
+    return `${text}（${attacker.name} ${attackerHpPercent}% | ${defender.name} ${defenderHpPercent}%）`
   }
 
   const normalTexts = [
-    `${attacker.name}向${defender.name}发起攻击，造成${formatNumber(damage)}点伤害。`,
-    `${attacker.name}挥出一击，${defender.name}受到${formatNumber(damage)}点伤害。`,
-    `${attacker.name}的攻击命中了${defender.name}，造成${formatNumber(damage)}点伤害。`,
-    `${attacker.name}出手攻击${defender.name}，造成${formatNumber(damage)}点伤害。`,
-    `${attacker.name}发起攻势，${defender.name}损失${formatNumber(damage)}点血。`,
+    `${attacker.name}施展【${skill}】，对${defender.name}造成${formatNumber(damage)}点伤害。`,
+    `${attacker.name}以【${skill}】攻向${defender.name}，造成${formatNumber(damage)}点伤害。`,
+    `${attacker.name}一记【${skill}】命中${defender.name}，${defender.name}损失${formatNumber(damage)}点血。`,
+    `${attacker.name}催动灵力，【${skill}】击中${defender.name}，造成${formatNumber(damage)}点伤害。`,
   ]
-  return normalTexts[Math.floor(Math.random() * normalTexts.length)]
+  const text = normalTexts[Math.floor(Math.random() * normalTexts.length)]
+  return `${text}（${attacker.name} ${attackerHpPercent}% | ${defender.name} ${defenderHpPercent}%）`
 }
 
 /**
@@ -228,10 +249,12 @@ export function simulateBattle(
   const maxRounds = 50 // 防止无限循环
 
   // 开场消息
-  battleLog.push(`【切磋开始】`)
-  battleLog.push(`${combatantA.name}（${combatantA.cultivationName}·${combatantA.petLevel}级${combatantA.petName}）`)
+  battleLog.push(`═══════════ 切磋开始 ═══════════`)
+  battleLog.push(`${combatantA.name}（${combatantA.cultivationName}·${combatantA.petLevel}级${combatantA.petName}）血量 ${combatantA.maxHp}`)
   battleLog.push(`VS`)
-  battleLog.push(`${combatantB.name}（${combatantB.cultivationName}·${combatantB.petLevel}级${combatantB.petName}）`)
+  battleLog.push(`${combatantB.name}（${combatantB.cultivationName}·${combatantB.petLevel}级${combatantB.petName}）血量 ${combatantB.maxHp}`)
+  battleLog.push(`${firstAttacker.name}先手出击！`)
+  battleLog.push(`─────────────────────────────`)
 
   while (
     combatantA.isAlive &&
@@ -310,10 +333,16 @@ export function simulateBattle(
   }
 
   if (isDraw) {
-    battleLog.push(`【平局】双方势均力敌，战斗以平局结束！`)
+    battleLog.push(`─────────────────────────────`)
+    battleLog.push(`【平局】双方势均力敌，鏖战${roundNumber}回合，不分胜负！`)
+    battleLog.push(`${combatantA.name} 剩余血量：${combatantA.currentHp} / ${combatantA.maxHp}`)
+    battleLog.push(`${combatantB.name} 剩余血量：${combatantB.currentHp} / ${combatantB.maxHp}`)
   } else {
+    battleLog.push(`─────────────────────────────`)
     battleLog.push(`【战斗结束】${winner.name}击败${loser.name}，获得胜利！`)
-    battleLog.push(`胜者剩余血量：${winner.currentHp} / ${winner.maxHp}`)
+    battleLog.push(`${winner.name}（${winner.cultivationName}）剩余血量：${winner.currentHp} / ${winner.maxHp}`)
+    battleLog.push(`${loser.name}（${loser.cultivationName}）已倒下`)
+    battleLog.push(`═══════════ 切磋结束 ═══════════`)
   }
 
   return {

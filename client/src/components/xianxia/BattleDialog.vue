@@ -114,6 +114,13 @@
           v-for="(log, idx) in displayedLogs"
           :key="idx"
           class="battle-screen__log-item"
+          :class="{
+            'battle-screen__log-item--header': isLogHeader(log),
+            'battle-screen__log-item--round': isLogRound(log),
+            'battle-screen__log-item--crit': isLogCrit(log),
+            'battle-screen__log-item--dodge': isLogDodge(log),
+            'battle-screen__log-item--end': isLogEnd(log),
+          }"
         >
           {{ log }}
         </div>
@@ -163,13 +170,22 @@
         </div>
       </div>
 
-      <!-- 战斗日志 -->
+      <!-- 战斗过程 -->
       <div class="battle-result__log">
-        <div class="battle-result__log-title">战斗详情</div>
+        <div class="battle-result__log-title">切磋过程</div>
         <div class="battle-result__log-list">
-          <div v-for="(log, idx) in battleResult?.battleLog" :key="idx" class="battle-result__log-item">
-            {{ log }}
-          </div>
+          <div
+            v-for="(log, idx) in battleResult?.battleLog"
+            :key="idx"
+            class="battle-result__log-item"
+            :class="{
+              'battle-result__log-item--header': isLogHeader(log),
+              'battle-result__log-item--round': isLogRound(log),
+              'battle-result__log-item--crit': isLogCrit(log),
+              'battle-result__log-item--dodge': isLogDodge(log),
+              'battle-result__log-item--end': isLogEnd(log),
+            }"
+          >{{ log }}</div>
         </div>
       </div>
     </div>
@@ -441,6 +457,27 @@ function backToSelect() {
 
 function handleClose() {
   visible.value = false
+}
+
+// 日志分类函数（用于样式高亮）
+function isLogHeader(log: string): boolean {
+  return log.includes('═══') || log.includes('切磋开始') || log.includes('VS')
+}
+
+function isLogRound(log: string): boolean {
+  return log.startsWith('【第') && log.includes('回合】')
+}
+
+function isLogCrit(log: string): boolean {
+  return log.includes('暴击') || log.includes('重创') || log.includes('轰飞')
+}
+
+function isLogDodge(log: string): boolean {
+  return log.includes('闪避') || log.includes('躲开') || log.includes('避开') || log.includes('化解')
+}
+
+function isLogEnd(log: string): boolean {
+  return log.includes('战斗结束') || log.includes('切磋结束') || log.includes('平局') || log.includes('已倒下') || log.includes('剩余血量')
 }
 </script>
 
@@ -749,6 +786,32 @@ function handleClose() {
   padding: 2px 0;
 }
 
+.battle-screen__log-item--header {
+  color: #C9A84C;
+  font-weight: 600;
+  text-align: center;
+}
+
+.battle-screen__log-item--round {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.battle-screen__log-item--crit {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.battle-screen__log-item--dodge {
+  color: #60a5fa;
+  font-style: italic;
+}
+
+.battle-screen__log-item--end {
+  color: #f87171;
+  font-weight: 600;
+}
+
 /* ===== 战斗结果 ===== */
 .battle-result {
   display: flex;
@@ -867,9 +930,43 @@ function handleClose() {
 }
 
 .battle-result__log-item {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.8;
-  padding: 2px 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.9;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.battle-result__log-item--header {
+  color: #C9A84C;
+  font-weight: 600;
+  text-align: center;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: none;
+}
+
+.battle-result__log-item--round {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  margin-top: 6px;
+  border-bottom: none;
+}
+
+.battle-result__log-item--crit {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.battle-result__log-item--dodge {
+  color: #60a5fa;
+  font-style: italic;
+}
+
+.battle-result__log-item--end {
+  color: #f87171;
+  font-weight: 600;
+  margin-top: 6px;
+  border-bottom: none;
 }
 </style>
