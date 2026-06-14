@@ -62,11 +62,6 @@ async function openMainWindow() {
 </script>
 
 <style scoped>
-/* 悬浮窗需要透明背景 */
-:global(html), :global(body) {
-  background: transparent !important;
-}
-
 .floating-bar {
   width: 100%;
   height: 100%;
