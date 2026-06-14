@@ -12,7 +12,7 @@ interface RustTheme {
   installed_at: string
 }
 
-function toTheme(r: RustTheme): ThemeManifest {
+function toTheme(r: RustTheme): ThemeManifest & { enabled: boolean } {
   return {
     id: r.id,
     name: r.name,
@@ -20,6 +20,7 @@ function toTheme(r: RustTheme): ThemeManifest {
     version: r.version,
     author: r.author,
     targetApiVersion: '1.0',
+    enabled: r.is_enabled,
   }
 }
 

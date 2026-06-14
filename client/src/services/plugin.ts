@@ -11,7 +11,7 @@ interface RustPlugin {
   installed_at: string
 }
 
-function toPlugin(r: RustPlugin): PluginManifest {
+function toPlugin(r: RustPlugin): PluginManifest & { enabled: boolean } {
   return {
     id: r.id,
     name: r.name,
@@ -19,6 +19,7 @@ function toPlugin(r: RustPlugin): PluginManifest {
     version: r.version,
     author: r.author,
     entranceAssembly: '',
+    enabled: r.is_enabled,
   }
 }
 

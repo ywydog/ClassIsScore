@@ -335,7 +335,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
 import { groupApi } from '@/services/group'
 import type { EvaluationItem, StudentGroup, StudentScoreStats } from '@/types'
-import api from '@/services/api'
+import { evaluationApi } from '@/services/evaluation'
 import { readExcelFile } from '@/utils/excelHelper'
 import { scoreApi } from '@/services/score'
 import type { UploadFile } from 'element-plus'
@@ -463,7 +463,7 @@ onMounted(async () => {
 
 async function fetchEvaluationItems() {
   try {
-    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluations')
+    const response = await evaluationApi.getAll()
     evaluationItems.value = response.data.data
   } catch {
     evaluationItems.value = [

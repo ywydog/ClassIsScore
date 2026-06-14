@@ -72,7 +72,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Refresh, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry } from '@/types'
-import api from '@/services/api'
+import { leaderboardApi } from '@/services/leaderboard'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { exportToExcel, type ExcelColumn } from '@/utils/excelHelper'
 
@@ -99,50 +99,18 @@ onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
 })
 
-function getTimeRangeParams(): { startTime?: string; endTime?: string } {
-  const now = new Date()
-  let startTime: Date | undefined
-
-  switch (timeRange.value) {
-    case 'today': {
-      startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
-      break
-    }
-    case 'week': {
-      const day = now.getDay() || 7
-      startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1, 0, 0, 0)
-      break
-    }
-    case 'month': {
-      startTime = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0)
-      break
-    }
-    case 'all':
-    default:
-      return {}
-  }
-
-  return {
-    startTime: startTime!.toISOString().slice(0, 19),
-    endTime: now.toISOString().slice(0, 19),
-  }
-}
-
 function handleTimeRangeChange() {
   fetchLeaderboard()
 }
 
 async function fetchLeaderboard() {
   try {
-    const endpoint = mode.value === 'personal' ? '/api/leaderboard/personal' : '/api/leaderboard/group'
-    const params = getTimeRangeParams()
-    const response = await api.get<{ data: LeaderboardEntry[] }>(endpoint, { params })
+    const response = await leaderboardApi.query()
     const data = response.data.data
-    // 为每条数据添加 rank
-    entries.value = data.map((item: any, index: number) => ({
-      rank: index + 1,
+    entries.value = data.map((item: LeaderboardEntry, index: number) => ({
+      rank: item.rank ?? index + 1,
       name: item.name,
-      score: item.score ?? item.totalScore ?? 0,
+      score: item.score ?? 0,
       isGroup: mode.value === 'group',
     }))
   } catch {

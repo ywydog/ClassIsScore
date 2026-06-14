@@ -174,7 +174,7 @@ import { User, Grid, Timer, Trophy, Rank, Finished, TrendCharts } from '@element
 import { useStudentStore } from '@/stores/student'
 import { useScoreStore } from '@/stores/score'
 import { groupApi } from '@/services/group'
-import api from '@/services/api'
+import { studentApi } from '@/services/student'
 
 const router = useRouter()
 const studentStore = useStudentStore()
@@ -253,7 +253,7 @@ function formatTime(dateStr: string): string {
 async function fetchDashboardData() {
   try {
     const [studentsRes, groupsRes] = await Promise.all([
-      api.get('/api/students'),
+      studentApi.getAll(),
       groupApi.getAll(),
     ])
 
@@ -276,26 +276,14 @@ async function fetchDashboardData() {
     }
   }
 
-  // Fetch today's count
-  try {
-    const res = await api.get('/api/scores/today-count')
-    stats.value.todayCount = res.data.data ?? 0
-  } catch {
-    // Fallback: compute from recent records
-    const today = new Date().toISOString().slice(0, 10)
-    stats.value.todayCount = scoreStore.scoreRecords.filter(
-      r => r.createdAt.slice(0, 10) === today
-    ).length
-  }
+  // Compute today's count from scoreStore
+  const today = new Date().toISOString().slice(0, 10)
+  stats.value.todayCount = scoreStore.scoreRecords.filter(
+    r => r.createdAt.slice(0, 10) === today
+  ).length
 
-  // Fetch trend data
-  try {
-    const res = await api.get('/api/scores/trend', { params: { days: 7 } })
-    trendRaw.value = res.data.data || []
-  } catch {
-    // Fallback: compute client-side from records
-    computeTrendFromRecords()
-  }
+  // Compute trend data from scoreStore
+  computeTrendFromRecords()
 }
 
 function computeTrendFromRecords() {

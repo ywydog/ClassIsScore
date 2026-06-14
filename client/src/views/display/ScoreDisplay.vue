@@ -523,7 +523,8 @@ import { Trophy, Check, Close, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent, StudentScoreStats } from '@/types'
 import { PetCategory } from '@/types'
-import api from '@/services/api'
+import { leaderboardApi } from '@/services/leaderboard'
+import { evaluationApi } from '@/services/evaluation'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
 import { scoreApi } from '@/services/score'
@@ -949,8 +950,7 @@ onUnmounted(() => {
 
 async function fetchLeaderboard() {
   try {
-    const endpoint = mode.value === 'personal' ? '/api/leaderboard/personal' : '/api/leaderboard/group'
-    const response = await api.get<{ data: LeaderboardEntry[] }>(endpoint)
+    const response = await leaderboardApi.query()
     leaderboard.value = response.data.data
   } catch {
     // silent
@@ -968,7 +968,7 @@ async function fetchStudents() {
 
 async function fetchEvaluationItems() {
   try {
-    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluation/items')
+    const response = await evaluationApi.getAll()
     evaluationItems.value = response.data.data || []
   } catch {
     // silent

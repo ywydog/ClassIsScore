@@ -66,4 +66,39 @@ export const settingsApi = {
     await invoke('auth_set_passwords', { adminPassword: password })
     return { data: { data: undefined } }
   },
+
+  async resetAll() {
+    await invoke('student_reset_scores')
+    return { data: { data: undefined } }
+  },
+
+  async getFloatingSettings() {
+    const settings = await invoke<RustSetting[]>('settings_get_all', {})
+    const result: Record<string, unknown> = {}
+    for (const s of settings) {
+      if (s.setting_value && s.setting_key.startsWith('floating.')) {
+        result[s.setting_key] = s.setting_value
+      }
+    }
+    return { data: { data: result } }
+  },
+
+  async updateFloatingSettings(settings: Record<string, unknown>) {
+    for (const [key, value] of Object.entries(settings)) {
+      if (value !== undefined) {
+        await invoke('settings_set', { key, value: String(value) })
+      }
+    }
+    return { data: { data: undefined } }
+  },
+
+  async getDataPath() {
+    try {
+      const { appDataDir } = await import('@tauri-apps/api/path')
+      const path = await appDataDir()
+      return { data: { data: { path } } }
+    } catch {
+      return { data: { data: { path: '' } } }
+    }
+  },
 }

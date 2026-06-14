@@ -226,7 +226,8 @@ import { useSettingsStore } from '@/stores/settings'
 import { DisplayMode } from '@/types'
 import type { Student, StudentGroup, EvaluationItem } from '@/types'
 import { ALL_PET_TYPES } from '@/utils/petSystem'
-import api from '@/services/api'
+import { settingsApi } from '@/services/settings'
+import { evaluationApi } from '@/services/evaluation'
 import { studentApi } from '@/services/student'
 import { groupApi } from '@/services/group'
 import { exportToExcel, readExcelFile } from '@/utils/excelHelper'
@@ -317,7 +318,7 @@ onMounted(async () => {
 
 async function fetchFloatingSettings() {
   try {
-    const response = await api.get<{ data: Record<string, unknown> }>('/api/settings/floating')
+    const response = await settingsApi.getFloatingSettings()
     const data = response.data.data
     if (data) {
       if (data['floating.enabled'] !== undefined) floatingSettings.enabled = !!data['floating.enabled']
@@ -333,7 +334,7 @@ async function fetchFloatingSettings() {
 
 async function fetchDataFolderPath() {
   try {
-    const response = await api.get<{ data: { path: string } }>('/api/settings/data-path')
+    const response = await settingsApi.getDataPath()
     dataFolderPath.value = response.data.data?.path || ''
   } catch { /* ignore */ }
 }
@@ -368,7 +369,7 @@ async function handleThemeModeChange(value: 'default' | 'xianxia') {
 
 async function handleFloatingSave() {
   try {
-    await api.put('/api/settings/floating', {
+    await settingsApi.updateFloatingSettings({
       'floating.enabled': floatingSettings.enabled,
       'floating.style': floatingSettings.style,
       'floating.opacity': floatingSettings.opacity,
@@ -392,7 +393,7 @@ async function handleExportAll() {
     const [studentsRes, groupsRes, evaluationRes] = await Promise.all([
       studentApi.getAll(),
       groupApi.getAll(),
-      api.get<{ data: EvaluationItem[] }>('/api/evaluation-items').catch(() => ({ data: { data: [] } })),
+      evaluationApi.getAll().catch(() => ({ data: { data: [] } })),
     ])
 
     const students: Student[] = studentsRes.data.data || []

@@ -22,7 +22,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Trophy } from '@element-plus/icons-vue'
 import type { LeaderboardEntry } from '@/types'
-import api from '@/services/api'
+import { leaderboardApi } from '@/services/leaderboard'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { Window } from '@tauri-apps/api/window'
 
@@ -41,9 +41,7 @@ onUnmounted(() => {
 
 async function fetchTopStudents() {
   try {
-    const response = await api.get<{ data: LeaderboardEntry[] }>('/api/leaderboard/personal', {
-      params: { limit: 5 },
-    })
+    const response = await leaderboardApi.query()
     topStudents.value = response.data.data.slice(0, 5)
   } catch {
     // silent

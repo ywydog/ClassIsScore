@@ -241,7 +241,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { EvaluationItem, AutoEvaluationConfig, StudentGroup, Student } from '@/types'
-import api from '@/services/api'
+import { evaluationApi } from '@/services/evaluation'
+import { autoScoreApi } from '@/services/autoScore'
+import { groupApi } from '@/services/group'
+import { studentApi } from '@/services/student'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
 
 const { t } = useTerminology()
@@ -275,7 +278,7 @@ function onColorPickerChange(val: string | null) {
 
 async function fetchItems() {
   try {
-    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluation/items')
+    const response = await evaluationApi.getAll()
     evaluationItems.value = response.data.data
   } catch { /* ignore */ }
 }
@@ -309,9 +312,9 @@ async function handleSaveItem() {
   }
   try {
     if (editingItem.value) {
-      await api.put(`/api/evaluation/items/${editingItem.value.id}`, payload)
+      await evaluationApi.update(String(editingItem.value.id), payload)
     } else {
-      await api.post('/api/evaluation/items', payload)
+      await evaluationApi.create(payload)
     }
     ElMessage.success('已保存')
     showItemDialog.value = false
@@ -322,7 +325,7 @@ async function handleSaveItem() {
 async function handleDeleteItem(id: string) {
   await ElMessageBox.confirm('确定删除该评估项？', '确认', { type: 'warning' })
   try {
-    await api.delete(`/api/evaluation/items/${id}`)
+    await evaluationApi.delete(String(id))
     ElMessage.success('已删除')
     await fetchItems()
   } catch { /* ignore */ }
@@ -352,22 +355,22 @@ const configForm = reactive({
 
 async function fetchConfigs() {
   try {
-    const response = await api.get<{ data: AutoEvaluationConfig[] }>('/api/auto-evaluation-configs')
+    const response = await autoScoreApi.getAll()
     configList.value = response.data.data
   } catch { /* ignore */ }
 }
 
 async function fetchGroups() {
   try {
-    const response = await api.get<{ data: StudentGroup[] }>('/api/groups')
+    const response = await groupApi.getAll()
     groups.value = response.data.data
   } catch { /* ignore */ }
 }
 
 async function fetchStudents() {
   try {
-    const response = await api.get<{ data: { records: Student[] } }>('/api/students?current=1&size=9999')
-    students.value = response.data.data.records || []
+    const response = await studentApi.getAll()
+    students.value = response.data.data || []
   } catch { /* ignore */ }
 }
 
@@ -497,9 +500,9 @@ async function handleSaveConfig() {
   }
   try {
     if (editingConfig.value) {
-      await api.put(`/api/auto-evaluation-configs/${editingConfig.value.id}`, payload)
+      await autoScoreApi.updateRule(String(editingConfig.value.id), payload)
     } else {
-      await api.post('/api/auto-evaluation-configs', payload)
+      await autoScoreApi.addRule(payload)
     }
     ElMessage.success('已保存')
     showConfigDialog.value = false
@@ -509,7 +512,7 @@ async function handleSaveConfig() {
 
 async function handleToggleConfig(row: AutoEvaluationConfig) {
   try {
-    await api.put(`/api/auto-evaluation-configs/${row.id}/toggle`)
+    await autoScoreApi.toggleRule(String(row.id), !row.isEnabled)
     await fetchConfigs()
   } catch { /* ignore */ }
 }
@@ -517,7 +520,7 @@ async function handleToggleConfig(row: AutoEvaluationConfig) {
 async function handleDeleteConfig(id: string) {
   await ElMessageBox.confirm('确定删除该自动评估配置？', '确认', { type: 'warning' })
   try {
-    await api.delete(`/api/auto-evaluation-configs/${id}`)
+    await autoScoreApi.deleteRule(String(id))
     ElMessage.success('已删除')
     await fetchConfigs()
   } catch { /* ignore */ }

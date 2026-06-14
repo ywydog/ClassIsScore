@@ -66,7 +66,7 @@ import { ref, onMounted } from 'vue'
 import { Brush, Upload, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ThemeManifest } from '@/types'
-import api from '@/services/api'
+import { themeApi } from '@/services/theme'
 import { invoke } from '@tauri-apps/api/core'
 
 const themes = ref<Array<ThemeManifest & { enabled: boolean }>>([])
@@ -79,7 +79,7 @@ onMounted(async () => {
 
 async function fetchThemes() {
   try {
-    const response = await api.get<{ data: Array<ThemeManifest & { enabled: boolean }> }>('/api/themes')
+    const response = await themeApi.getAll()
     themes.value = response.data.data || []
   } catch {
     themes.value = []
@@ -88,7 +88,7 @@ async function fetchThemes() {
 
 async function handleThemeToggle(theme: ThemeManifest & { enabled: boolean }) {
   try {
-    await api.put(`/api/themes/${theme.id}/toggle`, { enabled: theme.enabled })
+    await themeApi.apply(String(theme.id))
     ElMessage.success(theme.enabled ? '已启用主题' : '已禁用主题')
     promptRelaunch('主题包状态变更')
   } catch {
@@ -99,7 +99,7 @@ async function handleThemeToggle(theme: ThemeManifest & { enabled: boolean }) {
 async function handleDeleteTheme(id: string) {
   await ElMessageBox.confirm('确定删除该主题包？', '确认删除', { type: 'warning' })
   try {
-    await api.delete(`/api/themes/${id}`)
+    await themeApi.uninstall(String(id))
     ElMessage.success('已删除')
     await fetchThemes()
     promptRelaunch('删除主题包')
