@@ -1,8 +1,8 @@
-name: Build
+name: Build Tauri
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/vue-electron ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
@@ -19,65 +19,82 @@ on:
         default: false
 
 env:
-  DOTNET_VERSION: '8.0.x'
-  PROJECT_PATH: 'avalonia/ClassIsScore.csproj'
+  NODE_VERSION: '20.x'
+  RUST_VERSION: '1.77'
+  CLIENT_DIR: 'client'
 
 jobs:
   build:
-    name: Build_${{ matrix.os }}_${{ matrix.arch }}
+    name: Build ${{ matrix.os }}
     runs-on: ${{ matrix.runner }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows
-            arch: x64
             runner: windows-2022
-            rid: win-x64
-          - os: windows
-            arch: arm64
-            runner: windows-2022
-            rid: win-arm64
           - os: linux
-            arch: x64
             runner: ubuntu-22.04
-            rid: linux-x64
-          - os: linux
-            arch: arm64
-            runner: ubuntu-22.04
-            rid: linux-arm64
           - os: macos
-            arch: x64
             runner: macos-14
-            rid: osx-x64
-          - os: macos
-            arch: arm64
-            runner: macos-14
-            rid: osx-arm64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.CLIENT_DIR }}/package-lock.json
 
-      - name: Install .NET
-        uses: actions/setup-dotnet@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          toolchain: ${{ env.RUST_VERSION }}
 
-      - name: Restore dependencies
-        run: dotnet restore ${{ env.PROJECT_PATH }}
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.CLIENT_DIR }}/src-tauri -> target
 
-      - name: Build
-        run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+      - name: Install Linux Dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
 
-      - name: Publish (Self-contained)
-        run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r ${{ matrix.rid }} --self-contained true -o ./publish/${{ matrix.rid }}
+      - name: Install Frontend Dependencies
+        run: |
+          cd ${{ env.CLIENT_DIR }}
+          npm ci
+
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: ${{ env.CLIENT_DIR }}
+          tauriScript: npx tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: 'ClassIsScore ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ClassIsScore-${{ matrix.rid }}
-          path: ./publish/${{ matrix.rid }}/
+          name: ClassIsScore-${{ matrix.os }}
+          path: |
+            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.exe
+            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.msi
+            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.AppImage
+            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.deb
+            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.dmg
+            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.app
+          if-no-files-found: warn
 
   release:
     name: Create Release
@@ -95,14 +112,10 @@ jobs:
         with:
           path: ./artifacts
 
-      - name: Create Release Archives
+      - name: Collect Release Files
         run: |
           mkdir -p ./release
-          cd ./artifacts
-          for dir in */; do
-            name=$(basename "$dir")
-            7z a -tzip "../release/ClassIsScore-${name}.zip" "./$dir/*"
-          done
+          find ./artifacts -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} ./release/ \;
 
       - name: Determine Tag
         id: tag
@@ -115,7 +128,7 @@ jobs:
             echo "tag=v0.0.0-dev.$(date +%Y%m%d%H%M)" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create or Update GitHub Release
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.tag.outputs.tag }}
