@@ -58,7 +58,7 @@ import { Box, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { PluginManifest } from '@/types'
 import { pluginApi } from '@/services/plugin'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@/services/tauri'
 
 const plugins = ref<Array<PluginManifest & { enabled: boolean }>>([])
 const loading = ref(true)

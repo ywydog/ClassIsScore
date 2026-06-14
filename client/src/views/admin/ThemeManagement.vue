@@ -68,7 +68,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ThemeManifest } from '@/types'
 import { themeApi } from '@/services/theme'
 import { useSettingsStore } from '@/stores/settings'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@/services/tauri'
 
 const settingsStore = useSettingsStore()
 const themes = ref<Array<ThemeManifest & { enabled: boolean }>>([])

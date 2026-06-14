@@ -25,7 +25,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Fold, Monitor, DataLine } from '@element-plus/icons-vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@/services/tauri'
 
 defineEmits<{
   'toggle-sidebar': []

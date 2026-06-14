@@ -232,7 +232,7 @@ import { studentApi } from '@/services/student'
 import { groupApi } from '@/services/group'
 import { exportToExcel, readExcelFile } from '@/utils/excelHelper'
 import * as XLSX from 'xlsx'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@/services/tauri'
 
 const settingsStore = useSettingsStore()
 const activeTab = ref('general')
