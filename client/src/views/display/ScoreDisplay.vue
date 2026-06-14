@@ -527,6 +527,7 @@ import { leaderboardApi } from '@/services/leaderboard'
 import { evaluationApi } from '@/services/evaluation'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
+import { groupApi } from '@/services/group'
 import { scoreApi } from '@/services/score'
 import { useSettingsStore } from '@/stores/settings'
 import { ALL_PET_TYPES, calculateLevel } from '@/utils/petSystem'
@@ -950,8 +951,25 @@ onUnmounted(() => {
 
 async function fetchLeaderboard() {
   try {
-    const response = await leaderboardApi.query()
-    leaderboard.value = response.data.data
+    if (mode.value === 'group') {
+      // 小组模式：获取所有小组，计算小组总分
+      const groupsResponse = await groupApi.getAll()
+      const groups = groupsResponse.data.data
+      const studentsResponse = await studentApi.getAll()
+      const allStudents = studentsResponse.data.data
+
+      const groupScores = groups.map(g => {
+        const members = allStudents.filter(s => s.groupId === g.id)
+        const totalScore = members.reduce((sum, s) => sum + s.score, 0)
+        return { rank: 0, name: g.name, score: totalScore, isGroup: true } as LeaderboardEntry
+      }).sort((a, b) => b.score - a.score)
+
+      groupScores.forEach((g, i) => g.rank = i + 1)
+      leaderboard.value = groupScores
+    } else {
+      const response = await leaderboardApi.query()
+      leaderboard.value = response.data.data
+    }
   } catch {
     // silent
   }

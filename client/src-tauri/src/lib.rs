@@ -98,6 +98,7 @@ pub fn run() {
             commands::score::score_revert,
             commands::score::score_recent,
             commands::score::score_stats,
+            commands::score::score_stats_all,
             // 小组管理
             commands::group::group_list,
             commands::group::group_create,

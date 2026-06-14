@@ -1,5 +1,5 @@
 import { invoke } from './tauri'
-import type { ScoreRecord } from '@/types'
+import type { ScoreRecord, StudentScoreStats } from '@/types'
 
 interface RustScoreRecord {
   id: number
@@ -11,6 +11,21 @@ interface RustScoreRecord {
   can_quick_revert: boolean
   reverted: boolean
   created_at: string
+}
+
+interface RustStudentScoreStats {
+  student_id: number
+  student_name: string
+  total_score: number
+  day_plus: number
+  day_minus: number
+  day_net: number
+  week_plus: number
+  week_minus: number
+  week_net: number
+  month_plus: number
+  month_minus: number
+  month_net: number
 }
 
 function toScoreRecord(r: RustScoreRecord): ScoreRecord {
@@ -25,6 +40,23 @@ function toScoreRecord(r: RustScoreRecord): ScoreRecord {
     isReverted: r.reverted,
     canQuickRevert: r.can_quick_revert,
     needsAdminRevert: !r.reverted && !r.can_quick_revert,
+  }
+}
+
+function toStudentScoreStats(r: RustStudentScoreStats): StudentScoreStats {
+  return {
+    studentId: r.student_id,
+    studentName: r.student_name,
+    totalScore: r.total_score,
+    dayPlus: r.day_plus,
+    dayMinus: r.day_minus,
+    dayNet: r.day_net,
+    weekPlus: r.week_plus,
+    weekMinus: r.week_minus,
+    weekNet: r.week_net,
+    monthPlus: r.month_plus,
+    monthMinus: r.month_minus,
+    monthNet: r.month_net,
   }
 }
 
@@ -80,6 +112,7 @@ export const scoreApi = {
   },
 
   async getStats(_semesterStartDate?: string) {
-    return { data: { data: [] } }
+    const stats = await invoke<RustStudentScoreStats[]>('score_stats_all')
+    return { data: { data: stats.map(toStudentScoreStats) } }
   },
 }
