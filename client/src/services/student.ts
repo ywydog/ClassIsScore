@@ -56,18 +56,17 @@ export const studentApi = {
   },
 
   async update(id: string, student: Partial<Student>) {
-    const result = await invoke<RustStudent>('student_update', {
-      input: {
-        id: Number(id),
-        name: student.name,
-        student_number: student.studentNumber ?? null,
-        group_id: student.groupId ? Number(student.groupId) : null,
-        avatar: student.avatar ?? null,
-        pet_type: student.petType ?? null,
-        pet_name: null,
-        pet_exp: student.petExp,
-      }
-    })
+    const input: Record<string, unknown> = {
+      id: Number(id),
+    }
+    if (student.name !== undefined) input.name = student.name
+    if (student.studentNumber !== undefined) input.student_number = student.studentNumber ?? null
+    if (student.groupId !== undefined) input.group_id = student.groupId ? Number(student.groupId) : null
+    if (student.avatar !== undefined) input.avatar = student.avatar ?? null
+    if (student.petType !== undefined) input.pet_type = student.petType ?? null
+    if (student.petExp !== undefined) input.pet_exp = student.petExp
+
+    const result = await invoke<RustStudent>('student_update', { input })
     return { data: { data: toStudent(result) } }
   },
 

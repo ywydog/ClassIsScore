@@ -56,8 +56,8 @@ export const settingsApi = {
 
   async verifyAdmin(method: string, credential: string) {
     if (method === 'password') {
-      const result = await invoke<boolean>('auth_verify', { password: credential })
-      return { data: { data: result } }
+      const result = await invoke<{ success: boolean; message: string }>('auth_verify', { password: credential })
+      return { data: { data: result.success } }
     }
     return { data: { data: false } }
   },
