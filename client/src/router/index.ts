@@ -116,4 +116,28 @@ const router = createRouter({
   routes,
 })
 
+// 路由守卫：首次启动跳转引导页
+router.beforeEach((to, _from, next) => {
+  if (to.path === '/onboarding' || to.path === '/display' || to.path === '/floating') {
+    next()
+    return
+  }
+
+  // 检查引导是否完成
+  const onboardingDone = localStorage.getItem('onboardingCompleted') === 'true'
+  if (!onboardingDone) {
+    // 延迟检查：app store 可能还没初始化
+    import('@/stores/app').then(({ useAppStore }) => {
+      const appStore = useAppStore()
+      if (!appStore.appState.isOnboardingCompleted && appStore.initialized) {
+        next('/onboarding')
+      } else {
+        next()
+      }
+    }).catch(() => next())
+  } else {
+    next()
+  }
+})
+
 export default router

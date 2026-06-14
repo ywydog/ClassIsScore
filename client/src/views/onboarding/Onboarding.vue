@@ -122,11 +122,13 @@ import { useRouter } from 'vue-router'
 import { Trophy, User, Rank, Monitor, SuccessFilled } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useStudentStore } from '@/stores/student'
+import { useAppStore } from '@/stores/app'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const settingsStore = useSettingsStore()
 const studentStore = useStudentStore()
+const appStore = useAppStore()
 
 const currentStep = ref(0)
 const studentInput = ref('')
@@ -152,7 +154,15 @@ function orbStyle(i: number) {
 
 async function handleComplete() {
   try {
+    // 保存主题设置
     await settingsStore.updateSettings({ theme: setupForm.theme })
+
+    // 保存班级名称
+    if (setupForm.className.trim()) {
+      await settingsStore.updateSettings({ className: setupForm.className } as Record<string, unknown>)
+    }
+
+    // 批量创建学生
     if (studentInput.value.trim()) {
       const names = studentInput.value.trim().split('\n').filter(n => n.trim())
       if (names.length > 0) {
@@ -161,9 +171,13 @@ async function handleComplete() {
         ElMessage.success(`已添加 ${names.length} 名学生`)
       }
     }
-    router.replace('/admin/scores')
-  } catch {
-    ElMessage.error('设置保存失败，请重试')
+
+    // 标记引导完成
+    await appStore.completeOnboarding()
+
+    router.replace('/admin/dashboard')
+  } catch (err) {
+    ElMessage.error('设置保存失败: ' + (err instanceof Error ? err.message : '请重试'))
   }
 }
 </script>
