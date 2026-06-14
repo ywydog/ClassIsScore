@@ -1,6 +1,6 @@
 # ClassIsScore
 
-教室大屏多功能积分管理软件，基于 .NET 8 + Avalonia UI 构建。
+教室大屏多功能积分管理软件，基于 Tauri 2 + Rust + Vue 3 构建。
 
 ## 功能特性
 
@@ -8,11 +8,18 @@
 - **学生管理** — 支持 Excel/CSV 导入学生名单，按姓名首字母/学号排序
 - **积分管理** — 加减分操作、常用评价项快捷操作、3分钟免验证撤销机制
 - **历史记录** — 完整的积分变动记录，支持按学生/日/周/月筛选
+- **周期统计** — 日/周/月加减分统计面板
 
 ### 积分显示
 - **卡片样式** — 头像 + 姓名 + 积分并排展示
 - **圆形样式** — 圆形头像 + 底部积分叠加
 - **宠物模式** — 宠物喂养升级效果，支持自定义样式
+
+### 大屏展示
+- 独立全屏窗口，支持个人/小组排行榜切换
+- 可配置自动刷新（10s/30s/60s）
+- 修仙主题卡片模式，显示境界信息
+- 实时事件推送，积分变化即时刷新
 
 ### 结算系统
 - 手动结算，积分与历史清空
@@ -32,6 +39,12 @@
 - U盘验证（检测可移动磁盘）
 - 人脸验证（预留接口）
 
+### 修仙主题
+- 64级境界体系（练气→大乘）
+- 修仙术语映射（积分→灵力，小组→宗门，管理员→掌门）
+- 切磋系统、渡劫系统、突破系统
+- 仙宠养成
+
 ### 其他功能
 - **小组功能** — 创建小组、整组评价
 - **自动评价** — 定时评价（天/周/月/结算前）
@@ -39,112 +52,135 @@
 - **首次引导** — 5步引导向导
 - **数据导出/导入** — 全量 zip 导出导入、学生数据 Excel 导出导入
 - **自定义主题色** — 9种预设色 + 自定义
-- **URI 启动** — 支持 `classisscore://app/` 协议导航
-- **IPC 通信** — 预留命名管道通信接口
 - **插件接口** — 预留插件加载接口
 
 ## 技术栈
 
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| .NET | 8.0 | 运行时 |
-| Avalonia UI | 11.3.13 | 跨平台 UI 框架 |
-| FluentAvalonia | 2.3.0+ | Fluent Design 风格 |
-| CommunityToolkit.Mvvm | 8.2.1 | MVVM 框架 |
-| Microsoft.Extensions.Hosting | 8.0 | 依赖注入 |
-| ClosedXML | 0.104.2 | Excel 读写 |
-| SharpZipLib | 1.4.2 | Zip 压缩/解压 |
+| Tauri | 2.x | 桌面应用框架 |
+| Rust | 2021 edition | 后端逻辑 + IPC 命令 |
+| Vue | 3.5 | 前端 UI 框架 |
+| TypeScript | 5.x | 前端类型安全 |
+| Element Plus | 2.9 | UI 组件库 |
+| sea-orm | 1.x | ORM（SQLite） |
+| SQLite | — | 嵌入式数据库 |
+| Pinia | 2.x | 状态管理 |
+| Vite | 6.x | 前端构建工具 |
+| tracing | 0.1 | Rust 日志系统 |
 
 ## 项目结构
 
 ```
-ClassIsScore/
-├── App.axaml / .cs          # 应用入口
-├── Program.cs                # 程序启动、DI 配置
-├── MainWindow.axaml / .cs    # 主窗口、导航
-├── Controls/                 # 自定义控件
-│   ├── AdminVerifyDialog     # 管理员验证对话框
-│   ├── StudentCardControl    # 卡片样式控件
-│   ├── StudentCircleControl  # 圆形样式控件
-│   └── PetDisplayControl     # 宠物模式控件
-├── Models/                   # 数据模型
-├── Services/                 # 业务服务
-│   └── Abstractions/         # 服务接口
-├── ViewModels/               # 视图模型
-├── Views/                    # 视图
-│   ├── FloatingWindow        # 悬浮窗
-│   ├── OnboardingWindow      # 引导向导
-│   └── Pages/                # 功能页面
-├── Helpers/                  # 辅助工具
-├── Converters/               # 值转换器
-└── data/                     # 运行时数据目录
-    ├── Data/                 # 数据文件（JSON）
-    ├── Logs/                 # 日志
-    ├── Backup/               # 结算备份
-    ├── Plugins/              # 插件目录
-    └── Config/               # 配置文件
+client/
+├── src/                          # 前端源码
+│   ├── components/               # 组件
+│   │   ├── common/               # 通用组件
+│   │   ├── display/              # 大屏展示组件
+│   │   ├── layout/               # 布局组件
+│   │   ├── score/                # 积分相关组件
+│   │   ├── student/              # 学生相关组件
+│   │   └── xianxia/              # 修仙主题组件
+│   ├── plugins/                  # 插件加载器
+│   ├── router/                   # 路由配置
+│   ├── services/                 # IPC 服务层
+│   │   ├── tauri.ts              # Tauri invoke 封装
+│   │   ├── websocket.ts          # 事件系统适配
+│   │   ├── student.ts            # 学生服务
+│   │   ├── score.ts              # 积分服务
+│   │   ├── group.ts              # 小组服务
+│   │   ├── evaluation.ts         # 评价项服务
+│   │   ├── leaderboard.ts        # 排行榜服务
+│   │   ├── settlement.ts         # 结算服务
+│   │   ├── settings.ts           # 设置服务
+│   │   ├── autoScore.ts          # 自动评价服务
+│   │   ├── theme.ts              # 主题服务
+│   │   ├── plugin.ts             # 插件服务
+│   │   └── log.ts                # 日志服务
+│   ├── stores/                   # Pinia 状态
+│   ├── themes/                   # 主题资源
+│   │   ├── xianxia/              # 修仙主题
+│   │   ├── dark.css              # 暗色主题
+│   │   ├── light.css             # 亮色主题
+│   │   └── variables.css         # CSS 变量
+│   ├── types/                    # 类型定义
+│   ├── utils/                    # 工具函数
+│   └── views/                    # 页面视图
+│       ├── admin/                # 管理页面
+│       ├── display/              # 大屏展示
+│       ├── floating/             # 悬浮窗
+│       └── onboarding/           # 引导向导
+├── src-tauri/                    # Rust 后端源码
+│   ├── src/
+│   │   ├── commands/             # Tauri IPC 命令
+│   │   │   ├── student.rs        # 学生管理
+│   │   │   ├── score.rs          # 积分管理
+│   │   │   ├── group.rs          # 小组管理
+│   │   │   ├── evaluation.rs     # 评价项管理
+│   │   │   ├── leaderboard.rs    # 排行榜
+│   │   │   ├── settlement.rs     # 结算
+│   │   │   ├── settings.rs       # 设置
+│   │   │   ├── auth.rs           # 认证
+│   │   │   ├── auto_score.rs     # 自动评价
+│   │   │   ├── log.rs            # 日志
+│   │   │   ├── app.rs            # 应用控制
+│   │   │   ├── theme.rs          # 主题管理
+│   │   │   └── plugin.rs         # 插件管理
+│   │   ├── db/                   # 数据库层
+│   │   │   ├── entities/         # sea-orm 实体
+│   │   │   ├── connection.rs     # 连接管理
+│   │   │   └── migration.rs      # 数据库迁移
+│   │   ├── services/
+│   │   │   └── logger.rs         # 日志服务
+│   │   ├── lib.rs                # 应用入口
+│   │   └── main.rs               # main 函数
+│   ├── Cargo.toml
+│   └── tauri.conf.json
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
 ```
 
 ## 构建与运行
 
 ### 环境要求
-- .NET 8.0 SDK
+- Node.js 18+
+- Rust 1.77+（安装 [rustup](https://rustup.rs/)）
 - Windows 10+ / macOS 12+ / Linux（X11/Wayland）
 
-### 构建
+### 开发模式
 ```bash
-dotnet build
+cd client
+npm install
+npm run tauri:dev
 ```
 
-### 运行
+### 构建发布
 ```bash
-dotnet run
+cd client
+npm run tauri:build
 ```
 
-### 发布
-```bash
-# Windows
-dotnet publish -c Release -r win-x64 --self-contained
+构建产物位于 `client/src-tauri/target/release/bundle/`：
+- Windows: `.msi` 安装包 + `.zip` 绿色便携版
+- macOS: `.dmg`
+- Linux: `.deb` / `.AppImage`
 
-# macOS
-dotnet publish -c Release -r osx-x64 --self-contained
+## 架构说明
 
-# Linux
-dotnet publish -c Release -r linux-x64 --self-contained
-```
+### 通信方式
+- **IPC 命令**：前端通过 `invoke()` 调用 Rust `#[tauri::command]` 函数
+- **事件系统**：Rust 通过 `app.emit()` 推送实时事件，前端通过 `listen()` 监听
+- **封装层**：`services/tauri.ts` 统一封装 invoke，非 Tauri 环境回退 HTTP API
 
-## URI 协议
+### 数据库
+- 嵌入式 SQLite，数据文件存储在应用数据目录
+- sea-orm 实体定义 + 自动迁移
+- 7 张核心表：student, score_record, student_group, evaluation_item, admin_settings, settlement_record, auto_evaluation_config
 
-支持 `classisscore://` 协议启动并导航到指定页面：
-
-| URI | 页面 |
-|-----|------|
-| `classisscore://app/home` | 主页 |
-| `classisscore://app/students` | 学生管理 |
-| `classisscore://app/scores` | 积分管理 |
-| `classisscore://app/settlement` | 结算 |
-| `classisscore://app/leaderboard` | 排行榜 |
-| `classisscore://app/settings` | 设置 |
-
-命令行使用：`ClassIsScore --uri classisscore://app/scores`
-
-详细的 URI 调用文档请参阅 [docs/URI.md](docs/URI.md)，包含各语言调用示例、协议注册方法和 ClassIsland 联动说明。
-
-## 数据存储
-
-所有数据以 JSON 格式存储在 `data/Data/` 目录下：
-
-| 文件 | 内容 |
-|------|------|
-| students.json | 学生信息 |
-| score_records.json | 积分记录 |
-| groups.json | 小组信息 |
-| evaluation_items.json | 常用评价项 |
-| auto_evaluation.json | 自动评价配置 |
-| admin.json | 管理员设置 |
-| floating_window.json | 悬浮窗设置 |
-| app_state.json | 应用状态 |
-| settlement_records.json | 结算记录 |
+### 日志系统
+- Rust 端：tracing + tracing-appender（双层日志：控制台 + 文件）
+- 前端端：Vue errorHandler + window.error + unhandledrejection → `log_write` IPC 转发
 
 ## 许可证
 
