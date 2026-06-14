@@ -25,6 +25,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Fold, Monitor, DataLine } from '@element-plus/icons-vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import { invoke } from '@tauri-apps/api/core'
 
 defineEmits<{
   'toggle-sidebar': []
@@ -59,11 +60,15 @@ const pageTitle = computed(() => {
 })
 
 function openDisplayWindow() {
-  window.electronAPI?.openWindow?.('display')
+  invoke('open_display_window').catch(() => {
+    // 非Tauri环境忽略
+  })
 }
 
 function openFloatingBar() {
-  window.electronAPI?.openWindow?.('floating')
+  invoke('open_floating_window').catch(() => {
+    // 非Tauri环境忽略
+  })
 }
 </script>
 

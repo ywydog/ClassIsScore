@@ -637,6 +637,7 @@ dependencies = [
  "chrono",
  "hex",
  "once_cell",
+ "open",
  "parking_lot",
  "rand",
  "sea-orm",

@@ -1,15 +1,8 @@
-# Client (Vue+Electron)
+# Client (Vue + Tauri)
 client/dist/
-client/dist-electron/
-client/release/
 client/node_modules/
 client/.vite/
-
-# Server (Spring Boot)
-server/target/
-server/.mvn/
-server/mvnw
-server/mvnw.cmd
+client/src-tauri/target/
 
 # IDE
 .idea/

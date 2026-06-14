@@ -231,6 +231,7 @@ import { studentApi } from '@/services/student'
 import { groupApi } from '@/services/group'
 import { exportToExcel, readExcelFile } from '@/utils/excelHelper'
 import * as XLSX from 'xlsx'
+import { invoke } from '@tauri-apps/api/core'
 
 const settingsStore = useSettingsStore()
 const activeTab = ref('general')
@@ -246,9 +247,9 @@ async function promptRelaunch(reason: string) {
         type: 'info',
       }
     )
-    if (window.electronAPI?.relaunchApp) {
-      await window.electronAPI.relaunchApp()
-    } else {
+    try {
+      await invoke('restart_app')
+    } catch {
       ElMessage.info('当前环境不支持自动重启，请手动关闭并重新打开应用')
     }
   } catch {
@@ -633,10 +634,10 @@ function handlePetSave() {
 }
 
 function handleOpenDataFolder() {
-  if (window.electronAPI?.openPath) {
-    window.electronAPI.openPath(dataFolderPath.value)
-  } else if (dataFolderPath.value) {
-    ElMessage.info(`数据目录: ${dataFolderPath.value}`)
+  if (dataFolderPath.value) {
+    invoke('open_path', { path: dataFolderPath.value }).catch(() => {
+      ElMessage.info(`数据目录: ${dataFolderPath.value}`)
+    })
   } else {
     ElMessage.info('数据目录路径不可用')
   }

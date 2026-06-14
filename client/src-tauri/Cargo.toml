@@ -35,6 +35,7 @@ tower-http = { version = "0.6", features = ["cors"] }
 sha2 = "0.10"
 hex = "0.4"
 rand = "0.8"
+open = "5"
 
 [profile.release]
 panic = "abort"

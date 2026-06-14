@@ -67,6 +67,7 @@ import { Brush, Upload, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ThemeManifest } from '@/types'
 import api from '@/services/api'
+import { invoke } from '@tauri-apps/api/core'
 
 const themes = ref<Array<ThemeManifest & { enabled: boolean }>>([])
 const loading = ref(true)
@@ -120,9 +121,9 @@ async function promptRelaunch(reason: string) {
       '需要重启',
       { confirmButtonText: '立即重启', cancelButtonText: '稍后手动重启', type: 'info' }
     )
-    if (window.electronAPI?.relaunchApp) {
-      await window.electronAPI.relaunchApp()
-    } else {
+    try {
+      await invoke('restart_app')
+    } catch {
       ElMessage.info('当前环境不支持自动重启，请手动关闭并重新打开应用')
     }
   } catch { /* 用户选择稍后 */ }

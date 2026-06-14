@@ -24,6 +24,7 @@ import { Trophy } from '@element-plus/icons-vue'
 import type { LeaderboardEntry } from '@/types'
 import api from '@/services/api'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
+import { Window } from '@tauri-apps/api/window'
 
 const topStudents = ref<LeaderboardEntry[]>([])
 
@@ -49,8 +50,17 @@ async function fetchTopStudents() {
   }
 }
 
-function openMainWindow() {
-  window.electronAPI?.openWindow?.('main')
+async function openMainWindow() {
+  try {
+    const mainWindow = await Window.getByLabel('main')
+    if (mainWindow) {
+      await mainWindow.setFocus()
+    } else {
+      window.close()
+    }
+  } catch {
+    window.close()
+  }
 }
 </script>
 

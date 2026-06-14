@@ -14,20 +14,12 @@ const api = axios.create({
   },
 })
 
-// 后端是否已就绪（Electron环境下由主进程通知）
-let backendReady = !window.electronAPI // 非Electron环境默认就绪
+// Tauri 模式下后端内嵌进程，默认就绪
+let backendReady = true
 
 // Network Error 节流：避免后端未就绪时疯狂弹窗
 let lastNetworkErrorTime = 0
 const NETWORK_ERROR_THROTTLE = 5000 // 5秒内只弹一次
-
-// 监听后端就绪事件（Electron环境）
-if (window.electronAPI) {
-  window.electronAPI.onBackendReady(() => {
-    backendReady = true
-    console.log('前端收到后端就绪通知')
-  })
-}
 
 // 请求拦截：后端未就绪时静默拦截请求
 api.interceptors.request.use(
@@ -65,12 +57,6 @@ api.interceptors.response.use(
       }
       // 标记后端未就绪，后续请求静默
       backendReady = false
-      // 重新监听后端就绪
-      if (window.electronAPI) {
-        window.electronAPI.isBackendReady()?.then((ready) => {
-          if (ready) backendReady = true
-        })
-      }
     } else {
       const message = error.response?.data?.message || error.message || '网络请求失败'
       ElMessage.error(message)

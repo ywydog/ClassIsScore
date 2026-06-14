@@ -81,7 +81,7 @@
               style="margin-bottom: 16px"
             >
               <template #title>
-                U盘验证需要在 Electron 环境中运行，浏览器环境下请手动输入设备ID进行绑定。
+                U盘验证的自动检测功能暂不可用，请手动输入设备ID进行绑定。
               </template>
             </el-alert>
           </template>
@@ -245,20 +245,7 @@ async function handleSetPassword() {
 async function detectUsb() {
   detectingUsb.value = true
   try {
-    if (window.electronAPI) {
-      const result = await window.electronAPI.invokeServer('detect-usb')
-      if (result && typeof result === 'object' && 'deviceId' in (result as Record<string, unknown>)) {
-        const deviceId = (result as { deviceId: string }).deviceId
-        adminSettings.usbDeviceId = deviceId
-        ElMessage.success(`检测到U盘: ${deviceId}`)
-      } else {
-        ElMessage.warning('未检测到U盘设备')
-      }
-    } else {
-      ElMessage.info('U盘检测功能需要Electron环境支持，请手动输入设备ID')
-    }
-  } catch {
-    ElMessage.info('U盘检测功能需要Electron环境支持，请手动输入设备ID')
+    ElMessage.info('该功能暂不可用，请手动输入设备ID')
   } finally {
     detectingUsb.value = false
   }

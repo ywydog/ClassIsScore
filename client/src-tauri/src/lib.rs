@@ -136,6 +136,11 @@ pub fn run() {
             commands::log::log_clear,
             commands::log::log_set_level,
             commands::log::log_write,
+            // 应用控制
+            commands::app::restart_app,
+            commands::app::open_path,
+            commands::app::open_display_window,
+            commands::app::open_floating_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
