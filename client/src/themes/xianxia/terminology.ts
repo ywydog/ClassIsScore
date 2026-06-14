@@ -17,17 +17,17 @@ export const TERMINOLOGY_MAP: Record<string, TermEntry> = {
   groupMember: { default: '组员', xianxia: '弟子' },
   groupLeader: { default: '组长', xianxia: '掌门' },
   pet: { default: '宠物', xianxia: '仙宠' },
-  score: { default: '积分', xianxia: '灵力' },
+  score: { default: '积分', xianxia: '灵石' },
   scorePlus: { default: '加分', xianxia: '悟道' },
   scoreMinus: { default: '减分', xianxia: '魔障' },
-  netScore: { default: '净积分', xianxia: '净灵力' },
+  netScore: { default: '净积分', xianxia: '净灵石' },
   cultivation: { default: '修为', xianxia: '修为' },
-  scoreUnit: { default: '分', xianxia: '灵力' },
-  scoreChange: { default: '积分变动', xianxia: '灵力变动' },
+  scoreUnit: { default: '分', xianxia: '灵石' },
+  scoreChange: { default: '积分变动', xianxia: '灵石变动' },
   scorePlusItem: { default: '加分项', xianxia: '悟道项' },
   scoreMinusItem: { default: '扣分项', xianxia: '魔障项' },
-  scoreStats: { default: '积分统计', xianxia: '灵力统计' },
-  scoreColumn: { default: '积分列', xianxia: '灵力列' },
+  scoreStats: { default: '积分统计', xianxia: '灵石统计' },
+  scoreColumn: { default: '积分列', xianxia: '灵石列' },
 
   // 页面/功能名称
   leaderboard: { default: '排行榜', xianxia: '仙榜' },
@@ -51,7 +51,7 @@ export const TERMINOLOGY_MAP: Record<string, TermEntry> = {
   addScore: { default: '加分', xianxia: '悟道' },
   subtractScore: { default: '减分', xianxia: '魔障' },
   confirmScore: { default: '确认评分', xianxia: '确认悟道' },
-  importScore: { default: '从表格导入积分', xianxia: '从表格导入灵力' },
+  importScore: { default: '从表格导入积分', xianxia: '从表格导入灵石' },
 
   // 选择/目标
   selectStudent: { default: '选择学生', xianxia: '选择道友' },
@@ -63,8 +63,8 @@ export const TERMINOLOGY_MAP: Record<string, TermEntry> = {
   // 提示消息
   selectStudentFirst: { default: '请先选择学生', xianxia: '请先选择道友' },
   selectStudentAndReason: { default: '请选择学生并填写原因', xianxia: '请选择道友并填写原因' },
-  addScoreRequired: { default: '加分分数必须大于0', xianxia: '悟道灵力必须大于0' },
-  subtractScoreRequired: { default: '减分分数必须大于0', xianxia: '魔障灵力必须大于0' },
+  addScoreRequired: { default: '加分分数必须大于0', xianxia: '悟道灵石必须大于0' },
+  subtractScoreRequired: { default: '减分分数必须大于0', xianxia: '魔障灵石必须大于0' },
 }
 
 export type TermKey = keyof typeof TERMINOLOGY_MAP
