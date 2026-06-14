@@ -3,9 +3,6 @@ import type { ApiResponse } from '@/types'
 import { ElMessage } from 'element-plus'
 
 function getBaseUrl(): string {
-  if (window.electronAPI) {
-    return 'http://localhost:18888'
-  }
   return 'http://localhost:18888'
 }
 
@@ -16,6 +13,10 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+// Network Error 节流：避免后端未就绪时疯狂弹窗
+let lastNetworkErrorTime = 0
+const NETWORK_ERROR_THROTTLE = 5000 // 5秒内只弹一次
 
 api.interceptors.request.use(
   (config) => {
@@ -37,7 +38,11 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
-      ElMessage.error('无法连接到服务器，请确认后端服务已启动')
+      const now = Date.now()
+      if (now - lastNetworkErrorTime > NETWORK_ERROR_THROTTLE) {
+        lastNetworkErrorTime = now
+        ElMessage.error('无法连接到服务器，请确认后端服务已启动')
+      }
     } else {
       const message = error.response?.data?.message || error.message || '网络请求失败'
       ElMessage.error(message)

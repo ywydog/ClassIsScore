@@ -123,15 +123,26 @@ export async function stopServer(): Promise<void> {
 }
 
 function findServerJar(): string | null {
-  const resourcesDir = path.join(app.getAppPath(), 'resources')
   const fs = require('fs')
-  if (!fs.existsSync(resourcesDir)) {
-    return null
+
+  // 1. 生产模式：从 resources 目录查找
+  const resourcesDir = path.join(app.getAppPath(), 'resources')
+  if (fs.existsSync(resourcesDir)) {
+    const files = fs.readdirSync(resourcesDir)
+    const jarFile = files.find((f: string) => f.endsWith('.jar') && f.includes('classisscore'))
+    if (jarFile) return path.join(resourcesDir, jarFile)
   }
 
-  const files = fs.readdirSync(resourcesDir)
-  const jarFile = files.find((f: string) => f.endsWith('.jar') && f.includes('classisscore'))
-  return jarFile ? path.join(resourcesDir, jarFile) : null
+  // 2. 开发模式：从 server/target 目录查找
+  const projectRoot = path.resolve(app.getAppPath(), '..')
+  const targetDir = path.join(projectRoot, 'server', 'target')
+  if (fs.existsSync(targetDir)) {
+    const files = fs.readdirSync(targetDir)
+    const jarFile = files.find((f: string) => f.endsWith('.jar') && !f.includes('-sources') && !f.includes('-javadoc'))
+    if (jarFile) return path.join(targetDir, jarFile)
+  }
+
+  return null
 }
 
 function checkHealth(): Promise<boolean> {

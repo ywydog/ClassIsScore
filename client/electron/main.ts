@@ -8,7 +8,12 @@ let displayWindow: BrowserWindow | null = null
 let floatingWindow: BrowserWindow | null = null
 
 app.whenReady().then(async () => {
-  await startServer()
+  // 尝试启动后端，失败不阻止前端打开
+  try {
+    await startServer()
+  } catch (err) {
+    console.warn('后端启动失败，前端仍可使用:', err)
+  }
 
   mainWindow = createMainWindow()
   createTray(mainWindow, displayWindow, floatingWindow)
