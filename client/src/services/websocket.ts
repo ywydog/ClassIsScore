@@ -1,4 +1,5 @@
 import type { ScoreUpdateEvent } from '@/types'
+import { isTauri } from './tauri'
 
 interface WebSocketCallbacks {
   onScoreUpdate?: (data: ScoreUpdateEvent) => void
@@ -6,16 +7,41 @@ interface WebSocketCallbacks {
   onDisconnect?: () => void
 }
 
+let callbacks: WebSocketCallbacks = {}
+
+// Tauri 模式：使用事件系统
+let tauriUnlisten: (() => void) | null = null
+
+async function connectTauri(cbs: WebSocketCallbacks) {
+  callbacks = cbs
+  try {
+    const { listen } = await import('@tauri-apps/api/event')
+    tauriUnlisten = await listen<ScoreUpdateEvent>('score-update', (event) => {
+      callbacks.onScoreUpdate?.(event.payload)
+    })
+    callbacks.onConnect?.()
+  } catch (err) {
+    console.error('[Tauri Event] 监听失败:', err)
+  }
+}
+
+function disconnectTauri() {
+  if (tauriUnlisten) {
+    tauriUnlisten()
+    tauriUnlisten = null
+  }
+}
+
+// 非 Tauri 模式：使用 WebSocket（开发兼容）
 let ws: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-let callbacks: WebSocketCallbacks = {}
 const RECONNECT_DELAY = 3000
 
 function getWsUrl(): string {
   return 'ws://localhost:18888/ws'
 }
 
-export function connectWebSocket(cbs: WebSocketCallbacks): void {
+function connectWs(cbs: WebSocketCallbacks): void {
   callbacks = cbs
 
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
@@ -47,8 +73,7 @@ export function connectWebSocket(cbs: WebSocketCallbacks): void {
       scheduleReconnect()
     }
 
-    ws.onerror = (err) => {
-      console.error('[WebSocket] 连接错误:', err)
+    ws.onerror = () => {
       ws?.close()
     }
   } catch (err) {
@@ -57,7 +82,7 @@ export function connectWebSocket(cbs: WebSocketCallbacks): void {
   }
 }
 
-export function disconnectWebSocket(): void {
+function disconnectWs(): void {
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
@@ -76,12 +101,30 @@ function scheduleReconnect(): void {
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null
     console.log('[WebSocket] 尝试重连...')
-    connectWebSocket(callbacks)
+    connectWs(callbacks)
   }, RECONNECT_DELAY)
 }
 
-export function sendWebSocketMessage(type: string, payload: unknown): void {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type, payload }))
+// 统一导出
+export function connectWebSocket(cbs: WebSocketCallbacks): void {
+  if (isTauri) {
+    connectTauri(cbs)
+  } else {
+    connectWs(cbs)
+  }
+}
+
+export function disconnectWebSocket(): void {
+  if (isTauri) {
+    disconnectTauri()
+  } else {
+    disconnectWs()
+  }
+}
+
+export function sendWebSocketMessage(_type: string, _payload: unknown): void {
+  // Tauri 模式下通过 IPC 命令发送，非 Tauri 模式通过 WebSocket
+  if (!isTauri && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: _type, payload: _payload }))
   }
 }

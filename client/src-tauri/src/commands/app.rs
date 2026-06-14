@@ -1,6 +1,3 @@
-use crate::state::AppState;
-use parking_lot::RwLock;
-use std::sync::Arc;
 use tauri::Manager;
 
 #[tauri::command]

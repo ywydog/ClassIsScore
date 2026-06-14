@@ -1,28 +1,55 @@
-import api from './api'
-import type { ApiResponse, PluginManifest } from '@/types'
+import { invoke } from './tauri'
+import type { PluginManifest } from '@/types'
+
+interface RustPlugin {
+  id: string
+  name: string
+  description: string
+  version: string
+  author: string
+  is_enabled: boolean
+  installed_at: string
+}
+
+function toPlugin(r: RustPlugin): PluginManifest {
+  return {
+    id: r.id,
+    name: r.name,
+    description: r.description,
+    version: r.version,
+    author: r.author,
+    entranceAssembly: '',
+  }
+}
 
 export const pluginApi = {
-  getAll() {
-    return api.get<ApiResponse<PluginManifest[]>>('/api/plugins')
+  async getAll() {
+    const plugins = await invoke<RustPlugin[]>('plugin_list', {})
+    return { data: { data: plugins.map(toPlugin), code: 0 } }
   },
 
-  getById(id: string) {
-    return api.get<ApiResponse<PluginManifest>>(`/api/plugins/${id}`)
+  async getById(id: string) {
+    const plugin = await invoke<RustPlugin>('plugin_get', { id })
+    return { data: { data: toPlugin(plugin), code: 0 } }
   },
 
-  install(pluginPath: string) {
-    return api.post<ApiResponse<PluginManifest>>('/api/plugins/install', { path: pluginPath })
+  async install(pluginPath: string) {
+    const plugin = await invoke<RustPlugin>('plugin_install', { path: pluginPath })
+    return { data: { data: toPlugin(plugin), code: 0 } }
   },
 
-  uninstall(id: string) {
-    return api.delete<ApiResponse<void>>(`/api/plugins/${id}`)
+  async uninstall(id: string) {
+    await invoke('plugin_delete', { id })
+    return { data: { data: undefined, code: 0 } }
   },
 
-  enable(id: string) {
-    return api.post<ApiResponse<void>>(`/api/plugins/${id}/enable`)
+  async enable(id: string) {
+    await invoke('plugin_toggle', { id, enabled: true })
+    return { data: { data: undefined, code: 0 } }
   },
 
-  disable(id: string) {
-    return api.post<ApiResponse<void>>(`/api/plugins/${id}/disable`)
+  async disable(id: string) {
+    await invoke('plugin_toggle', { id, enabled: false })
+    return { data: { data: undefined, code: 0 } }
   },
 }
