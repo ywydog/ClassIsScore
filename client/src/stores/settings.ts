@@ -9,6 +9,7 @@ export const useSettingsStore = defineStore('settings', () => {
     theme: 'light',
     fontSize: 14,
     displayMode: DisplayMode.Card,
+    themeMode: 'default',
   })
 
   const loading = ref(false)
@@ -22,6 +23,7 @@ export const useSettingsStore = defineStore('settings', () => {
       settings.value = { ...settings.value, ...response.data.data }
       applyTheme(settings.value.theme)
       applyFontSize(settings.value.fontSize)
+      applyThemeMode(settings.value.themeMode || 'default')
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取设置失败'
     } finally {
@@ -40,6 +42,9 @@ export const useSettingsStore = defineStore('settings', () => {
       }
       if (newSettings.fontSize) {
         applyFontSize(settings.value.fontSize)
+      }
+      if (newSettings.themeMode) {
+        applyThemeMode(settings.value.themeMode || 'default')
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : '更新设置失败'
@@ -65,10 +70,25 @@ export const useSettingsStore = defineStore('settings', () => {
     document.documentElement.style.setProperty('--cis-font-size-base', `${size}px`)
   }
 
+  function applyThemeMode(mode: 'default' | 'xianxia') {
+    const root = document.documentElement
+    root.removeAttribute('data-theme-mode')
+    if (mode === 'xianxia') {
+      root.setAttribute('data-theme-mode', 'xianxia')
+    }
+  }
+
   watch(
     () => settings.value.theme,
     (newTheme) => {
       applyTheme(newTheme)
+    }
+  )
+
+  watch(
+    () => settings.value.themeMode,
+    (newMode) => {
+      applyThemeMode(newMode || 'default')
     }
   )
 
@@ -80,5 +100,6 @@ export const useSettingsStore = defineStore('settings', () => {
     updateSettings,
     applyTheme,
     applyFontSize,
+    applyThemeMode,
   }
 })

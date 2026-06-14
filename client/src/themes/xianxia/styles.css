@@ -1,0 +1,298 @@
+/**
+ * 修仙主题 — 古风视觉样式
+ * 通过 data-theme-mode="xianxia" 属性选择器覆盖
+ */
+
+/* ===== 全局配色 ===== */
+[data-theme-mode="xianxia"] {
+  --xianxia-primary: #C9A84C;
+  --xianxia-primary-dark: #8B6914;
+  --xianxia-secondary: #7C3AED;
+  --xianxia-bg-dark: #1A1A2E;
+  --xianxia-bg-darker: #0F0F1E;
+  --xianxia-text-gold: #C9A84C;
+  --xianxia-text-light: rgba(255, 255, 255, 0.85);
+  --xianxia-text-muted: rgba(255, 255, 255, 0.5);
+  --xianxia-border-gold: rgba(201, 168, 76, 0.3);
+  --xianxia-glow-gold: rgba(201, 168, 76, 0.15);
+}
+
+/* ===== 大屏展示/仙界展示 ===== */
+[data-theme-mode="xianxia"] .score-display {
+  background: linear-gradient(160deg, #0F0F1E 0%, #1A1A2E 40%, #161630 70%, #0D0D1F 100%);
+}
+
+/* 背景光球变为仙气 */
+[data-theme-mode="xianxia"] .score-display__orb {
+  background: radial-gradient(circle, rgba(201, 168, 76, 0.08) 0%, transparent 70%);
+}
+
+/* 标题变为金色 */
+[data-theme-mode="xianxia"] .score-display__title {
+  background: linear-gradient(135deg, #C9A84C, #E8D48B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme-mode="xianxia"] .score-display__brand-icon {
+  background: linear-gradient(135deg, #C9A84C, #8B6914);
+}
+
+/* 排行榜分数变为金色 */
+[data-theme-mode="xianxia"] .score-display__score,
+[data-theme-mode="xianxia"] .score-display__podium-score {
+  background: linear-gradient(135deg, #C9A84C, #E8D48B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 领奖台王冠变为仙冠 */
+[data-theme-mode="xianxia"] .score-display__podium-crown {
+  filter: hue-rotate(-30deg) brightness(1.2);
+}
+
+/* 奖牌变为金色系 */
+[data-theme-mode="xianxia"] .score-display__medal--gold {
+  background: linear-gradient(135deg, #C9A84C, #8B6914);
+  box-shadow: 0 0 16px rgba(201, 168, 76, 0.5);
+}
+
+[data-theme-mode="xianxia"] .score-display__medal--silver {
+  background: linear-gradient(135deg, #B8C4D8, #8899AA);
+}
+
+[data-theme-mode="xianxia"] .score-display__medal--bronze {
+  background: linear-gradient(135deg, #8B6914, #6B4F10);
+}
+
+/* 列表项边框变为金色 */
+[data-theme-mode="xianxia"] .score-display__item {
+  border-color: rgba(201, 168, 76, 0.08);
+}
+
+[data-theme-mode="xianxia"] .score-display__item:hover {
+  border-color: rgba(201, 168, 76, 0.25);
+  background: rgba(201, 168, 76, 0.04);
+}
+
+/* 排名数字 */
+[data-theme-mode="xianxia"] .score-display__rank {
+  background: rgba(201, 168, 76, 0.1);
+  color: var(--xianxia-text-gold);
+}
+
+/* ===== 卡片模式 ===== */
+[data-theme-mode="xianxia"] .score-display__grid :deep(.student-card-display) {
+  background: rgba(201, 168, 76, 0.04);
+  border-color: rgba(201, 168, 76, 0.12);
+}
+
+[data-theme-mode="xianxia"] .score-display__grid :deep(.student-card-display:hover) {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.3);
+}
+
+[data-theme-mode="xianxia"] .score-display__grid :deep(.student-card-display__score) {
+  color: var(--xianxia-text-gold);
+}
+
+/* ===== 宠物/仙宠模式 ===== */
+[data-theme-mode="xianxia"] .score-display__grid :deep(.pet-display) {
+  background: rgba(201, 168, 76, 0.04);
+  border-color: rgba(201, 168, 76, 0.12);
+}
+
+[data-theme-mode="xianxia"] .score-display__grid :deep(.pet-display:hover) {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.3);
+}
+
+[data-theme-mode="xianxia"] .score-display__grid :deep(.pet-display__score) {
+  color: var(--xianxia-text-gold);
+}
+
+[data-theme-mode="xianxia"] .score-display__grid :deep(.pet-display__pet-name) {
+  color: var(--xianxia-text-gold);
+}
+
+/* ===== 圆形模式 ===== */
+[data-theme-mode="xianxia"] .score-display__grid :deep(.student-circle-display__name) {
+  color: var(--xianxia-text-light);
+}
+
+/* ===== 按钮样式 ===== */
+[data-theme-mode="xianxia"] .score-display__toggles :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #C9A84C, #8B6914);
+  border-color: #C9A84C;
+  box-shadow: 0 0 16px rgba(201, 168, 76, 0.3);
+}
+
+[data-theme-mode="xianxia"] .score-display__settings-btn:hover {
+  background: rgba(201, 168, 76, 0.15);
+  border-color: rgba(201, 168, 76, 0.4);
+  color: #C9A84C;
+}
+
+[data-theme-mode="xianxia"] .score-display__multi-btn:hover {
+  border-color: rgba(201, 168, 76, 0.4);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+/* ===== 多选工具栏 ===== */
+[data-theme-mode="xianxia"] .score-display__multi-toolbar {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.2);
+}
+
+/* ===== 快速评分栏 ===== */
+[data-theme-mode="xianxia"] .quick-score-bar__inner {
+  border-color: rgba(201, 168, 76, 0.2);
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.4), 0 0 24px rgba(201, 168, 76, 0.08);
+}
+
+[data-theme-mode="xianxia"] .quick-score-bar__btn--apply {
+  background: linear-gradient(135deg, #C9A84C, #8B6914);
+}
+
+[data-theme-mode="xianxia"] .quick-score-bar__input:focus {
+  border-color: rgba(201, 168, 76, 0.5);
+}
+
+[data-theme-mode="xianxia"] .quick-score-bar__reason-input:focus {
+  border-color: rgba(201, 168, 76, 0.5);
+}
+
+/* ===== 周期积分面板 ===== */
+[data-theme-mode="xianxia"] .score-display__period-panel {
+  border-color: rgba(201, 168, 76, 0.2);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(201, 168, 76, 0.08);
+}
+
+[data-theme-mode="xianxia"] .score-display__period-panel__toggle--active {
+  background: linear-gradient(135deg, #C9A84C, #8B6914);
+  box-shadow: 0 2px 8px rgba(201, 168, 76, 0.3);
+}
+
+[data-theme-mode="xianxia"] .score-display__period-panel__net--pos {
+  color: #C9A84C;
+}
+
+/* ===== 设置面板 ===== */
+[data-theme-mode="xianxia"] .score-display__settings-panel {
+  border-left-color: rgba(201, 168, 76, 0.2);
+}
+
+[data-theme-mode="xianxia"] .score-display__settings-section :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #C9A84C, #8B6914);
+  border-color: #C9A84C;
+}
+
+[data-theme-mode="xianxia"] .score-display__settings-fullscreen-btn {
+  border-color: rgba(201, 168, 76, 0.3);
+  background: rgba(201, 168, 76, 0.1);
+  color: #C9A84C;
+}
+
+[data-theme-mode="xianxia"] .score-display__settings-fullscreen-btn:hover {
+  background: rgba(201, 168, 76, 0.2);
+  border-color: rgba(201, 168, 76, 0.5);
+  box-shadow: 0 2px 12px rgba(201, 168, 76, 0.2);
+}
+
+[data-theme-mode="xianxia"] .score-display__settings-switch input[type="checkbox"]:checked {
+  background: rgba(201, 168, 76, 0.6);
+}
+
+[data-theme-mode="xianxia"] .score-display__settings-switch input[type="checkbox"]:checked::after {
+  background: #C9A84C;
+}
+
+/* ===== 可选择包装器 ===== */
+[data-theme-mode="xianxia"] .score-display__selectable-wrapper--selected {
+  outline-color: #C9A84C;
+}
+
+[data-theme-mode="xianxia"] .score-display__selectable-wrapper--selected :deep(.student-card-display),
+[data-theme-mode="xianxia"] .score-display__selectable-wrapper--selected :deep(.pet-display) {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.4);
+}
+
+[data-theme-mode="xianxia"] .score-display__select-check {
+  background: rgba(201, 168, 76, 0.8);
+}
+
+/* ===== 分数浮动动画 ===== */
+[data-theme-mode="xianxia"] .score-display__float-anim--pos {
+  color: #C9A84C;
+  text-shadow: 0 2px 8px rgba(201, 168, 76, 0.4);
+}
+
+[data-theme-mode="xianxia"] .score-display__float-anim--neg {
+  color: #7C3AED;
+  text-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+/* ===== 对话框 ===== */
+[data-theme-mode="xianxia"] .score-display :deep(.el-dialog) {
+  border-color: rgba(201, 168, 76, 0.15);
+}
+
+/* ===== 云纹背景动画 ===== */
+[data-theme-mode="xianxia"] .score-display__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(201, 168, 76, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(124, 58, 237, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(201, 168, 76, 0.02) 0%, transparent 50%);
+  animation: cloud-drift 30s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes cloud-drift {
+  0%, 100% { opacity: 0.5; transform: translateX(0) scale(1); }
+  33% { opacity: 0.8; transform: translateX(10px) scale(1.02); }
+  66% { opacity: 0.6; transform: translateX(-10px) scale(0.98); }
+}
+
+/* ===== 仙气粒子效果 ===== */
+[data-theme-mode="xianxia"] .score-display__bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(201, 168, 76, 0.3), transparent),
+    radial-gradient(1px 1px at 30% 60%, rgba(201, 168, 76, 0.2), transparent),
+    radial-gradient(1px 1px at 50% 30%, rgba(201, 168, 76, 0.25), transparent),
+    radial-gradient(1px 1px at 70% 70%, rgba(201, 168, 76, 0.15), transparent),
+    radial-gradient(1px 1px at 90% 40%, rgba(201, 168, 76, 0.2), transparent),
+    radial-gradient(1.5px 1.5px at 15% 80%, rgba(201, 168, 76, 0.35), transparent),
+    radial-gradient(1.5px 1.5px at 45% 10%, rgba(201, 168, 76, 0.2), transparent),
+    radial-gradient(1.5px 1.5px at 75% 50%, rgba(201, 168, 76, 0.3), transparent),
+    radial-gradient(1px 1px at 85% 90%, rgba(201, 168, 76, 0.15), transparent),
+    radial-gradient(1px 1px at 25% 45%, rgba(201, 168, 76, 0.25), transparent);
+  animation: sparkle 8s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* ===== 管理页面通用样式 ===== */
+[data-theme-mode="xianxia"] .el-menu--horizontal > .el-menu-item.is-active {
+  border-bottom-color: #C9A84C !important;
+  color: #C9A84C !important;
+}
+
+[data-theme-mode="xianxia"] .el-button--primary {
+  --el-button-bg-color: #C9A84C;
+  --el-button-border-color: #C9A84C;
+  --el-button-hover-bg-color: #B8973F;
+  --el-button-hover-border-color: #B8973F;
+  --el-button-active-bg-color: #8B6914;
+  --el-button-active-border-color: #8B6914;
+}

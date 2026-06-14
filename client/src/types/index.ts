@@ -127,6 +127,7 @@ export interface AppSettings {
   customAccentColor?: string
   petStyle?: string
   semesterStartDate?: string
+  themeMode?: 'default' | 'xianxia'
 }
 
 export enum PetCategory {

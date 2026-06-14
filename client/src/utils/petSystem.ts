@@ -118,3 +118,73 @@ export function getPetImagePath(petTypeId?: string, level: number = 1): string {
   const validLevel = Math.max(1, Math.min(level, MAX_LEVEL))
   return `/pets/${petTypeId}/lv${validLevel}.png`
 }
+
+/** 渡劫相关常量 */
+export const TRIBULATION_LEVELS = [5, 8] // 需要渡劫的等级
+
+/** 判断指定等级是否需要渡劫 */
+export function isTribulationLevel(level: number): boolean {
+  return TRIBULATION_LEVELS.includes(level)
+}
+
+/**
+ * 计算仙宠渡劫成功率
+ * 基础成功率 = 50%（5级渡劫）/ 30%（8级渡劫）
+ * 经验加成 = (当前经验 / 升级所需经验) × 30%
+ * 最终成功率 = min(基础成功率 + 经验加成, 80%)
+ */
+export function calculatePetTribulationSuccessRate(
+  targetLevel: number,
+  currentExp: number,
+  requiredExp: number
+): number {
+  const baseRate = targetLevel === 5 ? 0.5 : 0.3
+  const expRatio = requiredExp > 0 ? Math.min(1, currentExp / requiredExp) : 0
+  const expBonus = expRatio * 0.3
+  return Math.min(0.8, baseRate + expBonus)
+}
+
+/** 渡劫失败惩罚结果 */
+export interface TribulationPenalty {
+  penaltyRate: number  // 扣除经验比例
+  description: string  // 描述文案
+}
+
+/**
+ * 获取渡劫失败惩罚（阶梯式）
+ * 参考诸天修仙的阶梯式惩罚机制
+ */
+export function getPetTribulationPenalty(): TribulationPenalty {
+  const roll = Math.random()
+  if (roll > 0.9) {
+    return { penaltyRate: 0.4, description: '天劫降世，道基崩碎！' }
+  } else if (roll > 0.7) {
+    return { penaltyRate: 0.2, description: '雷劫反噬，修为受损' }
+  } else if (roll > 0.5) {
+    return { penaltyRate: 0.1, description: '心魔侵扰，略有损耗' }
+  } else if (roll > 0.3) {
+    return { penaltyRate: 0.05, description: '劫雷擦身，轻微反噬' }
+  } else {
+    return { penaltyRate: 0, description: '天劫未成，全身而退' }
+  }
+}
+
+/**
+ * 执行仙宠渡劫判定
+ * @returns success: 是否成功, penaltyRate: 失败惩罚比例, description: 描述
+ */
+export function executePetTribulation(
+  targetLevel: number,
+  currentExp: number,
+  requiredExp: number
+): { success: boolean; penaltyRate: number; description: string } {
+  const successRate = calculatePetTribulationSuccessRate(targetLevel, currentExp, requiredExp)
+  const roll = Math.random()
+
+  if (roll <= successRate) {
+    return { success: true, penaltyRate: 0, description: '渡劫成功！仙宠突破！' }
+  }
+
+  const penalty = getPetTribulationPenalty()
+  return { success: false, penaltyRate: penalty.penaltyRate, description: penalty.description }
+}

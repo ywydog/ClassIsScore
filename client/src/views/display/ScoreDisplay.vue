@@ -14,7 +14,7 @@
           <div class="score-display__brand-icon">
             <el-icon :size="20"><Trophy /></el-icon>
           </div>
-          <h1 class="score-display__title">积分排行榜</h1>
+          <h1 class="score-display__title">{{ isXianxia ? '仙榜' : '积分排行榜' }}</h1>
         </div>
         <div class="score-display__time" v-if="displaySettings.showClock">{{ currentTime }}</div>
         <div class="score-display__toggles">
@@ -29,8 +29,8 @@
             {{ multiSelectMode ? '退出多选' : '多选' }}
           </el-button>
           <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard">
-            <el-radio-button value="personal">个人</el-radio-button>
-            <el-radio-button value="group">小组</el-radio-button>
+            <el-radio-button value="personal">{{ t('student') }}</el-radio-button>
+            <el-radio-button value="group">{{ t('group') }}</el-radio-button>
           </el-radio-group>
           <el-radio-group v-model="displayMode" size="small" class="score-display__display-toggle">
             <el-radio-button value="leaderboard">排行</el-radio-button>
@@ -56,12 +56,12 @@
           :disabled="selectedStudentIds.length === 0"
           @click="showBatchScorePanel = true"
         >
-          批量评分
+          {{ isXianxia ? '批量悟道' : '批量评分' }}
         </el-button>
       </div>
 
       <!-- 排行榜模式：领奖台 + 列表 -->
-      <template v-if="displayMode === 'leaderboard'">
+      <template v-if="effectiveDisplayMode === 'leaderboard'">
         <div v-if="limitedTopThree.length > 0" class="score-display__podium">
           <div
             class="score-display__podium-item score-display__podium--2"
@@ -121,7 +121,7 @@
       </template>
 
       <!-- 卡片模式 -->
-      <div v-else-if="displayMode === 'Card'" class="score-display__grid score-display__grid--card">
+      <div v-else-if="effectiveDisplayMode === 'Card'" class="score-display__grid score-display__grid--card">
         <div
           v-for="student in students"
           :key="student.id"
@@ -133,11 +133,15 @@
             <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
           </div>
           <StudentCardDisplay :student="student" />
+          <div v-if="isXianxia" class="score-display__cultivation-info">
+            <span class="score-display__cultivation-level">{{ getCultivationLevel(calculateCultivation(student.score, calculateLevel(student.petExp))).name }}</span>
+            <span class="score-display__cultivation-score">修为 {{ formatCultivationNumber(calculateCultivation(student.score, calculateLevel(student.petExp))) }}</span>
+          </div>
         </div>
       </div>
 
       <!-- 圆形模式 -->
-      <div v-else-if="displayMode === 'Circle'" class="score-display__grid score-display__grid--circle">
+      <div v-else-if="effectiveDisplayMode === 'Circle'" class="score-display__grid score-display__grid--circle">
         <div
           v-for="student in students"
           :key="student.id"
@@ -153,7 +157,7 @@
       </div>
 
       <!-- 宠物模式 -->
-      <div v-else-if="displayMode === 'Pet'" class="score-display__grid score-display__grid--pet">
+      <div v-else-if="effectiveDisplayMode === 'Pet'" class="score-display__grid score-display__grid--pet">
         <div
           v-for="student in students"
           :key="student.id"
@@ -185,7 +189,7 @@
     <!-- 周期积分面板（右下角） -->
     <div class="score-display__period-panel">
       <div class="score-display__period-panel__header">
-        <span class="score-display__period-panel__title">积分统计</span>
+        <span class="score-display__period-panel__title">{{ isXianxia ? '修为统计' : '积分统计' }}</span>
         <div class="score-display__period-panel__toggles">
           <button
             v-for="p in periodOptions"
@@ -310,7 +314,7 @@
         <div class="quick-score-bar__inner">
           <div class="quick-score-bar__student">
             <span class="quick-score-bar__student-name">{{ quickScoreStudent.name }}</span>
-            <span class="quick-score-bar__student-score">当前 {{ quickScoreStudent.score }} 分</span>
+            <span class="quick-score-bar__student-score">当前 {{ quickScoreStudent.score }} {{ isXianxia ? '灵力' : '分' }}</span>
           </div>
           <div class="quick-score-bar__actions">
             <!-- 评价项预设 -->
@@ -384,7 +388,7 @@
     <!-- 批量评分对话框 -->
     <el-dialog
       v-model="showBatchScorePanel"
-      title="批量评分"
+      :title="isXianxia ? '批量悟道' : '批量评分'"
       width="480px"
       :close-on-click-modal="false"
       class="score-display__batch-dialog"
@@ -392,7 +396,7 @@
     >
       <div class="batch-score-form">
         <div class="batch-score-form__info">
-          已选择 <strong>{{ selectedStudentIds.length }}</strong> 名学生
+          已选择 <strong>{{ selectedStudentIds.length }}</strong> 名{{ isXianxia ? '道友' : '学生' }}
         </div>
         <!-- 评价项预设 -->
         <div v-if="evaluationItems.length > 0" class="batch-score-form__eval-section">
@@ -444,14 +448,14 @@
       </div>
       <template #footer>
         <el-button @click="showBatchScorePanel = false">取消</el-button>
-        <el-button type="primary" :disabled="!batchScoreChange" @click="submitBatchScore">确认评分</el-button>
+        <el-button type="primary" :disabled="!batchScoreChange" @click="submitBatchScore">{{ isXianxia ? '确认悟道' : '确认评分' }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 宠物选择对话框 -->
     <el-dialog
       v-model="showPetDialog"
-      title="选择宠物"
+      :title="isXianxia ? '选择仙宠' : '选择宠物'"
       width="520px"
       class="score-display__pet-dialog"
       append-to-body
@@ -490,7 +494,7 @@
       </div>
       <template #footer>
         <el-button @click="showPetDialog = false">取消</el-button>
-        <el-button type="danger" plain @click="selectPet('')">移除宠物</el-button>
+        <el-button type="danger" plain @click="selectPet('')">{{ isXianxia ? '移除仙宠' : '移除宠物' }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -507,7 +511,9 @@ import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
 import { scoreApi } from '@/services/score'
 import { useSettingsStore } from '@/stores/settings'
-import { ALL_PET_TYPES } from '@/utils/petSystem'
+import { ALL_PET_TYPES, calculateLevel } from '@/utils/petSystem'
+import { useTerminology } from '@/themes/xianxia/useTerminology'
+import { calculateCultivation, getCultivationLevel, formatCultivationNumber } from '@/utils/cultivationSystem'
 import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
 import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
 import PetDisplay from '@/components/display/PetDisplay.vue'
@@ -614,6 +620,13 @@ const evaluationItems = ref<EvaluationItem[]>([])
 const scoreStats = ref<StudentScoreStats[]>([])
 const mode = ref<'personal' | 'group'>('personal')
 const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('leaderboard')
+
+const effectiveDisplayMode = computed(() => {
+  if (isXianxia.value && mode.value === 'personal') {
+    return 'Card' // 修仙模式下个人页强制卡片模式
+  }
+  return displayMode.value
+})
 const currentTime = ref('')
 
 // 多选模式
@@ -638,6 +651,7 @@ let timeTimer: ReturnType<typeof setInterval> | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const settingsStore = useSettingsStore()
+const { isXianxia, t } = useTerminology()
 
 // ===== 周期积分面板 =====
 type PeriodKey = 'day' | 'week' | 'month' | 'semester'
@@ -938,6 +952,8 @@ function formatNet(val: number | undefined): string {
   return val > 0 ? `+${val}` : `${val}`
 }
 </script>
+
+<style src="@/themes/xianxia/styles.css"></style>
 
 <style scoped>
 /* ===== Focus-less CSS ===== */
@@ -2197,5 +2213,25 @@ function formatNet(val: number | undefined): string {
 .settings-slide-leave-to {
   transform: translateX(100%);
   opacity: 0;
+}
+
+/* ===== 修仙模式：境界信息 ===== */
+.score-display__cultivation-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.score-display__cultivation-level {
+  font-size: 11px;
+  font-weight: 600;
+  color: #C9A84C;
+}
+
+.score-display__cultivation-score {
+  font-size: 10px;
+  color: rgba(201, 168, 76, 0.6);
 }
 </style>

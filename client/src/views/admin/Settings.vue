@@ -38,6 +38,12 @@
             <el-form-item label="主题色">
               <el-color-picker v-model="settings.customAccentColor" @change="handleSave" />
             </el-form-item>
+            <el-form-item label="主题模式">
+              <el-radio-group v-model="themeMode" @change="handleThemeModeChange">
+                <el-radio-button value="default">默认模式</el-radio-button>
+                <el-radio-button value="xianxia">修仙模式</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
             <el-form-item label="开学日期">
               <el-date-picker
                 v-model="settings.semesterStartDate"
@@ -289,6 +295,9 @@ const customQuickScores = ref<number[]>([])
 const showAddScoreInput = ref(false)
 const newScoreValue = ref(1)
 
+// 主题模式
+const themeMode = ref<'default' | 'xianxia'>('default')
+
 // 宠物设置
 const petSettings = reactive({
   enabled: true,
@@ -299,6 +308,7 @@ const petSettings = reactive({
 onMounted(async () => {
   await settingsStore.fetchSettings()
   Object.assign(settings, settingsStore.settings)
+  themeMode.value = settingsStore.settings.themeMode || 'default'
   await Promise.all([fetchFloatingSettings(), fetchDataFolderPath()])
   loadCustomQuickScores()
   loadPetSettings()
@@ -349,6 +359,10 @@ async function handleSave() {
 
 async function handleSemesterStartDateChange(date: string) {
   await settingsStore.updateSettings({ semesterStartDate: date } as Record<string, unknown>)
+}
+
+async function handleThemeModeChange(value: 'default' | 'xianxia') {
+  await settingsStore.updateSettings({ themeMode: value })
 }
 
 async function handleFloatingSave() {
