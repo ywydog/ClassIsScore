@@ -1,7 +1,7 @@
 <template>
   <div class="auto-evaluation">
     <div class="auto-evaluation__header">
-      <h2>自动评估</h2>
+      <h2>{{ isXianxia ? '天道评估' : '自动评估' }}</h2>
     </div>
 
     <div class="auto-evaluation__content">
@@ -9,7 +9,7 @@
       <el-card class="auto-evaluation__card">
         <template #header>
           <div class="card-header">
-            <span>评估项目</span>
+            <span>{{ isXianxia ? '天道项目' : '评估项目' }}</span>
             <el-button type="primary" size="small" @click="openItemDialog()">
               <el-icon><Plus /></el-icon>
               添加项目
@@ -23,7 +23,7 @@
               {{ row.name }}
             </template>
           </el-table-column>
-          <el-table-column prop="scoreChange" label="积分变动" width="120">
+          <el-table-column prop="scoreChange" :label="isXianxia ? '灵力变动' : '积分变动'" width="120">
             <template #default="{ row }">
               <span :class="row.scoreChange >= 0 ? 'score-positive' : 'score-negative'">
                 {{ row.scoreChange >= 0 ? '+' : '' }}{{ row.scoreChange }}
@@ -33,7 +33,7 @@
           <el-table-column label="类型" width="100">
             <template #default="{ row }">
               <el-tag :type="row.scoreChange >= 0 ? 'success' : 'danger'" size="small">
-                {{ row.scoreChange >= 0 ? '加分' : '扣分' }}
+                {{ row.scoreChange >= 0 ? (isXianxia ? '悟道' : '加分') : (isXianxia ? '魔障' : '扣分') }}
               </el-tag>
             </template>
           </el-table-column>
@@ -76,7 +76,7 @@
               {{ targetLabel(row) }}
             </template>
           </el-table-column>
-          <el-table-column label="积分变动" width="100">
+          <el-table-column :label="isXianxia ? '灵力变动' : '积分变动'" width="100">
             <template #default="{ row }">
               <span :class="(row.scoreChange ?? 0) >= 0 ? 'score-positive' : 'score-negative'">
                 {{ (row.scoreChange ?? 0) >= 0 ? '+' : '' }}{{ row.scoreChange }}
@@ -104,18 +104,18 @@
     </div>
 
     <!-- 评估项目对话框 -->
-    <el-dialog v-model="showItemDialog" :title="editingItem ? '编辑评估项' : '添加评估项'" width="420px">
+    <el-dialog v-model="showItemDialog" :title="editingItem ? (isXianxia ? '编辑天道项' : '编辑评估项') : (isXianxia ? '添加天道项' : '添加评估项')" width="420px">
       <el-form :model="itemForm" label-width="80px">
         <el-form-item label="名称" required>
           <el-input v-model="itemForm.name" placeholder="如：回答问题" />
         </el-form-item>
-        <el-form-item label="积分变动" required>
+        <el-form-item :label="isXianxia ? '灵力变动' : '积分变动'" required>
           <el-input-number v-model="itemForm.scoreChange" :min="-100" :max="100" />
         </el-form-item>
         <el-form-item label="类型">
           <el-radio-group v-model="itemForm.isPositive">
-            <el-radio-button :value="true">加分</el-radio-button>
-            <el-radio-button :value="false">扣分</el-radio-button>
+            <el-radio-button :value="true">{{ isXianxia ? '悟道' : '加分' }}</el-radio-button>
+            <el-radio-button :value="false">{{ isXianxia ? '魔障' : '扣分' }}</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="颜色标签">
@@ -191,7 +191,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="积分变动">
+        <el-form-item :label="isXianxia ? '灵力变动' : '积分变动'">
           <el-input-number v-model="configForm.scoreChange" :min="-1000" :max="1000" :precision="1" style="width: 100%" />
         </el-form-item>
         <el-form-item label="原因">
@@ -199,7 +199,7 @@
         </el-form-item>
         <el-form-item label="目标类型" required>
           <el-select v-model="configForm.targetType" placeholder="选择目标类型" style="width: 100%">
-            <el-option label="所有学生" value="AllStudents" />
+            <el-option :label="isXianxia ? '所有道友' : '所有学生'" value="AllStudents" />
             <el-option label="指定小组" value="SpecificGroup" />
             <el-option label="指定学生" value="SpecificStudent" />
           </el-select>
@@ -242,6 +242,9 @@ import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { EvaluationItem, AutoEvaluationConfig, StudentGroup, Student } from '@/types'
 import api from '@/services/api'
+import { useTerminology } from '@/themes/xianxia/useTerminology'
+
+const { isXianxia } = useTerminology()
 
 // ==================== 评估项目 ====================
 const evaluationItems = ref<EvaluationItem[]>([])

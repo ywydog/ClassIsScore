@@ -1,12 +1,12 @@
 <template>
   <div class="quick-score-panel">
     <div class="quick-score-panel__header">
-      <span class="quick-score-panel__title">快捷积分</span>
+      <span class="quick-score-panel__title">{{ isXianxia ? '天机指引' : '快捷积分' }}</span>
     </div>
     <div class="quick-score-panel__student">
       <el-select
         v-model="selectedStudentId"
-        placeholder="选择学生"
+        :placeholder="isXianxia ? '选择道友' : '选择学生'"
         filterable
         size="default"
         class="quick-score-panel__student-select"
@@ -18,13 +18,13 @@
           :value="s.id"
         >
           <span>{{ s.name }}</span>
-          <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px">{{ s.score }}分</span>
+          <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px">{{ s.score }}{{ isXianxia ? '灵力' : '分' }}</span>
         </el-option>
       </el-select>
     </div>
     <div v-if="selectedStudentId" class="quick-score-panel__items">
       <div class="quick-score-panel__group">
-        <div class="quick-score-panel__group-label">加分项</div>
+        <div class="quick-score-panel__group-label">{{ isXianxia ? '悟道项' : '加分项' }}</div>
         <div class="quick-score-panel__group-items">
           <div
             v-for="item in positiveItems"
@@ -38,7 +38,7 @@
         </div>
       </div>
       <div class="quick-score-panel__group">
-        <div class="quick-score-panel__group-label">扣分项</div>
+        <div class="quick-score-panel__group-label">{{ isXianxia ? '魔障项' : '扣分项' }}</div>
         <div class="quick-score-panel__group-items">
           <div
             v-for="item in negativeItems"
@@ -53,7 +53,7 @@
       </div>
     </div>
     <div v-else class="quick-score-panel__hint">
-      请先选择学生
+      {{ isXianxia ? '请先选择道友' : '请先选择学生' }}
     </div>
   </div>
 </template>
@@ -61,6 +61,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { EvaluationItem, Student } from '@/types'
+import { useTerminology } from '@/themes/xianxia/useTerminology'
+
+const { isXianxia } = useTerminology()
 
 const props = defineProps<{
   evaluationItems: EvaluationItem[]

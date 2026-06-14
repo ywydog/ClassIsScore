@@ -1,11 +1,11 @@
 <template>
   <div class="score-management">
     <div class="score-management__header">
-      <h2>积分管理</h2>
+      <h2>{{ isXianxiaMode ? '修炼管理' : '积分管理' }}</h2>
       <div class="score-management__actions">
         <el-button @click="showExportDialog = true">
           <el-icon><Download /></el-icon>
-          导出报表
+          {{ isXianxiaMode ? '仙册录录' : '导出报表' }}
         </el-button>
         <el-button @click="showImportDialog = true">
           <el-icon><Upload /></el-icon>
@@ -13,7 +13,7 @@
         </el-button>
         <el-button @click="showBatchDialog = true">
           <el-icon><Operation /></el-icon>
-          批量操作
+          {{ isXianxiaMode ? '批量悟道' : '批量操作' }}
         </el-button>
         <el-button v-if="isXianxiaMode" type="warning" @click="openBattleDialog">
           ⚔️ 道友切磋
@@ -27,7 +27,7 @@
         <div class="score-operator__row">
           <el-select
             v-model="addForm.studentId"
-            placeholder="选择学生"
+            :placeholder="isXianxiaMode ? '选择道友' : '选择学生'"
             filterable
             class="score-operator__student-select"
           >
@@ -38,7 +38,7 @@
               :value="s.id"
             >
               <span>{{ s.name }}</span>
-              <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px">{{ s.score }}分</span>
+              <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px">{{ s.score }}{{ isXianxiaMode ? '灵力' : '分' }}</span>
             </el-option>
           </el-select>
           <el-input-number
@@ -57,10 +57,10 @@
             @keyup.enter="handleAddScore"
           />
           <el-button type="success" :loading="scoreStore.loading" @click="handleAddScore">
-            加分
+            {{ isXianxiaMode ? '悟道' : '加分' }}
           </el-button>
           <el-button type="danger" :loading="scoreStore.loading" @click="handleSubtractScore">
-            减分
+            {{ isXianxiaMode ? '魔障' : '减分' }}
           </el-button>
         </div>
         <!-- 选中学生的周期积分 -->
@@ -80,7 +80,7 @@
         </div>
         <!-- 快捷评价项 -->
         <div class="score-operator__quick">
-          <span class="score-operator__quick-label">快捷：</span>
+          <span class="score-operator__quick-label">{{ isXianxiaMode ? '天机：' : '快捷：' }}</span>
           <div class="score-operator__quick-items">
             <div
               v-for="item in evaluationItems"
@@ -109,7 +109,7 @@
       <div class="score-management__stats-panel">
         <div class="stats-panel">
           <div class="stats-panel__header">
-            <span class="stats-panel__title">积分统计</span>
+            <span class="stats-panel__title">{{ isXianxiaMode ? '灵力统计' : '积分统计' }}</span>
             <div class="stats-panel__toggles">
               <button
                 v-for="p in periodOptions"
@@ -145,10 +145,10 @@
     </div>
 
     <!-- 批量操作对话框 -->
-    <el-dialog v-model="showBatchDialog" title="批量积分" width="520px" destroy-on-close>
+    <el-dialog v-model="showBatchDialog" :title="isXianxiaMode ? '批量悟道' : '批量积分'" width="520px" destroy-on-close>
       <el-form :model="batchForm" label-width="80px">
-        <el-form-item label="目标学生">
-          <el-select v-model="batchForm.studentIds" multiple placeholder="选择学生" filterable style="width: 100%">
+        <el-form-item :label="isXianxiaMode ? '目标道友' : '目标学生'">
+          <el-select v-model="batchForm.studentIds" multiple :placeholder="isXianxiaMode ? '选择道友' : '选择学生'" filterable style="width: 100%">
             <el-option
               v-for="s in studentStore.students"
               :key="s.id"
@@ -167,7 +167,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="积分变动" required>
+        <el-form-item :label="isXianxiaMode ? '灵力变动' : '积分变动'" required>
           <el-input-number v-model="batchForm.scoreChange" :step="1" style="width: 100%" />
         </el-form-item>
         <el-form-item label="原因" required>
@@ -183,7 +183,7 @@
     </el-dialog>
 
     <!-- 从表格导入对话框 -->
-    <el-dialog v-model="showImportDialog" title="从表格导入积分" width="640px" destroy-on-close>
+    <el-dialog v-model="showImportDialog" :title="isXianxiaMode ? '从表格导入灵力' : '从表格导入积分'" width="640px" destroy-on-close>
       <!-- 步骤1: 选择文件 -->
       <div v-if="importStep === 0">
         <el-upload
@@ -199,7 +199,7 @@
           <div style="margin-top: 8px">拖拽文件到此处，或 <em>点击选择文件</em></div>
           <template #tip>
             <div style="font-size: 12px; color: var(--cis-text-tertiary); margin-top: 8px">
-              支持 .xlsx、.xls、.csv 格式，表格需包含姓名列和积分列
+              支持 .xlsx、.xls、.csv 格式，表格需包含姓名列和{{ isXianxiaMode ? '灵力' : '积分' }}列
             </div>
           </template>
         </el-upload>
@@ -221,8 +221,8 @@
               <el-option v-for="(h, i) in importHeaders" :key="i" :label="h" :value="i" />
             </el-select>
           </el-form-item>
-          <el-form-item label="积分列" required>
-            <el-select v-model="importMapping.scoreColumnIndex" placeholder="选择积分列" style="width: 100%">
+          <el-form-item :label="isXianxiaMode ? '灵力列' : '积分列'" required>
+            <el-select v-model="importMapping.scoreColumnIndex" :placeholder="isXianxiaMode ? '选择灵力列' : '选择积分列'" style="width: 100%">
               <el-option v-for="(h, i) in importHeaders" :key="i" :label="h" :value="i" />
             </el-select>
           </el-form-item>
@@ -239,7 +239,7 @@
           </div>
           <el-table :data="importPreviewEntries.slice(0, 5)" size="small" border>
             <el-table-column prop="studentName" label="姓名" width="100" />
-            <el-table-column prop="scoreChange" label="积分" width="80">
+            <el-table-column prop="scoreChange" :label="isXianxiaMode ? '灵力' : '积分'" width="80">
               <template #default="{ row }">
                 <span :style="{ color: row.scoreChange > 0 ? 'var(--cis-success)' : 'var(--cis-danger)' }">
                   {{ row.scoreChange > 0 ? '+' : '' }}{{ row.scoreChange }}
@@ -504,7 +504,7 @@ function applyEvaluationItem(item: EvaluationItem) {
 
 async function handleAddScore() {
   if (!addForm.studentId) {
-    ElMessage.warning('请选择学生')
+    ElMessage.warning(isXianxiaMode.value ? '请选择道友' : '请选择学生')
     return
   }
   if (!addForm.reason) {
@@ -512,20 +512,20 @@ async function handleAddScore() {
     return
   }
   if (addForm.scoreChange <= 0) {
-    ElMessage.warning('加分分数必须大于0')
+    ElMessage.warning(isXianxiaMode.value ? '悟道灵力必须大于0' : '加分分数必须大于0')
     return
   }
   try {
     const student = studentStore.getStudentById(addForm.studentId)
     await scoreStore.addScore(addForm.studentId, addForm.scoreChange, addForm.reason)
-    ElMessage.success(`已为 ${student?.name || '学生'} 加 ${addForm.scoreChange} 分`)
+    ElMessage.success(`已为 ${student?.name || (isXianxiaMode.value ? '道友' : '学生')} ${isXianxiaMode.value ? '悟道' : '加'} ${addForm.scoreChange} ${isXianxiaMode.value ? '灵力' : '分'}`)
     addForm.reason = ''
   } catch { /* error handled in store */ }
 }
 
 async function handleSubtractScore() {
   if (!addForm.studentId) {
-    ElMessage.warning('请选择学生')
+    ElMessage.warning(isXianxiaMode.value ? '请选择道友' : '请选择学生')
     return
   }
   if (!addForm.reason) {
@@ -533,25 +533,25 @@ async function handleSubtractScore() {
     return
   }
   if (addForm.scoreChange <= 0) {
-    ElMessage.warning('减分分数必须大于0')
+    ElMessage.warning(isXianxiaMode.value ? '魔障灵力必须大于0' : '减分分数必须大于0')
     return
   }
   try {
     const student = studentStore.getStudentById(addForm.studentId)
     await scoreStore.addScore(addForm.studentId, -addForm.scoreChange, addForm.reason)
-    ElMessage.success(`已为 ${student?.name || '学生'} 减 ${addForm.scoreChange} 分`)
+    ElMessage.success(`已为 ${student?.name || (isXianxiaMode.value ? '道友' : '学生')} ${isXianxiaMode.value ? '魔障' : '减'} ${addForm.scoreChange} ${isXianxiaMode.value ? '灵力' : '分'}`)
     addForm.reason = ''
   } catch { /* error handled in store */ }
 }
 
 async function handleBatchScore() {
   if (batchForm.studentIds.length === 0 || !batchForm.reason) {
-    ElMessage.warning('请选择学生并填写原因')
+    ElMessage.warning(isXianxiaMode.value ? '请选择道友并填写原因' : '请选择学生并填写原因')
     return
   }
   try {
     await scoreStore.batchAddScore(batchForm.studentIds, batchForm.scoreChange, batchForm.reason)
-    ElMessage.success(`已为 ${batchForm.studentIds.length} 名学生添加积分`)
+    ElMessage.success(`已为 ${batchForm.studentIds.length} 名${isXianxiaMode.value ? '道友' : '学生'}${isXianxiaMode.value ? '悟道' : '添加积分'}`)
     showBatchDialog.value = false
     batchForm.studentIds = []
     batchForm.groupId = ''

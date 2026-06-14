@@ -198,7 +198,7 @@
     <!-- 周期积分面板（右下角） -->
     <div class="score-display__period-panel">
       <div class="score-display__period-panel__header">
-        <span class="score-display__period-panel__title">{{ isXianxia ? '修为统计' : '积分统计' }}</span>
+        <span class="score-display__period-panel__title">{{ isXianxia ? '灵力统计' : '积分统计' }}</span>
         <div class="score-display__period-panel__toggles">
           <button
             v-for="p in periodOptions"
