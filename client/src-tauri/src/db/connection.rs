@@ -17,10 +17,8 @@ pub async fn create_sqlite_connection(
         app_data_dir.join("classisscore.db")
     };
 
-    let db_url = format!(
-        "sqlite://{}?mode=rwc",
-        db_path.to_str().unwrap_or("classisscore.db")
-    );
+    let db_path_str = db_path.to_str().unwrap_or("classisscore.db").replace('\\', "/");
+    let db_url = format!("sqlite://{}?mode=rwc", db_path_str);
 
     tracing::info!("数据库路径: {:?}", db_path);
 
