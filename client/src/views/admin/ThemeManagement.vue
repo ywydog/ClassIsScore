@@ -67,8 +67,10 @@ import { Brush, Upload, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ThemeManifest } from '@/types'
 import { themeApi } from '@/services/theme'
+import { useSettingsStore } from '@/stores/settings'
 import { invoke } from '@tauri-apps/api/core'
 
+const settingsStore = useSettingsStore()
 const themes = ref<Array<ThemeManifest & { enabled: boolean }>>([])
 const loading = ref(true)
 
@@ -88,9 +90,11 @@ async function fetchThemes() {
 
 async function handleThemeToggle(theme: ThemeManifest & { enabled: boolean }) {
   try {
-    await themeApi.apply(String(theme.id))
+    await themeApi.apply(String(theme.id), theme.enabled)
+    // 同步 settings store，使 CSS 立即生效
+    const mode = theme.enabled ? (theme.id as 'default' | 'xianxia') : 'default'
+    await settingsStore.updateSettings({ themeMode: mode })
     ElMessage.success(theme.enabled ? '已启用主题' : '已禁用主题')
-    promptRelaunch('主题包状态变更')
   } catch {
     theme.enabled = !theme.enabled
   }

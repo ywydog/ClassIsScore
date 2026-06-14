@@ -9,6 +9,7 @@ import { isTauri } from './services/tauri'
 import './themes/variables.css'
 import './themes/light.css'
 import './themes/dark.css'
+import './themes/xianxia/styles.css'
 
 const app = createApp(App)
 const pinia = createPinia()

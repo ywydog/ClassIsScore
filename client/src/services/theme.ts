@@ -45,8 +45,8 @@ export const themeApi = {
     return { data: { data: undefined, code: 0 } }
   },
 
-  async apply(id: string) {
-    await invoke('theme_toggle', { id, enabled: true })
+  async apply(id: string, enabled: boolean = true) {
+    await invoke('theme_toggle', { id, enabled })
     return { data: { data: undefined, code: 0 } }
   },
 }

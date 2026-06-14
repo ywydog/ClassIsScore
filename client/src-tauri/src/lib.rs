@@ -141,6 +141,18 @@ pub fn run() {
             commands::app::open_path,
             commands::app::open_display_window,
             commands::app::open_floating_window,
+            // 主题
+            commands::theme::theme_list,
+            commands::theme::theme_get,
+            commands::theme::theme_toggle,
+            commands::theme::theme_install,
+            commands::theme::theme_delete,
+            // 插件
+            commands::plugin::plugin_list,
+            commands::plugin::plugin_get,
+            commands::plugin::plugin_install,
+            commands::plugin::plugin_delete,
+            commands::plugin::plugin_toggle,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

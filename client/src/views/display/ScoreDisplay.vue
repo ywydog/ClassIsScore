@@ -991,8 +991,6 @@ function formatNet(val: number | undefined): string {
 }
 </script>
 
-<style src="@/themes/xianxia/styles.css"></style>
-
 <style scoped>
 /* ===== Focus-less CSS ===== */
 .score-display * {
