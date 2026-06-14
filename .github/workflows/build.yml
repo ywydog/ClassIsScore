@@ -71,29 +71,23 @@ jobs:
           npm ci
 
       - name: Build Tauri App
-        uses: tauri-apps/tauri-action@v0
+        run: |
+          cd ${{ env.CLIENT_DIR }}
+          npx tauri build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: ${{ env.CLIENT_DIR }}
-          tauriScript: npx tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: 'ClassIsScore ${{ github.ref_name }}'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ClassIsScore-${{ matrix.os }}
           path: |
-            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.exe
-            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.msi
-            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.AppImage
-            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.deb
-            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.dmg
-            ${{ env.CLIENT_DIR }}/target/release/bundle/**/*.app
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.exe
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.msi
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.AppImage
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.deb
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.dmg
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.app
           if-no-files-found: warn
 
   release:
