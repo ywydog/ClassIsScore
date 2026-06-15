@@ -30,7 +30,6 @@ pub async fn open_display_window(app_handle: tauri::AppHandle) -> Result<(), Str
         WebviewUrl::App("index.html#/display".into()),
     )
     .title("ClassIsScore 大屏展示")
-    .fullscreen(true)
     .build()
     .map_err(|e| format!("创建大屏窗口失败: {}", e))?;
 

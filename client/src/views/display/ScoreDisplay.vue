@@ -42,6 +42,10 @@
           <button class="score-display__settings-btn" @click="showSettings = !showSettings" title="显示设置">
             <el-icon :size="18"><Setting /></el-icon>
           </button>
+          <!-- 退出按钮 -->
+          <button class="score-display__close-btn" @click="closeDisplay" title="关闭大屏">
+            <el-icon :size="18"><Close /></el-icon>
+          </button>
         </div>
       </div>
 
@@ -524,6 +528,7 @@ import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent, StudentScoreStats } from '@/types'
 import { PetCategory } from '@/types'
 import api from '@/services/api'
+import { Window } from '@tauri-apps/api/window'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
 import { scoreApi } from '@/services/score'
@@ -605,6 +610,19 @@ function onMouseMove(e: MouseEvent) {
     fullscreenHideTimer = setTimeout(() => {
       showGearOnFullscreen.value = false
     }, 3000)
+  }
+}
+
+async function closeDisplay() {
+  try {
+    const win = Window.getByLabel('display')
+    if (win) {
+      await win.close()
+    } else {
+      window.close()
+    }
+  } catch {
+    window.close()
   }
 }
 
@@ -1162,6 +1180,28 @@ function formatNet(val: number | undefined): string {
   border-color: rgba(13, 148, 136, 0.4);
   color: #2dd4bf;
   transform: rotate(45deg);
+}
+
+/* 关闭按钮 */
+.score-display__close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.score-display__close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
 }
 
 /* 多选工具栏 */
