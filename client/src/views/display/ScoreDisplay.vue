@@ -32,12 +32,6 @@
             <el-radio-button value="personal">{{ t('student') }}</el-radio-button>
             <el-radio-button value="group">{{ t('group') }}</el-radio-button>
           </el-radio-group>
-          <el-radio-group v-model="displayMode" size="small" class="score-display__display-toggle">
-            <el-radio-button value="leaderboard">排行</el-radio-button>
-            <el-radio-button value="Card">卡片</el-radio-button>
-            <el-radio-button value="Circle">圆形</el-radio-button>
-            <el-radio-button value="Pet">宠物</el-radio-button>
-          </el-radio-group>
           <!-- 设置齿轮按钮 -->
           <button class="score-display__settings-btn" @click="showSettings = !showSettings" title="显示设置">
             <el-icon :size="18"><Setting /></el-icon>
@@ -257,6 +251,17 @@
             <div v-if="displaySettings.background === 'custom'" class="score-display__settings-color-picker">
               <input type="color" v-model="displaySettings.customColor" @input="saveSettings" />
             </div>
+          </div>
+
+          <!-- 展示模式 -->
+          <div class="score-display__settings-section">
+            <div class="score-display__settings-label">展示模式</div>
+            <el-radio-group v-model="displayMode" size="small" class="score-display__settings-mode">
+              <el-radio-button value="leaderboard">排行</el-radio-button>
+              <el-radio-button value="Card">卡片</el-radio-button>
+              <el-radio-button value="Circle">圆形</el-radio-button>
+              <el-radio-button value="Pet">宠物</el-radio-button>
+            </el-radio-group>
           </div>
 
           <!-- 字体大小 -->
@@ -655,7 +660,7 @@ const students = ref<Student[]>([])
 const evaluationItems = ref<EvaluationItem[]>([])
 const scoreStats = ref<StudentScoreStats[]>([])
 const mode = ref<'personal' | 'group'>('personal')
-const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('leaderboard')
+const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('Card')
 
 const effectiveDisplayMode = computed(() => {
   if (isXianxia.value && mode.value === 'personal') {
