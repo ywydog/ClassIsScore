@@ -63,7 +63,17 @@ export const settingsApi = {
   },
 
   async setPassword(password: string) {
-    await invoke('auth_set_passwords', { adminPassword: password })
+    await invoke('auth_set_passwords', { admin_password: password })
+    return { data: { data: undefined } }
+  },
+
+  async exportSettings() {
+    const result = await invoke('settings_export', {})
+    return { data: { data: result } }
+  },
+
+  async importSettings(data: Record<string, unknown>) {
+    await invoke('settings_import', { data })
     return { data: { data: undefined } }
   },
 }

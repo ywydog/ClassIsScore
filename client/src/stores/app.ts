@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { AppState } from '@/types'
 import { useScoreStore } from './score'
+import { settingsApi } from '@/services/settings'
 
 export const useAppStore = defineStore('app', () => {
   const appState = ref<AppState>({
@@ -21,12 +22,32 @@ export const useAppStore = defineStore('app', () => {
       const scoreStore = useScoreStore()
       scoreStore.setupWebSocket()
 
-      appState.value.isOnboardingCompleted = true
+      // 从后端检查是否已完成引导
+      try {
+        const response = await settingsApi.getSettings()
+        const settings = response.data.data as Record<string, unknown>
+        appState.value.isOnboardingCompleted = settings.onboardingCompleted === 'true'
+          || localStorage.getItem('onboardingCompleted') === 'true'
+      } catch {
+        // 后端不可用时检查 localStorage
+        appState.value.isOnboardingCompleted = localStorage.getItem('onboardingCompleted') === 'true'
+      }
+
       initialized.value = true
     } catch (err) {
       showToast(err instanceof Error ? err.message : '初始化失败', 'error')
     } finally {
       loading.value = false
+    }
+  }
+
+  async function completeOnboarding() {
+    appState.value.isOnboardingCompleted = true
+    localStorage.setItem('onboardingCompleted', 'true')
+    try {
+      await settingsApi.updateSettings({ onboardingCompleted: true } as any)
+    } catch {
+      // 静默失败
     }
   }
 
@@ -53,6 +74,7 @@ export const useAppStore = defineStore('app', () => {
     loading,
     toasts,
     initialize,
+    completeOnboarding,
     cleanup,
     showToast,
     removeToast,

@@ -50,7 +50,7 @@ export const studentApi = {
         group_id: student.groupId ? Number(student.groupId) : null,
         avatar: student.avatar ?? null,
         pet_type: student.petType ?? null,
-        pet_name: null,
+        pet_name: student.petName ?? null,
       }
     })
     return { data: { data: toStudent(result) } }
@@ -83,7 +83,7 @@ export const studentApi = {
       group_id: s.groupId ? Number(s.groupId) : null,
       avatar: s.avatar ?? null,
       pet_type: s.petType ?? null,
-      pet_name: null as string | null,
+      pet_name: s.petName ?? null,
     }))
     const results = await invoke<RustStudent[]>('student_batch_create', { students: inputs })
     return { data: { data: results.map(toStudent) } }

@@ -1,14 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { AppSettings } from '@/types'
-import { DisplayMode } from '@/types'
+import { DisplayMode, PetModeBehavior } from '@/types'
 import { settingsApi } from '@/services/settings'
+import { invoke } from '@/services/tauri'
 
 export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<AppSettings>({
     theme: 'light',
     fontSize: 14,
     displayMode: DisplayMode.Card,
+    petModeBehavior: PetModeBehavior.Replace,
     themeMode: 'default',
   })
 
@@ -23,6 +25,7 @@ export const useSettingsStore = defineStore('settings', () => {
       settings.value = { ...settings.value, ...response.data.data }
       applyTheme(settings.value.theme)
       applyFontSize(settings.value.fontSize)
+      applyFontFamily(settings.value.fontFamily)
       applyThemeMode(settings.value.themeMode || 'default')
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取设置失败'
@@ -42,6 +45,9 @@ export const useSettingsStore = defineStore('settings', () => {
       }
       if (newSettings.fontSize) {
         applyFontSize(settings.value.fontSize)
+      }
+      if (newSettings.fontFamily !== undefined) {
+        applyFontFamily(newSettings.fontFamily)
       }
       if (newSettings.themeMode) {
         applyThemeMode(settings.value.themeMode || 'default')
@@ -70,12 +76,30 @@ export const useSettingsStore = defineStore('settings', () => {
     document.documentElement.style.setProperty('--cis-font-size-base', `${size}px`)
   }
 
+  function applyFontFamily(fontFamily?: string) {
+    if (fontFamily) {
+      document.documentElement.style.setProperty('--cis-font-family', fontFamily)
+    } else {
+      document.documentElement.style.removeProperty('--cis-font-family')
+    }
+  }
+
   function applyThemeMode(mode: 'default' | 'xianxia') {
     const root = document.documentElement
     root.removeAttribute('data-theme-mode')
     if (mode === 'xianxia') {
       root.setAttribute('data-theme-mode', 'xianxia')
     }
+  }
+
+  async function exportSettings() {
+    const result = await invoke('settings_export', {})
+    return result as string
+  }
+
+  async function importSettings(data: string) {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data
+    await invoke('settings_import', { data: parsed })
   }
 
   watch(
@@ -100,6 +124,9 @@ export const useSettingsStore = defineStore('settings', () => {
     updateSettings,
     applyTheme,
     applyFontSize,
+    applyFontFamily,
     applyThemeMode,
+    exportSettings,
+    importSettings,
   }
 })

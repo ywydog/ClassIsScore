@@ -98,6 +98,7 @@ pub fn run() {
             commands::score::score_stats,
             // 小组管理
             commands::group::group_list,
+            commands::group::group_get,
             commands::group::group_create,
             commands::group::group_update,
             commands::group::group_delete,

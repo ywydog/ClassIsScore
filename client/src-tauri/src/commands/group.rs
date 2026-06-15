@@ -58,6 +58,20 @@ pub async fn group_create(
 }
 
 #[tauri::command]
+pub async fn group_get(
+    state: State<'_, Arc<RwLock<AppState>>>,
+    id: i64,
+) -> Result<student_group::Model, String> {
+    let db = get_db(&state)?;
+
+    student_group::Entity::find_by_id(id)
+        .one(&db)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "小组不存在".to_string())
+}
+
+#[tauri::command]
 pub async fn group_update(
     state: State<'_, Arc<RwLock<AppState>>>,
     input: GroupUpdateInput,

@@ -68,7 +68,21 @@ export const scoreApi = {
     return { data: { data: undefined } }
   },
 
-  async canRevert(_recordId: string) {
+  async canRevert(recordId: string) {
+    try {
+      const records = await invoke<RustScoreRecord[]>('score_list', { limit: 1 })
+      const record = records.find(r => String(r.id) === recordId)
+      if (record) {
+        return {
+          data: {
+            data: {
+              canQuickRevert: record.can_quick_revert && !record.reverted,
+              needsAdminVerification: !record.can_quick_revert && !record.reverted,
+            }
+          }
+        }
+      }
+    } catch { /* fall through */ }
     return {
       data: {
         data: {
@@ -84,7 +98,10 @@ export const scoreApi = {
     return { data: { data: records.map(toScoreRecord) } }
   },
 
-  async getStats(_semesterStartDate?: string) {
-    return { data: { data: [] } }
+  async getStats(studentId: string) {
+    const stats = await invoke<{ total_positive: number; total_negative: number; count: number }>('score_stats', {
+      student_id: Number(studentId),
+    })
+    return { data: { data: { ...stats } } }
   },
 }

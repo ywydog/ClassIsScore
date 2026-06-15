@@ -29,6 +29,7 @@ export interface ScoreRecord {
 export interface StudentGroup {
   id: string
   name: string
+  description?: string
   studentIds: string[]
   createdAt: string
 }
@@ -121,12 +122,19 @@ export enum DisplayMode {
   Pet = 'Pet',
 }
 
+export enum PetModeBehavior {
+  Coexist = 'Coexist',
+  Replace = 'Replace',
+}
+
 export interface AppSettings {
   theme: 'light' | 'dark' | 'system'
   fontSize: number
   displayMode: DisplayMode
   customAccentColor?: string
   petStyle?: string
+  petModeBehavior?: PetModeBehavior
+  fontFamily?: string
   semesterStartDate?: string
   themeMode?: 'default' | 'xianxia'
 }

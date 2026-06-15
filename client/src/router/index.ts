@@ -116,4 +116,40 @@ const router = createRouter({
   routes,
 })
 
+// 路由守卫：首次启动引导
+router.beforeEach(async (to, _from, next) => {
+  // 引导页面和展示页面不需要检查
+  if (to.name === 'Onboarding' || to.name === 'ScoreDisplay' || to.name === 'FloatingBar') {
+    next()
+    return
+  }
+
+  // 检查是否已完成引导（localStorage 快速路径）
+  if (localStorage.getItem('onboardingCompleted') === 'true') {
+    next()
+    return
+  }
+
+  // 检查后端设置的引导状态
+  try {
+    const { invoke } = await import('@/services/tauri')
+    const settings = await invoke<Array<{ setting_key: string; setting_value: string | null }>>('settings_get_all', {})
+    const onboardingSetting = settings.find(s => s.setting_key === 'onboardingCompleted')
+    if (onboardingSetting?.setting_value === 'true') {
+      localStorage.setItem('onboardingCompleted', 'true')
+      next()
+      return
+    }
+  } catch {
+    // 后端不可用，检查 localStorage
+    if (localStorage.getItem('onboardingCompleted') === 'true') {
+      next()
+      return
+    }
+  }
+
+  // 未完成引导，重定向到引导页面
+  next({ name: 'Onboarding' })
+})
+
 export default router
