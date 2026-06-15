@@ -3,7 +3,7 @@ name: Build Tauri
 on:
   push:
     branches: [ main, feature/vue-electron ]
-    tags: [ 'v*' ]
+    tags: [ 'v*', 'w*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -77,6 +77,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create Windows Portable Zip
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: |
+          $exePath = Get-ChildItem -Path "${{ env.CLIENT_DIR }}/src-tauri/target/release" -Filter "ClassIsScore.exe" -Recurse | Select-Object -First 1
+          if ($exePath) {
+            $portableDir = "${{ env.CLIENT_DIR }}/src-tauri/target/release/portable"
+            New-Item -ItemType Directory -Force -Path $portableDir
+            Copy-Item $exePath.FullName -Destination $portableDir
+            Compress-Archive -Path $portableDir -DestinationPath "${{ env.CLIENT_DIR }}/src-tauri/target/release/ClassIsScore-Portable.zip"
+            Write-Host "Created portable zip: ClassIsScore-Portable.zip"
+          } else {
+            Write-Host "ClassIsScore.exe not found, skipping portable zip"
+          }
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -88,12 +103,13 @@ jobs:
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.deb
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.dmg
             ${{ env.CLIENT_DIR }}/src-tauri/target/release/bundle/**/*.app
+            ${{ env.CLIENT_DIR }}/src-tauri/target/release/ClassIsScore-Portable.zip
           if-no-files-found: warn
 
   release:
     name: Create Release
     needs: build
-    if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.upload_to_release == true) }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/w') || (github.event_name == 'workflow_dispatch' && inputs.upload_to_release == true) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -109,12 +125,12 @@ jobs:
       - name: Collect Release Files
         run: |
           mkdir -p ./release
-          find ./artifacts -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.dmg" \) -exec cp {} ./release/ \;
+          find ./artifacts -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.dmg" -o -name "*.zip" \) -exec cp {} ./release/ \;
 
       - name: Determine Tag
         id: tag
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          if [[ "${{ github.ref }}" == refs/tags/v* ]] || [[ "${{ github.ref }}" == refs/tags/w* ]]; then
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           elif [[ -n "${{ inputs.release_tag }}" ]]; then
             echo "tag=${{ inputs.release_tag }}" >> $GITHUB_OUTPUT

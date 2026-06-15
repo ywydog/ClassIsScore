@@ -1,6 +1,6 @@
 [package]
 name = "classisscore"
-version = "1.0.0"
+version = "1.0.5.0"
 description = "ClassIsScore - 教室积分管理系统"
 authors = ["ClassIsScore Team"]
 edition = "2021"
