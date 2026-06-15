@@ -67,131 +67,135 @@
         </el-button>
       </div>
 
-      <!-- 排行榜模式：领奖台 + 列表 -->
-      <template v-if="effectiveDisplayMode === 'leaderboard'">
-        <div v-if="limitedTopThree.length > 0" class="score-display__podium">
-          <div
-            class="score-display__podium-item score-display__podium--2"
-            :class="{ 'score-display__podium-item--animated': mounted }"
-            style="--podium-delay: 0.2s"
-            v-if="limitedTopThree.length >= 2"
-          >
-            <div class="score-display__podium-avatar">
-              <el-avatar :size="72">{{ limitedTopThree[1].name.charAt(0) }}</el-avatar>
-              <div class="score-display__medal score-display__medal--silver" v-if="displaySettings.showRank">2</div>
+      <div class="score-display__body">
+        <!-- 主体区域：卡片/圆形/宠物 -->
+        <div class="score-display__main">
+          <!-- 卡片模式 -->
+          <div v-if="effectiveDisplayMode === 'Card'" class="score-display__grid score-display__grid--card">
+            <div
+              v-for="student in students"
+              :key="student.id"
+              class="score-display__selectable-wrapper"
+              :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
+              @click="handleStudentClick(student)"
+            >
+              <div v-if="multiSelectMode" class="score-display__select-check">
+                <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+              </div>
+              <StudentCardDisplay :student="student" />
+              <div v-if="isXianxia" class="score-display__cultivation-info">
+                <span class="score-display__cultivation-level">{{ getCultivationLevel(calculateCultivation(student.score, calculateLevel(student.petExp))).name }}</span>
+                <span class="score-display__cultivation-score">修为 {{ formatCultivationNumber(calculateCultivation(student.score, calculateLevel(student.petExp))) }}</span>
+              </div>
             </div>
-            <div class="score-display__podium-name">{{ limitedTopThree[1].name }}</div>
-            <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[1].score }}</div>
           </div>
-          <div
-            class="score-display__podium-item score-display__podium--1"
-            :class="{ 'score-display__podium-item--animated': mounted }"
-            style="--podium-delay: 0.4s"
-            v-if="limitedTopThree.length >= 1"
-          >
-            <div class="score-display__podium-crown">👑</div>
-            <div class="score-display__podium-avatar">
-              <el-avatar :size="96">{{ limitedTopThree[0].name.charAt(0) }}</el-avatar>
-              <div class="score-display__medal score-display__medal--gold" v-if="displaySettings.showRank">1</div>
+
+          <!-- 圆形模式 -->
+          <div v-else-if="effectiveDisplayMode === 'Circle'" class="score-display__grid score-display__grid--circle">
+            <div
+              v-for="student in students"
+              :key="student.id"
+              class="score-display__selectable-wrapper score-display__selectable-wrapper--circle"
+              :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
+              @click="handleStudentClick(student)"
+            >
+              <div v-if="multiSelectMode" class="score-display__select-check">
+                <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+              </div>
+              <StudentCircleDisplay :student="student" />
             </div>
-            <div class="score-display__podium-name">{{ limitedTopThree[0].name }}</div>
-            <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[0].score }}</div>
           </div>
-          <div
-            class="score-display__podium-item score-display__podium--3"
-            :class="{ 'score-display__podium-item--animated': mounted }"
-            style="--podium-delay: 0s"
-            v-if="limitedTopThree.length >= 3"
-          >
-            <div class="score-display__podium-avatar">
-              <el-avatar :size="60">{{ limitedTopThree[2].name.charAt(0) }}</el-avatar>
-              <div class="score-display__medal score-display__medal--bronze" v-if="displaySettings.showRank">3</div>
+
+          <!-- 宠物模式 -->
+          <div v-else-if="effectiveDisplayMode === 'Pet'" class="score-display__grid score-display__grid--pet">
+            <div
+              v-for="student in students"
+              :key="student.id"
+              class="score-display__selectable-wrapper score-display__selectable-wrapper--pet"
+              :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
+              @click="handleStudentClick(student)"
+              @contextmenu.prevent="onPetRightClick(student)"
+            >
+              <div v-if="multiSelectMode" class="score-display__select-check">
+                <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+              </div>
+              <PetDisplay :student="student" />
             </div>
-            <div class="score-display__podium-name">{{ limitedTopThree[2].name }}</div>
-            <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[2].score }}</div>
           </div>
         </div>
 
-        <div class="score-display__list" v-if="limitedRestEntries.length > 0">
-          <div
-            v-for="(entry, idx) in limitedRestEntries"
-            :key="entry.rank"
-            class="score-display__item"
-            :class="{ 'score-display__item--animated': mounted }"
-            :style="{ '--item-delay': `${idx * 50}ms` }"
-          >
-            <span class="score-display__rank" v-if="displaySettings.showRank">{{ entry.rank }}</span>
-            <span class="score-display__name">{{ entry.name }}</span>
-            <span class="score-display__score" v-if="displaySettings.showScore">{{ entry.score }}</span>
+        <!-- 侧边栏：排行榜 -->
+        <div class="score-display__sidebar">
+          <div class="score-display__sidebar-header">
+            <h3 class="score-display__sidebar-title">{{ t('leaderboardTitle') }}</h3>
+            <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard">
+              <el-radio-button value="personal">{{ t('student') }}</el-radio-button>
+              <el-radio-button value="group">{{ t('group') }}</el-radio-button>
+            </el-radio-group>
           </div>
-        </div>
-      </template>
 
-      <!-- 卡片模式 -->
-      <div v-else-if="effectiveDisplayMode === 'Card'" class="score-display__grid score-display__grid--card">
-        <div
-          v-for="student in students"
-          :key="student.id"
-          class="score-display__selectable-wrapper"
-          :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
-          @click="handleStudentClick(student)"
-        >
-          <div v-if="multiSelectMode" class="score-display__select-check">
-            <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+          <!-- 领奖台 -->
+          <div v-if="limitedTopThree.length > 0" class="score-display__podium">
+            <div
+              class="score-display__podium-item score-display__podium--2"
+              :class="{ 'score-display__podium-item--animated': mounted }"
+              style="--podium-delay: 0.2s"
+              v-if="limitedTopThree.length >= 2"
+            >
+              <div class="score-display__podium-avatar">
+                <el-avatar :size="48">{{ limitedTopThree[1].name.charAt(0) }}</el-avatar>
+                <div class="score-display__medal score-display__medal--silver" v-if="displaySettings.showRank">2</div>
+              </div>
+              <div class="score-display__podium-name">{{ limitedTopThree[1].name }}</div>
+              <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[1].score }}</div>
+            </div>
+            <div
+              class="score-display__podium-item score-display__podium--1"
+              :class="{ 'score-display__podium-item--animated': mounted }"
+              style="--podium-delay: 0.4s"
+              v-if="limitedTopThree.length >= 1"
+            >
+              <div class="score-display__podium-crown">👑</div>
+              <div class="score-display__podium-avatar">
+                <el-avatar :size="64">{{ limitedTopThree[0].name.charAt(0) }}</el-avatar>
+                <div class="score-display__medal score-display__medal--gold" v-if="displaySettings.showRank">1</div>
+              </div>
+              <div class="score-display__podium-name">{{ limitedTopThree[0].name }}</div>
+              <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[0].score }}</div>
+            </div>
+            <div
+              class="score-display__podium-item score-display__podium--3"
+              :class="{ 'score-display__podium-item--animated': mounted }"
+              style="--podium-delay: 0s"
+              v-if="limitedTopThree.length >= 3"
+            >
+              <div class="score-display__podium-avatar">
+                <el-avatar :size="40">{{ limitedTopThree[2].name.charAt(0) }}</el-avatar>
+                <div class="score-display__medal score-display__medal--bronze" v-if="displaySettings.showRank">3</div>
+              </div>
+              <div class="score-display__podium-name">{{ limitedTopThree[2].name }}</div>
+              <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[2].score }}</div>
+            </div>
           </div>
-          <StudentCardDisplay :student="student" />
-          <div v-if="isXianxia" class="score-display__cultivation-info">
-            <span class="score-display__cultivation-level">{{ getCultivationLevel(calculateCultivation(student.score, calculateLevel(student.petExp))).name }}</span>
-            <span class="score-display__cultivation-score">修为 {{ formatCultivationNumber(calculateCultivation(student.score, calculateLevel(student.petExp))) }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- 圆形模式 -->
-      <div v-else-if="effectiveDisplayMode === 'Circle'" class="score-display__grid score-display__grid--circle">
-        <div
-          v-for="student in students"
-          :key="student.id"
-          class="score-display__selectable-wrapper score-display__selectable-wrapper--circle"
-          :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
-          @click="handleStudentClick(student)"
-        >
-          <div v-if="multiSelectMode" class="score-display__select-check">
-            <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
+          <!-- 列表 -->
+          <div class="score-display__sidebar-list" v-if="limitedRestEntries.length > 0">
+            <div
+              v-for="(entry, idx) in limitedRestEntries"
+              :key="entry.rank"
+              class="score-display__item"
+              :class="{ 'score-display__item--animated': mounted }"
+              :style="{ '--item-delay': `${idx * 50}ms` }"
+            >
+              <span class="score-display__rank" v-if="displaySettings.showRank">{{ entry.rank }}</span>
+              <span class="score-display__name">{{ entry.name }}</span>
+              <span class="score-display__score" v-if="displaySettings.showScore">{{ entry.score }}</span>
+            </div>
           </div>
-          <StudentCircleDisplay :student="student" />
-        </div>
-      </div>
-
-      <!-- 宠物模式 -->
-      <div v-else-if="effectiveDisplayMode === 'Pet'" class="score-display__grid score-display__grid--pet">
-        <div
-          v-for="student in students"
-          :key="student.id"
-          class="score-display__selectable-wrapper score-display__selectable-wrapper--pet"
-          :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
-          @click="handleStudentClick(student)"
-          @contextmenu.prevent="onPetRightClick(student)"
-        >
-          <div v-if="multiSelectMode" class="score-display__select-check">
-            <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
-          </div>
-          <PetDisplay :student="student" />
+          <div v-else class="score-display__sidebar-empty">暂无排行数据</div>
         </div>
       </div>
     </div>
-
-    <!-- 分数变化浮动动画 -->
-    <transition-group name="score-float" tag="div" class="score-display__float-container">
-      <div
-        v-for="anim in scoreAnimations"
-        :key="anim.id"
-        class="score-display__float-anim"
-        :class="anim.change > 0 ? 'score-display__float-anim--pos' : 'score-display__float-anim--neg'"
-      >
-        {{ anim.change > 0 ? '+' : '' }}{{ anim.change }}
-      </div>
-    </transition-group>
 
     <!-- 周期积分面板（右下角） -->
     <div class="score-display__period-panel">
@@ -257,7 +261,6 @@
           <div class="score-display__settings-section">
             <div class="score-display__settings-label">展示模式</div>
             <el-radio-group v-model="displayMode" size="small" class="score-display__settings-mode">
-              <el-radio-button value="leaderboard">排行</el-radio-button>
               <el-radio-button value="Card">卡片</el-radio-button>
               <el-radio-button value="Circle">圆形</el-radio-button>
               <el-radio-button value="Pet">宠物</el-radio-button>
