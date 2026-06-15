@@ -5,7 +5,7 @@ use parking_lot::RwLock;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tauri::State;
+use tauri::{Emitter, State};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScoreAddInput {
@@ -35,6 +35,27 @@ pub struct ScoreStats {
 fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
     let guard = state.read();
     guard.get_db().map(|db| db.clone())
+}
+
+fn emit_score_update(
+    state: &State<'_, Arc<RwLock<AppState>>>,
+    student_id: i64,
+    student_name: String,
+    score_change: i32,
+    new_score: i32,
+    reason: String,
+) {
+    let guard = state.read();
+    if let Some(handle) = guard.app_handle.get() {
+        let payload = serde_json::json!({
+            "studentId": student_id.to_string(),
+            "studentName": student_name,
+            "scoreChange": score_change,
+            "newScore": new_score,
+            "reason": reason,
+        });
+        let _ = handle.emit("score-update", payload);
+    }
 }
 
 #[tauri::command]
@@ -69,6 +90,8 @@ pub async fn score_add(
 ) -> Result<score_record::Model, String> {
     let db = get_db(&state)?;
 
+    let reason_text = input.reason.clone().unwrap_or_default();
+
     // 创建积分记录
     let record = score_record::ActiveModel {
         student_id: Set(input.student_id),
@@ -88,11 +111,16 @@ pub async fn score_add(
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "学生不存在".to_string())?;
 
+    let student_name = student_model.name.clone();
     let mut active: student::ActiveModel = student_model.into();
     let current_score = active.total_score.as_ref().clone();
-    active.total_score = Set(current_score + input.score_change);
+    let new_score = current_score + input.score_change;
+    active.total_score = Set(new_score);
     active.updated_at = Set(chrono::Local::now().naive_utc());
     active.update(&db).await.map_err(|e| e.to_string())?;
+
+    // 发出积分更新事件
+    emit_score_update(&state, input.student_id, student_name, input.score_change, new_score, reason_text);
 
     Ok(result)
 }
@@ -104,10 +132,12 @@ pub async fn score_batch_add(
 ) -> Result<Vec<score_record::Model>, String> {
     let db = get_db(&state)?;
 
+    let reason_text = input.reason.clone().unwrap_or_default();
+
     let mut results = Vec::new();
-    for student_id in input.student_ids {
+    for student_id in input.student_ids.iter() {
         let record = score_record::ActiveModel {
-            student_id: Set(student_id),
+            student_id: Set(*student_id),
             score_change: Set(input.score_change),
             reason: Set(input.reason.clone()),
             category: Set(input.category.clone()),
@@ -119,16 +149,21 @@ pub async fn score_batch_add(
 
         // 更新学生总分
         if let Some(student_model) =
-            student::Entity::find_by_id(student_id)
+            student::Entity::find_by_id(*student_id)
                 .one(&db)
                 .await
                 .map_err(|e| e.to_string())?
         {
+            let student_name = student_model.name.clone();
             let mut active: student::ActiveModel = student_model.into();
             let current_score = active.total_score.as_ref().clone();
-            active.total_score = Set(current_score + input.score_change);
+            let new_score = current_score + input.score_change;
+            active.total_score = Set(new_score);
             active.updated_at = Set(chrono::Local::now().naive_utc());
             active.update(&db).await.map_err(|e| e.to_string())?;
+
+            // 发出积分更新事件
+            emit_score_update(&state, *student_id, student_name, input.score_change, new_score, reason_text.clone());
         }
 
         results.push(result);
@@ -157,6 +192,7 @@ pub async fn score_revert(
     // 提取需要的值
     let score_change = record.score_change;
     let student_id = record.student_id;
+    let reason_text = format!("撤销: {}", record.reason.clone().unwrap_or_default());
 
     // 标记撤销
     let mut active: score_record::ActiveModel = record.into();
@@ -170,11 +206,16 @@ pub async fn score_revert(
             .await
             .map_err(|e| e.to_string())?
     {
+        let student_name = student_model.name.clone();
         let mut student_active: student::ActiveModel = student_model.into();
         let current_score = student_active.total_score.as_ref().clone();
-        student_active.total_score = Set(current_score - score_change);
+        let new_score = current_score - score_change;
+        student_active.total_score = Set(new_score);
         student_active.updated_at = Set(chrono::Local::now().naive_utc());
         student_active.update(&db).await.map_err(|e| e.to_string())?;
+
+        // 发出积分更新事件
+        emit_score_update(&state, student_id, student_name, -score_change, new_score, reason_text);
     }
 
     Ok(())

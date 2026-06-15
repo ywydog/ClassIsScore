@@ -119,6 +119,8 @@ pub fn run() {
             commands::settings::settings_get_all,
             commands::settings::settings_get,
             commands::settings::settings_set,
+            commands::settings::settings_export,
+            commands::settings::settings_import,
             // 认证
             commands::auth::auth_login,
             commands::auth::auth_change_password,

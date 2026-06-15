@@ -4,7 +4,7 @@ use parking_lot::RwLock;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tauri::State;
+use tauri::{Emitter, State};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StudentCreateInput {
@@ -20,11 +20,16 @@ pub struct StudentCreateInput {
 pub struct StudentUpdateInput {
     pub id: i64,
     pub name: Option<String>,
-    pub student_number: Option<String>,
-    pub group_id: Option<i64>,
-    pub avatar: Option<String>,
-    pub pet_type: Option<String>,
-    pub pet_name: Option<String>,
+    #[serde(default)]
+    pub student_number: Option<Option<String>>,
+    #[serde(default)]
+    pub group_id: Option<Option<i64>>,
+    #[serde(default)]
+    pub avatar: Option<Option<String>>,
+    #[serde(default)]
+    pub pet_type: Option<Option<String>>,
+    #[serde(default)]
+    pub pet_name: Option<Option<String>>,
     pub pet_exp: Option<i32>,
 }
 
@@ -107,11 +112,32 @@ pub async fn student_update(
 
     let updated = student::ActiveModel {
         name: input.name.map(Set).unwrap_or(existing.name),
-        student_number: input.student_number.map(|v| Set(Some(v))).unwrap_or(existing.student_number),
-        group_id: input.group_id.map(|v| Set(Some(v))).unwrap_or(existing.group_id),
-        avatar: input.avatar.map(|v| Set(Some(v))).unwrap_or(existing.avatar),
-        pet_type: input.pet_type.map(|v| Set(Some(v))).unwrap_or(existing.pet_type),
-        pet_name: input.pet_name.map(|v| Set(Some(v))).unwrap_or(existing.pet_name),
+        // Option<Option<T>>: None=不更新, Some(None)=清空, Some(Some(v))=设置值
+        student_number: match input.student_number {
+            None => existing.student_number,
+            Some(None) => Set(None),
+            Some(Some(v)) => Set(Some(v)),
+        },
+        group_id: match input.group_id {
+            None => existing.group_id,
+            Some(None) => Set(None),
+            Some(Some(v)) => Set(Some(v)),
+        },
+        avatar: match input.avatar {
+            None => existing.avatar,
+            Some(None) => Set(None),
+            Some(Some(v)) => Set(Some(v)),
+        },
+        pet_type: match input.pet_type {
+            None => existing.pet_type,
+            Some(None) => Set(None),
+            Some(Some(v)) => Set(Some(v)),
+        },
+        pet_name: match input.pet_name {
+            None => existing.pet_name,
+            Some(None) => Set(None),
+            Some(Some(v)) => Set(Some(v)),
+        },
         pet_exp: input.pet_exp.map(Set).unwrap_or(existing.pet_exp),
         updated_at: Set(chrono::Local::now().naive_utc()),
         ..existing
@@ -175,6 +201,18 @@ pub async fn student_reset_scores(
         active.pet_exp = Set(0);
         active.updated_at = Set(chrono::Local::now().naive_utc());
         active.update(&db).await.map_err(|e| e.to_string())?;
+    }
+
+    // 发出积分重置事件
+    let guard = state.read();
+    if let Some(handle) = guard.app_handle.get() {
+        let _ = handle.emit("score-update", serde_json::json!({
+            "studentId": "all",
+            "studentName": "",
+            "scoreChange": 0,
+            "newScore": 0,
+            "reason": "积分重置",
+        }));
     }
 
     Ok(())

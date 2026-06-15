@@ -5,7 +5,7 @@ use parking_lot::RwLock;
 use sea_orm::{ActiveModelTrait, EntityTrait, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tauri::State;
+use tauri::{Emitter, State};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SettlementCreateInput {
@@ -128,5 +128,18 @@ pub async fn settlement_rollback(
     };
 
     let result = updated.update(&db).await.map_err(|e| e.to_string())?;
+
+    // 发出积分更新事件
+    let guard = state.read();
+    if let Some(handle) = guard.app_handle.get() {
+        let _ = handle.emit("score-update", serde_json::json!({
+            "studentId": "all",
+            "studentName": "",
+            "scoreChange": 0,
+            "newScore": 0,
+            "reason": "结算回滚",
+        }));
+    }
+
     Ok(result)
 }
