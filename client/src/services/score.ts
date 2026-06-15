@@ -29,30 +29,35 @@ function toScoreRecord(r: RustScoreRecord): ScoreRecord {
 }
 
 export const scoreApi = {
-  async getRecords(studentId?: string) {
+  async getRecords(studentId?: string, limit?: number) {
     const records = await invoke<RustScoreRecord[]>('score_list', {
-      studentId: studentId ? Number(studentId) : null,
+      student_id: studentId ? Number(studentId) : null,
+      limit: limit ?? null,
     })
     return { data: { data: records.map(toScoreRecord) } }
   },
 
-  async addScore(data: { studentId: string; scoreChange: number; reason: string }) {
+  async addScore(data: { studentId: string; scoreChange: number; reason: string; category?: string; operatorId?: number }) {
     const result = await invoke<RustScoreRecord>('score_add', {
       input: {
         student_id: Number(data.studentId),
         score_change: data.scoreChange,
-        reason: data.reason,
+        reason: data.reason || null,
+        category: data.category ?? null,
+        operator_id: data.operatorId ?? null,
       }
     })
     return { data: { data: toScoreRecord(result) } }
   },
 
-  async batchAddScore(data: { studentIds: string[]; scoreChange: number; reason: string }) {
+  async batchAddScore(data: { studentIds: string[]; scoreChange: number; reason: string; category?: string; operatorId?: number }) {
     const results = await invoke<RustScoreRecord[]>('score_batch_add', {
       input: {
         student_ids: data.studentIds.map(Number),
         score_change: data.scoreChange,
-        reason: data.reason,
+        reason: data.reason || null,
+        category: data.category ?? null,
+        operator_id: data.operatorId ?? null,
       }
     })
     return { data: { data: results.map(toScoreRecord) } }

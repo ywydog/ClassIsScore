@@ -77,6 +77,7 @@ pub async fn settlement_complete(
 
     let updated = settlement_record::ActiveModel {
         status: Set(1),
+        updated_at: Set(chrono::Local::now().naive_utc()),
         ..existing
     };
 
@@ -124,6 +125,7 @@ pub async fn settlement_rollback(
     let existing: settlement_record::ActiveModel = record.into();
     let updated = settlement_record::ActiveModel {
         status: Set(2),
+        updated_at: Set(chrono::Local::now().naive_utc()),
         ..existing
     };
 

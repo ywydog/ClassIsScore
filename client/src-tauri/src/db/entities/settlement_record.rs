@@ -12,6 +12,7 @@ pub struct Model {
     pub snapshot_data: Option<String>,
     pub status: i32,
     pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -1,4 +1,4 @@
-use sea_orm::DatabaseConnection;
+use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection, Statement};
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::SchemaManager;
 
@@ -69,6 +69,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(StudentGroup::Name).string().not_null())
                     .col(ColumnDef::new(StudentGroup::Description).string().null())
                     .col(ColumnDef::new(StudentGroup::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(StudentGroup::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -85,6 +86,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(EvaluationItem::Category).string().null())
                     .col(ColumnDef::new(EvaluationItem::IsQuickAccess).boolean().not_null().default(false))
                     .col(ColumnDef::new(EvaluationItem::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(EvaluationItem::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -101,6 +103,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(SettlementRecord::SnapshotData).string().null())
                     .col(ColumnDef::new(SettlementRecord::Status).integer().not_null().default(0))
                     .col(ColumnDef::new(SettlementRecord::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(SettlementRecord::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -126,6 +129,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(AutoEvaluationConfig::IsEnabled).boolean().not_null().default(false))
                     .col(ColumnDef::new(AutoEvaluationConfig::LastExecutedAt).date_time().null())
                     .col(ColumnDef::new(AutoEvaluationConfig::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(AutoEvaluationConfig::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -143,6 +147,18 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+
+        // 为已有数据库补齐 updated_at 列（SQLite 支持的 ALTER TABLE）
+        let conn = manager.get_connection();
+        let tables = ["student_groups", "evaluation_items", "settlement_records", "auto_evaluation_configs"];
+        for table in tables.iter() {
+            let _ = conn
+                .execute(Statement::from_string(
+                    DatabaseBackend::Sqlite,
+                    format!("ALTER TABLE {} ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP", table),
+                ))
+                .await;
+        }
 
         Ok(())
     }
@@ -210,6 +226,7 @@ enum StudentGroup {
     Name,
     Description,
     CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(Iden)]
@@ -221,6 +238,7 @@ enum EvaluationItem {
     Category,
     IsQuickAccess,
     CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(Iden)]
@@ -232,6 +250,7 @@ enum SettlementRecord {
     SnapshotData,
     Status,
     CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(Iden)]
@@ -252,6 +271,7 @@ enum AutoEvaluationConfig {
     IsEnabled,
     LastExecutedAt,
     CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(Iden)]

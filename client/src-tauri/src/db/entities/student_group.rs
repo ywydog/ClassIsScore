@@ -10,6 +10,7 @@ pub struct Model {
     pub name: String,
     pub description: Option<String>,
     pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -12,6 +12,7 @@ pub struct Model {
     pub category: Option<String>,
     pub is_quick_access: bool,
     pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

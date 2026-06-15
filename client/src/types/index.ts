@@ -7,6 +7,7 @@ export interface Student {
   score: number
   groupId?: string
   petType?: string
+  petName?: string
   petExp: number
   createdAt: string
   updatedAt: string

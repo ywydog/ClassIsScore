@@ -96,6 +96,7 @@ pub async fn auto_score_update_rule(
         target_type: Set(input.target_type),
         target_group_id: Set(input.target_group_id),
         target_student_id: Set(input.target_student_id),
+        updated_at: Set(chrono::Local::now().naive_utc()),
         ..existing
     };
 
@@ -136,6 +137,7 @@ pub async fn auto_score_toggle_rule(
 
     let updated = auto_evaluation_config::ActiveModel {
         is_enabled: Set(is_enabled),
+        updated_at: Set(chrono::Local::now().naive_utc()),
         ..existing
     };
 

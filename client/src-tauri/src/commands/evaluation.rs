@@ -19,7 +19,8 @@ pub struct EvaluationUpdateInput {
     pub id: i64,
     pub name: Option<String>,
     pub score_change: Option<i32>,
-    pub category: Option<String>,
+    #[serde(default)]
+    pub category: Option<Option<String>>,
     pub is_quick_access: Option<bool>,
 }
 
@@ -79,8 +80,14 @@ pub async fn evaluation_update(
     let updated = evaluation_item::ActiveModel {
         name: input.name.map(Set).unwrap_or(existing.name),
         score_change: input.score_change.map(Set).unwrap_or(existing.score_change),
-        category: input.category.map(|v| Set(Some(v))).unwrap_or(existing.category),
+        // Option<Option<T>>: None=不更新, Some(None)=清空, Some(Some(v))=设置值
+        category: match input.category {
+            None => existing.category,
+            Some(None) => Set(None),
+            Some(Some(v)) => Set(Some(v)),
+        },
         is_quick_access: input.is_quick_access.map(Set).unwrap_or(existing.is_quick_access),
+        updated_at: Set(chrono::Local::now().naive_utc()),
         ..existing
     };
 

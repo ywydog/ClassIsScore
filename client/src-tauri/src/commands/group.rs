@@ -16,7 +16,8 @@ pub struct GroupCreateInput {
 pub struct GroupUpdateInput {
     pub id: i64,
     pub name: Option<String>,
-    pub description: Option<String>,
+    #[serde(default)]
+    pub description: Option<Option<String>>,
 }
 
 fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
@@ -72,7 +73,13 @@ pub async fn group_update(
 
     let updated = student_group::ActiveModel {
         name: input.name.map(Set).unwrap_or(existing.name),
-        description: input.description.map(|v| Set(Some(v))).unwrap_or(existing.description),
+        // Option<Option<T>>: None=不更新, Some(None)=清空, Some(Some(v))=设置值
+        description: match input.description {
+            None => existing.description,
+            Some(None) => Set(None),
+            Some(Some(v)) => Set(Some(v)),
+        },
+        updated_at: Set(chrono::Local::now().naive_utc()),
         ..existing
     };
 

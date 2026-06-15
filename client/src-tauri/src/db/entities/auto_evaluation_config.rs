@@ -21,6 +21,7 @@ pub struct Model {
     pub is_enabled: bool,
     pub last_executed_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
