@@ -25,7 +25,7 @@ export const useAppStore = defineStore('app', () => {
       // 从后端检查是否已完成引导
       try {
         const response = await settingsApi.getSettings()
-        const settings = response.data.data as Record<string, unknown>
+        const settings = response.data.data as unknown as Record<string, unknown>
         appState.value.isOnboardingCompleted = settings.onboardingCompleted === 'true'
           || localStorage.getItem('onboardingCompleted') === 'true'
       } catch {

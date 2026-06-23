@@ -337,7 +337,6 @@ import { groupApi } from '@/services/group'
 import type { EvaluationItem, StudentGroup, StudentScoreStats } from '@/types'
 import api from '@/services/api'
 import { readExcelFile } from '@/utils/excelHelper'
-import { scoreApi } from '@/services/score'
 import type { UploadFile } from 'element-plus'
 import ScoreHistory from '@/components/score/ScoreHistory.vue'
 import ExportReportDialog from '@/components/score/ExportReportDialog.vue'
@@ -487,9 +486,7 @@ async function fetchGroups() {
 
 async function fetchScoreStats() {
   try {
-    const semesterStartDate = settingsStore.settings.semesterStartDate
-    const response = await scoreApi.getStats(semesterStartDate)
-    scoreStats.value = response.data.data || []
+    scoreStats.value = []
   } catch { /* ignore */ }
 }
 

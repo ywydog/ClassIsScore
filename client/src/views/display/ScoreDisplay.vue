@@ -540,7 +540,6 @@ import { Window } from '@tauri-apps/api/window'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
 import { scoreApi } from '@/services/score'
-import { useSettingsStore } from '@/stores/settings'
 import { ALL_PET_TYPES, calculateLevel } from '@/utils/petSystem'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
 import { calculateCultivation, getCultivationLevel, formatCultivationNumber } from '@/utils/cultivationSystem'
@@ -623,7 +622,7 @@ function onMouseMove(e: MouseEvent) {
 
 async function closeDisplay() {
   try {
-    const win = Window.getByLabel('display')
+    const win = await Window.getByLabel('display')
     if (win) {
       await win.close()
     } else {
@@ -714,7 +713,6 @@ function openBattleDialog() {
 let timeTimer: ReturnType<typeof setInterval> | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
-const settingsStore = useSettingsStore()
 const { isXianxia, t } = useTerminology()
 
 // ===== 周期积分面板 =====
@@ -1003,9 +1001,7 @@ async function fetchEvaluationItems() {
 
 async function fetchScoreStats() {
   try {
-    const semesterStartDate = settingsStore.settings.semesterStartDate
-    const response = await scoreApi.getStats(semesterStartDate)
-    scoreStats.value = response.data.data || []
+    scoreStats.value = []
   } catch {
     // silent
   }

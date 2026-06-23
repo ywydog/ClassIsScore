@@ -1,5 +1,5 @@
 import { invoke } from './tauri'
-import type { LeaderboardEntry, Student } from '@/types'
+import type { LeaderboardEntry } from '@/types'
 
 interface RustLeaderboardEntry {
   student: {
