@@ -20,7 +20,7 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  RUST_VERSION: '1.77'
+  RUST_VERSION: '1.85'
   CLIENT_DIR: 'client'
 
 jobs:
