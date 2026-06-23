@@ -1,9 +1,8 @@
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::time::Duration;
-use tauri::Manager;
 
 pub async fn create_sqlite_connection(
-    app_handle: &tauri::AppHandle,
+    _app_handle: &tauri::AppHandle,
 ) -> Result<DatabaseConnection, sea_orm::DbErr> {
     // 数据目录：在软件所在目录下创建 data 文件夹
     let exe_dir = std::env::current_exe()

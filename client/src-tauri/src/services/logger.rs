@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -201,7 +201,7 @@ impl LoggerService {
 }
 
 /// 初始化日志系统，返回 LoggerService 实例
-pub fn init_logger(app_handle: &AppHandle) -> LoggerService {
+pub fn init_logger(_app_handle: &AppHandle) -> LoggerService {
     // 日志目录：在软件所在目录下创建 data/logs 文件夹
     let exe_dir = std::env::current_exe()
         .map(|p| p.parent().map(|pp| pp.to_path_buf()).unwrap_or_else(|| PathBuf::from(".")))
