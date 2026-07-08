@@ -5,6 +5,21 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '发布版本号 (例如 v1.0.0 / v1.1.0-beta.1)'
+        required: true
+        type: string
+      release_type:
+        description: 'GitHub Release 类型'
+        required: true
+        type: choice
+        default: 'release'
+        options:
+          - release
+          - prerelease
+          - draft
 
 env:
   RUST_VERSION: 1.89.0
@@ -163,3 +178,33 @@ jobs:
           # apk/universal/debug/ 下面（不是 apk/debug/），用 ** 兜底匹配。
           path: client/src-tauri/gen/android/app/build/outputs/apk/**/debug/*.apk
           if-no-files-found: warn
+
+  release:
+    # 仅在手动触发（workflow_dispatch）时执行，把四个平台的构建产物
+    # 打成同一个 GitHub Release，类型由 release_type 输入决定
+    # (release / prerelease / draft)。
+    name: Publish Release
+    if: github.event_name == 'workflow_dispatch'
+    needs: [build-macos, build-windows, build-linux, build-android]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: List downloaded files
+        run: |
+          echo "=== artifacts 目录 ==="
+          ls -laR artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          draft: ${{ inputs.release_type == 'draft' }}
+          prerelease: ${{ inputs.release_type == 'prerelease' }}
+          generate_release_notes: true
+          files: |
+            artifacts/**/*
