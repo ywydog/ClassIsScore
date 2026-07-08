@@ -66,6 +66,7 @@ export const TERMINOLOGY_MAP: Record<string, TermEntry> = {
   sortBy: { default: '排序方式', xianxia: '排序方式' },
   sortByRank: { default: '按排名', xianxia: '按榜位' },
   sortByNumber: { default: '按学号', xianxia: '按道号' },
+  sortByFirstLetter: { default: '按首字母', xianxia: '按首字' },
   privacyMode: { default: '隐私模式', xianxia: '隐私模式' },
   showRealName: { default: '真名', xianxia: '道名' },
   showAlias: { default: '昵称', xianxia: '别名' },

@@ -52,27 +52,6 @@
 
     <!-- 主体 -->
     <main class="score-display__main">
-      <!-- 领奖台 -->
-      <section v-if="topThree.length >= 3" class="score-display__podium">
-        <div
-          v-for="(entry, idx) in [topThree[1], topThree[0], topThree[2]]"
-          :key="entry.id"
-          class="score-display__podium-item"
-          :class="`score-display__podium-item--${idx}`"
-          :style="{ animationDelay: `${idx * 80}ms` }"
-        >
-          <div class="score-display__podium-medal">
-            <el-icon v-if="idx === 1"><Trophy /></el-icon>
-            <span v-else>{{ idx === 0 ? '🥈' : '🥉' }}</span>
-          </div>
-          <div class="score-display__podium-avatar" :style="{ background: avatarColor(entry.id) }">
-            <span>{{ nameInitial(entry.name) }}</span>
-          </div>
-          <div class="score-display__podium-name">{{ entry.name }}</div>
-          <div class="score-display__podium-score">{{ entry.score }}</div>
-        </div>
-      </section>
-
       <!-- 卡片网格 -->
       <section class="score-display__grid-wrap">
         <transition-group name="card" tag="div" class="score-display__grid">
@@ -285,7 +264,7 @@
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { Trophy, Check, Close, Setting, ArrowLeft, ArrowUp, ArrowDown, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { match } from 'pinyin-pro'
+import { match, pinyin } from 'pinyin-pro'
 import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent } from '@/types'
 import { leaderboardApi } from '@/services/leaderboard'
 import { evaluationApi } from '@/services/evaluation'
@@ -318,38 +297,54 @@ interface DisplayEntry {
   student: Student | null
 }
 
+type SortBy = 'rank' | 'studentNumber' | 'pinyinFirstLetter'
+
 const leaderboard = ref<LeaderboardEntry[]>([])
 const students = ref<Student[]>([])
 const evaluationItems = ref<EvaluationItem[]>([])
 
-const studentMap = computed(() => {
-  const m = new Map<string, Student>()
-  for (const s of students.value) m.set(s.id, s)
-  return m
-})
+// 取学生对应 Student 对象（用于跳转到 quick score 等需要 studentId 的场景）
+function findStudent(entry: { name: string }): Student | null {
+  return students.value.find(s => s.name === entry.name) ?? null
+}
 
 const displayEntries = computed<DisplayEntry[]>(() => {
-  if (sortBy.value === 'studentNumber') {
-    return [...leaderboard.value]
-      .map(e => ({
-        id: e.name,
-        rank: 0,
-        name: e.name,
-        score: e.score,
-        student: null,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
-      .map((e, i) => ({ ...e, rank: i + 1 }))
-  }
-  return leaderboard.value.map(e => ({
+  const base = leaderboard.value.map(e => ({
     id: e.name,
     rank: e.rank,
     name: e.name,
     score: e.score,
-    student: studentMap.value.get(
-      students.value.find(s => s.name === e.name)?.id ?? ''
-    ) ?? null,
+    student: findStudent(e),
   }))
+
+  if (sortBy.value === 'pinyinFirstLetter') {
+    // pinyin(pattern: 'first') 返回首字母字符串；非汉字字符会原样保留
+    return base
+      .slice()
+      .sort((a, b) => {
+        const fa = (pinyin(a.name, { pattern: 'first' }) || '').toLowerCase()
+        const fb = (pinyin(b.name, { pattern: 'first' }) || '').toLowerCase()
+        if (fa < fb) return -1
+        if (fa > fb) return 1
+        // 首字母相同时按总分降序
+        return b.score - a.score
+      })
+      .map((e, i) => ({ ...e, rank: i + 1 }))
+  }
+
+  if (sortBy.value === 'studentNumber') {
+    return base
+      .slice()
+      .sort((a, b) => {
+        // 优先按 Student.studentNumber 排序，缺失则回退到名称
+        const an = a.student?.studentNumber ?? a.name
+        const bn = b.student?.studentNumber ?? b.name
+        return an.localeCompare(bn, 'zh-Hans-CN', { numeric: true })
+      })
+      .map((e, i) => ({ ...e, rank: i + 1 }))
+  }
+
+  return base
 })
 
 // ===== 搜索 =====
@@ -372,16 +367,12 @@ const filteredEntries = computed<DisplayEntry[]>(() => {
 
 const isSearching = computed(() => Boolean(searchQuery.value.trim()))
 
-const topThree = computed<DisplayEntry[]>(() =>
-  isSearching.value ? [] : displayEntries.value.slice(0, 3)
-)
-const restEntries = computed<DisplayEntry[]>(() =>
-  isSearching.value ? filteredEntries.value : filteredEntries.value.slice(3)
-)
+// 网格直接显示所有过滤后的学生
+const restEntries = computed<DisplayEntry[]>(() => filteredEntries.value)
 
 // ===== 设置 =====
-const sortBy = ref<'rank' | 'studentNumber'>(
-  (localStorage.getItem('displaySortBy') as 'rank' | 'studentNumber') || 'rank'
+const sortBy = ref<SortBy>(
+  (localStorage.getItem('displaySortBy') as SortBy) || 'rank'
 )
 const privacy = ref<'name' | 'alias' | 'number'>(
   (localStorage.getItem('displayPrivacy') as 'name' | 'alias' | 'number') || 'name'
@@ -920,108 +911,6 @@ async function fetchEvaluationItems() {
   gap: 16px;
 }
 
-/* ===== 领奖台 ===== */
-.score-display__podium {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.score-display__podium-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 12px 20px;
-  background: var(--cis-card-bg);
-  border: 1px solid var(--cis-border-color-light);
-  border-radius: var(--cis-radius-lg);
-  position: relative;
-  animation: podium-rise 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
-}
-
-.score-display__podium-item--0 {
-  border-color: #FFD70080;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
-}
-
-.score-display__podium-item--1 {
-  border-color: #C0C0C080;
-  transform: translateY(8px);
-  box-shadow: 0 4px 12px rgba(192, 192, 192, 0.15);
-}
-
-.score-display__podium-item--2 {
-  border-color: #CD7F3280;
-  transform: translateY(16px);
-  box-shadow: 0 4px 12px rgba(205, 127, 50, 0.15);
-}
-
-@keyframes podium-rise {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.score-display__podium-medal {
-  font-size: 24px;
-  color: #FFD700;
-  margin-bottom: 4px;
-}
-
-.score-display__podium-item--0 .score-display__podium-medal {
-  color: #FFD700;
-}
-
-.score-display__podium-item--1 .score-display__podium-medal {
-  font-size: 20px;
-  color: #C0C0C0;
-}
-
-.score-display__podium-item--2 .score-display__podium-medal {
-  font-size: 20px;
-  color: #CD7F32;
-}
-
-.score-display__podium-avatar,
-.score-display__card-avatar {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 18px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.score-display__podium-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--cis-text-primary);
-  margin-top: 8px;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.score-display__podium-score {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--cis-primary);
-  font-variant-numeric: tabular-nums;
-  margin-top: 4px;
-  line-height: 1;
-}
-
 /* ===== 卡片网格 ===== */
 .score-display__grid-wrap {
   flex: 1;
@@ -1179,6 +1068,21 @@ async function fetchEvaluationItems() {
 .score-display__back-btn:hover {
   background: var(--cis-primary-light-9);
   color: var(--cis-primary);
+}
+
+.score-display__card-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(13, 124, 95, 0.15);
 }
 
 .score-display__card-avatar--lg {

@@ -24,6 +24,7 @@
         <el-radio-group v-model="localSortBy" size="default" class="display-settings__radio-group">
           <el-radio-button value="rank">{{ t('sortByRank') }}</el-radio-button>
           <el-radio-button value="studentNumber">{{ t('sortByNumber') }}</el-radio-button>
+          <el-radio-button value="pinyinFirstLetter">{{ t('sortByFirstLetter') }}</el-radio-button>
         </el-radio-group>
       </section>
 
@@ -92,7 +93,7 @@ import { useTerminology } from '@/themes/xianxia/useTerminology'
 const { t } = useTerminology()
 
 const props = defineProps<{
-  sortBy: 'rank' | 'studentNumber'
+  sortBy: 'rank' | 'studentNumber' | 'pinyinFirstLetter'
   privacy: 'name' | 'alias' | 'number'
   showPet: boolean
   showGroup: boolean
@@ -101,7 +102,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:sortBy': [value: 'rank' | 'studentNumber']
+  'update:sortBy': [value: 'rank' | 'studentNumber' | 'pinyinFirstLetter']
   'update:privacy': [value: 'name' | 'alias' | 'number']
   'update:showPet': [value: boolean]
   'update:showGroup': [value: boolean]
