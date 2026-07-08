@@ -239,7 +239,7 @@
       :display-mode="displayMode"
       :is-fullscreen="isFullscreen"
       @save-settings="saveSettings"
-      @update:display-mode="displayMode = $event"
+      @update:display-mode="onDisplayModeChange"
       @toggle-fullscreen="toggleFullscreen"
       @update:refresh-interval="onRefreshIntervalChange"
     />
@@ -410,14 +410,13 @@ import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 import { Trophy, Check, Close, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent, StudentScoreStats } from '@/types'
-import { PetCategory } from '@/types'
 import { leaderboardApi } from '@/services/leaderboard'
 import { evaluationApi } from '@/services/evaluation'
 import { Window } from '@tauri-apps/api/window'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
 import { scoreApi } from '@/services/score'
-import { ALL_PET_TYPES, calculateLevel } from '@/utils/petSystem'
+import { calculateLevel } from '@/utils/petSystem'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
 import { calculateCultivation, getCultivationLevel, formatCultivationNumber } from '@/utils/cultivationSystem'
 import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
@@ -690,6 +689,13 @@ function orbStyle(i: number) {
 function onRefreshIntervalChange() {
   saveSettings()
   restartRefreshTimer()
+}
+
+// 显示模式变更
+function onDisplayModeChange(value: string) {
+  if (value === 'Card' || value === 'Circle' || value === 'Pet' || value === 'leaderboard') {
+    displayMode.value = value
+  }
 }
 
 function restartRefreshTimer() {

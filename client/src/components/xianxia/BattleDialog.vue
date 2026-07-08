@@ -84,7 +84,7 @@ import BattleResultStep from './BattleResultStep.vue'
 
 const props = defineProps<{
   modelValue: boolean
-  challenger?: Student | null
+  challenger: Student | null
   opponents: Student[]
 }>()
 
