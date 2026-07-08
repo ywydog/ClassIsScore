@@ -9,7 +9,9 @@
     "typecheck": "vue-tsc --noEmit",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "tauri:android:dev": "tauri android dev",
+    "tauri:android:build": "tauri android build"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",

@@ -116,57 +116,57 @@ const route = useRoute()
 const drawerOpen = ref(false)
 
 const pageTitles: Record<string, string> = {
-  '/admin/dashboard': '总览',
-  '/admin/scores': '积分管理',
-  '/admin/students': '学生管理',
-  '/admin/groups': '分组管理',
-  '/admin/leaderboard': '排行榜',
-  '/admin/evaluation': '自动评估',
-  '/admin/settlement': '结算',
-  '/admin/settings': '设置',
-  '/admin/plugins': '插件管理',
-  '/admin/themes': '主题包',
-  '/admin/admin-settings': '管理员设置',
-  '/admin/about': '关于',
+  '/m/dashboard': '总览',
+  '/m/scores': '积分管理',
+  '/m/students': '学生管理',
+  '/m/groups': '分组管理',
+  '/m/leaderboard': '排行榜',
+  '/m/evaluation': '自动评估',
+  '/m/settlement': '结算',
+  '/m/settings': '设置',
+  '/m/plugins': '插件管理',
+  '/m/themes': '主题包',
+  '/m/admin-settings': '管理员设置',
+  '/m/about': '关于',
   '/display': '大屏展示',
 }
 
 const pageTitle = computed(() => pageTitles[route.path] || 'ClassIsScore')
 
 const bottomNav = [
-  { path: '/admin/dashboard', label: '总览', icon: HomeFilled },
-  { path: '/admin/scores', label: '积分', icon: Trophy },
-  { path: '/admin/students', label: '学生', icon: User },
-  { path: '/admin/leaderboard', label: '排行', icon: Rank },
-  { path: '/admin/settings', label: '设置', icon: Setting },
+  { path: '/m/dashboard', label: '总览', icon: HomeFilled },
+  { path: '/m/scores', label: '积分', icon: Trophy },
+  { path: '/m/students', label: '学生', icon: User },
+  { path: '/m/leaderboard', label: '排行', icon: Rank },
+  { path: '/m/settings', label: '设置', icon: Setting },
 ]
 
 const drawerMenu = [
   {
     title: '核心功能',
     items: [
-      { path: '/admin/dashboard', label: '总览', icon: HomeFilled },
-      { path: '/admin/scores', label: '积分管理', icon: Trophy },
-      { path: '/admin/students', label: '学生管理', icon: User },
-      { path: '/admin/groups', label: '分组管理', icon: Grid },
-      { path: '/admin/leaderboard', label: '排行榜', icon: Rank },
+      { path: '/m/dashboard', label: '总览', icon: HomeFilled },
+      { path: '/m/scores', label: '积分管理', icon: Trophy },
+      { path: '/m/students', label: '学生管理', icon: User },
+      { path: '/m/groups', label: '分组管理', icon: Grid },
+      { path: '/m/leaderboard', label: '排行榜', icon: Rank },
     ],
   },
   {
     title: '高级功能',
     items: [
-      { path: '/admin/evaluation', label: '自动评估', icon: Timer },
-      { path: '/admin/settlement', label: '结算', icon: Finished },
+      { path: '/m/evaluation', label: '自动评估', icon: Timer },
+      { path: '/m/settlement', label: '结算', icon: Finished },
     ],
   },
   {
     title: '系统',
     items: [
-      { path: '/admin/settings', label: '设置', icon: Setting },
-      { path: '/admin/plugins', label: '插件管理', icon: Box },
-      { path: '/admin/themes', label: '主题包', icon: Brush },
-      { path: '/admin/admin-settings', label: '管理员设置', icon: Lock },
-      { path: '/admin/about', label: '关于', icon: InfoFilled },
+      { path: '/m/settings', label: '设置', icon: Setting },
+      { path: '/m/plugins', label: '插件管理', icon: Box },
+      { path: '/m/themes', label: '主题包', icon: Brush },
+      { path: '/m/admin-settings', label: '管理员设置', icon: Lock },
+      { path: '/m/about', label: '关于', icon: InfoFilled },
     ],
   },
 ]

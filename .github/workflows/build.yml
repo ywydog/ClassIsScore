@@ -119,11 +119,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
       - name: Setup Android SDK
-        uses: nttld/setup-android@v2
+        uses: android-actions/setup-android@v3
         with:
-          android-sdk-version: '34'
-          ndk-version: '26.1'
-          components: 'build-tools,platform-tools,platforms;android-34'
+          packages: 'platform-tools,platforms;android-34,build-tools;34.0.0,ndk;26.1.10909125'
       - name: Install Rust Android targets
         run: |
           rustup target add aarch64-linux-android

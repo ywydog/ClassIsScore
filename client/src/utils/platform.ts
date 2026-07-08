@@ -24,7 +24,7 @@ export const isIOS = (): boolean => {
 export const isMobile = (): boolean => isAndroid() || isIOS()
 
 /** 是否为桌面端 */
-export const isDesktop = (): boolean => isTauri && !isMobile()
+export const isDesktop = (): boolean => isTauri() && !isMobile()
 
 /** 视口宽度断点（dp） */
 export const breakpoints = {
