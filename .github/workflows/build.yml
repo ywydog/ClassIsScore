@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  RUST_VERSION: 1.85.0
+  RUST_VERSION: 1.89.0
   NODE_VERSION: 20
 
 jobs:
@@ -121,7 +121,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools,platforms;android-34,build-tools;34.0.0,ndk;26.1.10909125'
+          packages: >-
+            platform-tools
+            platforms;android-34
+            build-tools;34.0.0
+            ndk;26.1.10909125
       - name: Install Rust Android targets
         run: |
           rustup target add aarch64-linux-android
