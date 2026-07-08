@@ -22,7 +22,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Trophy } from '@element-plus/icons-vue'
 import type { LeaderboardEntry } from '@/types'
-import api from '@/services/api'
+import { invoke } from '@/services/tauri'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { Window } from '@tauri-apps/api/window'
 
@@ -41,12 +41,15 @@ onUnmounted(() => {
 
 async function fetchTopStudents() {
   try {
-    const response = await api.get<{ data: LeaderboardEntry[] }>('/api/leaderboard/personal', {
-      params: { limit: 5 },
-    })
-    topStudents.value = response.data.data.slice(0, 5)
-  } catch {
-    // silent
+    const entries = await invoke<Array<{ student: { id: number; name: string; total_score: number; avatar: string | null; pet_type: string | null; pet_name: string | null; pet_exp: number }; rank: number }>>('leaderboard_query')
+    topStudents.value = entries.slice(0, 5).map(entry => ({
+      rank: entry.rank,
+      name: entry.student.name,
+      score: entry.student.total_score,
+      isGroup: false,
+    }))
+  } catch (err) {
+    console.warn('[FloatingBar] 获取排行榜失败:', err)
   }
 }
 
@@ -58,7 +61,8 @@ async function openMainWindow() {
     } else {
       window.close()
     }
-  } catch {
+  } catch (err) {
+    console.warn('[FloatingBar] 打开主窗口失败:', err)
     window.close()
   }
 }

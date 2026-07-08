@@ -6,15 +6,39 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use tauri::State;
 
+use super::get_db;
+
 fn hash_password(password: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(password.as_bytes());
     hex::encode(hasher.finalize())
 }
 
-fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
-    let guard = state.read();
-    guard.get_db().map(|db| db.clone())
+async fn upsert_setting(
+    db: &sea_orm::DatabaseConnection,
+    key: &str,
+    value: String,
+) -> Result<(), String> {
+    let existing = admin_settings::Entity::find()
+        .filter(admin_settings::Column::SettingKey.eq(key))
+        .one(db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(model) = existing {
+        let mut active: admin_settings::ActiveModel = model.into();
+        active.setting_value = Set(Some(value));
+        active.updated_at = Set(chrono::Local::now().naive_utc());
+        active.update(db).await.map_err(|e| e.to_string())?;
+    } else {
+        let new_setting = admin_settings::ActiveModel {
+            setting_key: Set(key.to_string()),
+            setting_value: Set(Some(value)),
+            ..Default::default()
+        };
+        new_setting.insert(db).await.map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -179,71 +203,14 @@ pub async fn auth_set_passwords(
 ) -> Result<AuthResult, String> {
     let db = get_db(&state)?;
 
-    // 设置管理员密码
-    let existing = admin_settings::Entity::find()
-        .filter(admin_settings::Column::SettingKey.eq("admin_password"))
-        .one(&db)
-        .await
-        .map_err(|e| e.to_string())?;
+    upsert_setting(&db, "admin_password", hash_password(&admin_password)).await?;
 
-    if let Some(model) = existing {
-        let mut active: admin_settings::ActiveModel = model.into();
-        active.setting_value = Set(Some(hash_password(&admin_password)));
-        active.updated_at = Set(chrono::Local::now().naive_utc());
-        active.update(&db).await.map_err(|e| e.to_string())?;
-    } else {
-        let new_setting = admin_settings::ActiveModel {
-            setting_key: Set("admin_password".to_string()),
-            setting_value: Set(Some(hash_password(&admin_password))),
-            ..Default::default()
-        };
-        new_setting.insert(&db).await.map_err(|e| e.to_string())?;
-    }
-
-    // 设置 USB 密码
     if let Some(usb_pwd) = usb_password {
-        let existing = admin_settings::Entity::find()
-            .filter(admin_settings::Column::SettingKey.eq("usb_password"))
-            .one(&db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if let Some(model) = existing {
-            let mut active: admin_settings::ActiveModel = model.into();
-            active.setting_value = Set(Some(hash_password(&usb_pwd)));
-            active.updated_at = Set(chrono::Local::now().naive_utc());
-            active.update(&db).await.map_err(|e| e.to_string())?;
-        } else {
-            let new_setting = admin_settings::ActiveModel {
-                setting_key: Set("usb_password".to_string()),
-                setting_value: Set(Some(hash_password(&usb_pwd))),
-                ..Default::default()
-            };
-            new_setting.insert(&db).await.map_err(|e| e.to_string())?;
-        }
+        upsert_setting(&db, "usb_password", hash_password(&usb_pwd)).await?;
     }
 
-    // 设置人脸密码
     if let Some(face_pwd) = face_password {
-        let existing = admin_settings::Entity::find()
-            .filter(admin_settings::Column::SettingKey.eq("face_password"))
-            .one(&db)
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if let Some(model) = existing {
-            let mut active: admin_settings::ActiveModel = model.into();
-            active.setting_value = Set(Some(hash_password(&face_pwd)));
-            active.updated_at = Set(chrono::Local::now().naive_utc());
-            active.update(&db).await.map_err(|e| e.to_string())?;
-        } else {
-            let new_setting = admin_settings::ActiveModel {
-                setting_key: Set("face_password".to_string()),
-                setting_value: Set(Some(hash_password(&face_pwd))),
-                ..Default::default()
-            };
-            new_setting.insert(&db).await.map_err(|e| e.to_string())?;
-        }
+        upsert_setting(&db, "face_password", hash_password(&face_pwd)).await?;
     }
 
     Ok(AuthResult {

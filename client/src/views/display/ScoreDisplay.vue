@@ -233,101 +233,16 @@
     </div>
 
     <!-- 显示设置面板 -->
-    <transition name="settings-slide">
-      <div v-if="showSettings" class="score-display__settings-panel">
-        <div class="score-display__settings-header">
-          <h3>显示设置</h3>
-          <button class="score-display__settings-close" @click="showSettings = false">
-            <el-icon :size="16"><Close /></el-icon>
-          </button>
-        </div>
-
-        <div class="score-display__settings-body">
-          <!-- 背景主题 -->
-          <div class="score-display__settings-section">
-            <div class="score-display__settings-label">背景主题</div>
-            <el-radio-group v-model="displaySettings.background" size="small" @change="saveSettings">
-              <el-radio-button value="deepblue">深蓝</el-radio-button>
-              <el-radio-button value="pureblack">纯黑</el-radio-button>
-              <el-radio-button value="warmgray">暖灰</el-radio-button>
-              <el-radio-button value="custom">自定义</el-radio-button>
-            </el-radio-group>
-            <div v-if="displaySettings.background === 'custom'" class="score-display__settings-color-picker">
-              <input type="color" v-model="displaySettings.customColor" @input="saveSettings" />
-            </div>
-          </div>
-
-          <!-- 展示模式 -->
-          <div class="score-display__settings-section">
-            <div class="score-display__settings-label">展示模式</div>
-            <el-radio-group v-model="displayMode" size="small" class="score-display__settings-mode">
-              <el-radio-button value="Card">卡片</el-radio-button>
-              <el-radio-button value="Circle">圆形</el-radio-button>
-              <el-radio-button value="Pet">宠物</el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <!-- 字体大小 -->
-          <div class="score-display__settings-section">
-            <div class="score-display__settings-label">字体大小</div>
-            <el-radio-group v-model="displaySettings.fontSize" size="small" @change="saveSettings">
-              <el-radio-button value="small">小</el-radio-button>
-              <el-radio-button value="medium">中</el-radio-button>
-              <el-radio-button value="large">大</el-radio-button>
-              <el-radio-button value="xlarge">特大</el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <!-- 排行榜条目数 -->
-          <div class="score-display__settings-section">
-            <div class="score-display__settings-label">排行榜条目数</div>
-            <el-radio-group v-model="displaySettings.maxItems" size="small" @change="saveSettings">
-              <el-radio-button :value="5">5</el-radio-button>
-              <el-radio-button :value="10">10</el-radio-button>
-              <el-radio-button :value="15">15</el-radio-button>
-              <el-radio-button :value="20">20</el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <!-- 自动刷新间隔 -->
-          <div class="score-display__settings-section">
-            <div class="score-display__settings-label">自动刷新间隔</div>
-            <el-radio-group v-model="displaySettings.refreshInterval" size="small" @change="onRefreshIntervalChange">
-              <el-radio-button :value="10">10s</el-radio-button>
-              <el-radio-button :value="30">30s</el-radio-button>
-              <el-radio-button :value="60">60s</el-radio-button>
-              <el-radio-button :value="0">关闭</el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <!-- 显示/隐藏开关 -->
-          <div class="score-display__settings-section">
-            <div class="score-display__settings-label">显示元素</div>
-            <div class="score-display__settings-switches">
-              <label class="score-display__settings-switch">
-                <span>时钟</span>
-                <input type="checkbox" v-model="displaySettings.showClock" @change="saveSettings" />
-              </label>
-              <label class="score-display__settings-switch">
-                <span>排名数字</span>
-                <input type="checkbox" v-model="displaySettings.showRank" @change="saveSettings" />
-              </label>
-              <label class="score-display__settings-switch">
-                <span>分数</span>
-                <input type="checkbox" v-model="displaySettings.showScore" @change="saveSettings" />
-              </label>
-            </div>
-          </div>
-
-          <!-- 全屏按钮 -->
-          <div class="score-display__settings-section">
-            <button class="score-display__settings-fullscreen-btn" @click="toggleFullscreen">
-              {{ isFullscreen ? '退出全屏' : '进入全屏' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <DisplaySettingsPanel
+      v-model:visible="showSettings"
+      :settings="displaySettings"
+      :display-mode="displayMode"
+      :is-fullscreen="isFullscreen"
+      @save-settings="saveSettings"
+      @update:display-mode="displayMode = $event"
+      @toggle-fullscreen="toggleFullscreen"
+      @update:refresh-interval="onRefreshIntervalChange"
+    />
 
     <!-- 快速评分底部栏 -->
     <transition name="quick-score-slide">
@@ -474,50 +389,11 @@
     </el-dialog>
 
     <!-- 宠物选择对话框 -->
-    <el-dialog
-      v-model="showPetDialog"
-      :title="t('selectPet')"
-      width="520px"
-      class="score-display__pet-dialog"
-      append-to-body
-    >
-      <div class="pet-select-grid">
-        <div class="pet-select-grid__section">
-          <div class="pet-select-grid__section-title">普通动物</div>
-          <div class="pet-select-grid__items">
-            <div
-              v-for="pet in normalPets"
-              :key="pet.id"
-              class="pet-select-item"
-              :class="{ 'pet-select-item--active': pet.id === petDialogStudent?.petType }"
-              @click="selectPet(pet.id)"
-            >
-              <span class="pet-select-item__emoji">{{ pet.emoji }}</span>
-              <span class="pet-select-item__name">{{ pet.name }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="pet-select-grid__section">
-          <div class="pet-select-grid__section-title">神兽</div>
-          <div class="pet-select-grid__items">
-            <div
-              v-for="pet in mythicalPets"
-              :key="pet.id"
-              class="pet-select-item"
-              :class="{ 'pet-select-item--active': pet.id === petDialogStudent?.petType }"
-              @click="selectPet(pet.id)"
-            >
-              <span class="pet-select-item__emoji">{{ pet.emoji }}</span>
-              <span class="pet-select-item__name">{{ pet.name }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="showPetDialog = false">取消</el-button>
-        <el-button type="danger" plain @click="selectPet('')">{{ t('removePet') }}</el-button>
-      </template>
-    </el-dialog>
+    <PetSelectDialog
+      v-model:visible="showPetDialog"
+      :student="petDialogStudent"
+      @select-pet="selectPet"
+    />
 
     <!-- 道友切磋对话框 -->
     <BattleDialog
@@ -535,7 +411,8 @@ import { Trophy, Check, Close, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent, StudentScoreStats } from '@/types'
 import { PetCategory } from '@/types'
-import api from '@/services/api'
+import { leaderboardApi } from '@/services/leaderboard'
+import { evaluationApi } from '@/services/evaluation'
 import { Window } from '@tauri-apps/api/window'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
@@ -547,6 +424,8 @@ import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
 import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
 import PetDisplay from '@/components/display/PetDisplay.vue'
 import BattleDialog from '@/components/xianxia/BattleDialog.vue'
+import DisplaySettingsPanel from '@/components/display/DisplaySettingsPanel.vue'
+import PetSelectDialog from '@/components/display/PetSelectDialog.vue'
 
 // ===== 显示设置 =====
 interface DisplaySettings {
@@ -783,8 +662,7 @@ const limitedLeaderboard = computed(() => leaderboard.value.slice(0, displaySett
 const limitedTopThree = computed(() => limitedLeaderboard.value.slice(0, 3))
 const limitedRestEntries = computed(() => limitedLeaderboard.value.slice(3))
 
-const normalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Normal))
-const mythicalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === PetCategory.Mythical))
+
 
 const positiveEvalItems = computed(() => evaluationItems.value.filter(i => i.isPositive))
 const negativeEvalItems = computed(() => evaluationItems.value.filter(i => !i.isPositive))
@@ -973,9 +851,7 @@ onUnmounted(() => {
 
 async function fetchLeaderboard() {
   try {
-    const endpoint = mode.value === 'personal' ? '/api/leaderboard/personal' : '/api/leaderboard/group'
-    const response = await api.get<{ data: LeaderboardEntry[] }>(endpoint)
-    leaderboard.value = response.data.data
+    leaderboard.value = await leaderboardApi.query()
   } catch {
     // silent
   }
@@ -992,7 +868,7 @@ async function fetchStudents() {
 
 async function fetchEvaluationItems() {
   try {
-    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluation/items')
+    const response = await evaluationApi.getAll()
     evaluationItems.value = response.data.data || []
   } catch {
     // silent
@@ -1806,64 +1682,7 @@ function formatNet(val: number | undefined): string {
   flex-wrap: wrap;
 }
 
-/* ===== 宠物选择对话框 ===== */
-.pet-select-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
 
-.pet-select-grid__section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--cis-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-}
-
-.pet-select-grid__items {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 8px;
-}
-
-.pet-select-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 6px;
-  border-radius: var(--cis-radius-md, 8px);
-  border: 1px solid var(--cis-border-color-light);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  background: var(--cis-card-bg);
-}
-
-.pet-select-item:hover {
-  border-color: rgba(13, 148, 136, 0.4);
-  background: rgba(13, 148, 136, 0.06);
-  transform: translateY(-1px);
-}
-
-.pet-select-item--active {
-  border-color: #0d9488;
-  background: rgba(13, 148, 136, 0.1);
-  box-shadow: 0 0 0 1px #0d9488;
-}
-
-.pet-select-item__emoji {
-  font-size: 28px;
-  line-height: 1;
-}
-
-.pet-select-item__name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--cis-text-primary);
-  text-align: center;
-}
 
 /* 对话框深色主题适配 */
 .score-display :deep(.el-dialog) {
@@ -2120,182 +1939,7 @@ function formatNet(val: number | undefined): string {
   color: rgba(255, 255, 255, 0.3);
 }
 
-/* ===== 显示设置面板 ===== */
-.score-display__settings-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 320px;
-  z-index: 150;
-  background: rgba(10, 22, 40, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-left: 1px solid rgba(13, 148, 136, 0.2);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
 
-.score-display__settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.score-display__settings-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.score-display__settings-close {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.score-display__settings-close:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.score-display__settings-body {
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.score-display__settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.score-display__settings-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.score-display__settings-section :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
-  padding: 6px 12px;
-}
-
-.score-display__settings-section :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
-  border-color: #0d9488;
-  color: #fff;
-}
-
-.score-display__settings-color-picker {
-  margin-top: 4px;
-}
-
-.score-display__settings-color-picker input[type="color"] {
-  width: 48px;
-  height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  background: transparent;
-  cursor: pointer;
-  padding: 2px;
-}
-
-.score-display__settings-switches {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.score-display__settings-switch {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.score-display__settings-switch input[type="checkbox"] {
-  width: 40px;
-  height: 22px;
-  appearance: none;
-  -webkit-appearance: none;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 11px;
-  position: relative;
-  transition: background 0.2s ease;
-  cursor: pointer;
-}
-
-.score-display__settings-switch input[type="checkbox"]::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.score-display__settings-switch input[type="checkbox"]:checked {
-  background: rgba(13, 148, 136, 0.6);
-}
-
-.score-display__settings-switch input[type="checkbox"]:checked::after {
-  transform: translateX(18px);
-  background: #2dd4bf;
-}
-
-.score-display__settings-fullscreen-btn {
-  width: 100%;
-  padding: 10px 0;
-  border-radius: 10px;
-  border: 1px solid rgba(13, 148, 136, 0.3);
-  background: rgba(13, 148, 136, 0.1);
-  color: #2dd4bf;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.score-display__settings-fullscreen-btn:hover {
-  background: rgba(13, 148, 136, 0.2);
-  border-color: rgba(13, 148, 136, 0.5);
-  box-shadow: 0 2px 12px rgba(13, 148, 136, 0.2);
-}
-
-/* 设置面板滑入动画 */
-.settings-slide-enter-active,
-.settings-slide-leave-active {
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
-}
-
-.settings-slide-enter-from,
-.settings-slide-leave-to {
-  transform: translateX(100%);
-  opacity: 0;
-}
 
 /* ===== 修仙模式：境界信息 ===== */
 .score-display__cultivation-info {

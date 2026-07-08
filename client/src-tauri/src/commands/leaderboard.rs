@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::State;
 
+use super::get_db;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LeaderboardEntry {
     pub student: student::Model,
@@ -19,11 +21,6 @@ pub struct IndividualStats {
     pub total_positive: i64,
     pub total_negative: i64,
     pub record_count: i64,
-}
-
-fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
-    let guard = state.read();
-    guard.get_db().map(|db| db.clone())
 }
 
 #[tauri::command]

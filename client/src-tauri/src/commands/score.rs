@@ -2,10 +2,12 @@ use crate::db::entities::score_record;
 use crate::db::entities::student;
 use crate::state::AppState;
 use parking_lot::RwLock;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Emitter, State};
+
+use super::get_db;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScoreAddInput {
@@ -30,11 +32,6 @@ pub struct ScoreStats {
     pub total_positive: i64,
     pub total_negative: i64,
     pub count: i64,
-}
-
-fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
-    let guard = state.read();
-    guard.get_db().map(|db| db.clone())
 }
 
 fn emit_score_update(
@@ -133,6 +130,7 @@ pub async fn score_batch_add(
     let db = get_db(&state)?;
 
     let reason_text = input.reason.clone().unwrap_or_default();
+    let txn = db.begin().await.map_err(|e| e.to_string())?;
 
     let mut results = Vec::new();
     for student_id in input.student_ids.iter() {
@@ -145,14 +143,20 @@ pub async fn score_batch_add(
             ..Default::default()
         };
 
-        let result = record.insert(&db).await.map_err(|e| e.to_string())?;
+        let result = record.insert(&txn).await.map_err(|e| {
+            let _ = txn.rollback();
+            e.to_string()
+        })?;
 
         // 更新学生总分
         if let Some(student_model) =
             student::Entity::find_by_id(*student_id)
-                .one(&db)
+                .one(&txn)
                 .await
-                .map_err(|e| e.to_string())?
+                .map_err(|e| {
+                    let _ = txn.rollback();
+                    e.to_string()
+                })?
         {
             let student_name = student_model.name.clone();
             let mut active: student::ActiveModel = student_model.into();
@@ -160,16 +164,25 @@ pub async fn score_batch_add(
             let new_score = current_score + input.score_change;
             active.total_score = Set(new_score);
             active.updated_at = Set(chrono::Local::now().naive_utc());
-            active.update(&db).await.map_err(|e| e.to_string())?;
+            active.update(&txn).await.map_err(|e| {
+                let _ = txn.rollback();
+                e.to_string()
+            })?;
 
-            // 发出积分更新事件
-            emit_score_update(&state, *student_id, student_name, input.score_change, new_score, reason_text.clone());
+            results.push((result, student_name, new_score));
+        } else {
+            results.push((result, String::new(), 0));
         }
-
-        results.push(result);
     }
 
-    Ok(results)
+    txn.commit().await.map_err(|e| e.to_string())?;
+
+    // 事务提交后，发出所有积分更新事件
+    for (result, student_name, new_score) in &results {
+        emit_score_update(&state, result.student_id, student_name.clone(), input.score_change, *new_score, reason_text.clone());
+    }
+
+    Ok(results.into_iter().map(|(r, _, _)| r).collect())
 }
 
 #[tauri::command]

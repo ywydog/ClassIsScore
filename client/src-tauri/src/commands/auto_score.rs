@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::State;
 
+use super::get_db;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AutoScoreRuleInput {
     pub name: String,
@@ -19,11 +21,6 @@ pub struct AutoScoreRuleInput {
     pub target_type: Option<String>,
     pub target_group_id: Option<i64>,
     pub target_student_id: Option<i64>,
-}
-
-fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
-    let guard = state.read();
-    guard.get_db().map(|db| db.clone())
 }
 
 #[tauri::command]

@@ -49,20 +49,20 @@ function toLeaderboardEntry(r: RustLeaderboardEntry): LeaderboardEntry {
 export const leaderboardApi = {
   async query() {
     const entries = await invoke<RustLeaderboardEntry[]>('leaderboard_query', {})
-    return { data: { data: entries.map(toLeaderboardEntry) } }
+    return entries.map(toLeaderboardEntry)
   },
 
   async byGroup(groupId: string) {
     const entries = await invoke<RustLeaderboardEntry[]>('leaderboard_by_group', {
       group_id: Number(groupId),
     })
-    return { data: { data: entries.map(toLeaderboardEntry) } }
+    return entries.map(toLeaderboardEntry)
   },
 
   async individual(studentId: string) {
     const stats = await invoke<RustIndividualStats>('leaderboard_individual', {
       student_id: Number(studentId),
     })
-    return { data: { data: stats } }
+    return stats
   },
 }

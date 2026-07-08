@@ -1,10 +1,13 @@
+use crate::db::entities::score_record;
 use crate::db::entities::student;
 use crate::state::AppState;
 use parking_lot::RwLock;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Emitter, State};
+
+use super::get_db;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StudentCreateInput {
@@ -31,11 +34,6 @@ pub struct StudentUpdateInput {
     #[serde(default)]
     pub pet_name: Option<Option<String>>,
     pub pet_exp: Option<i32>,
-}
-
-fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
-    let guard = state.read();
-    guard.get_db().map(|db| db.clone())
 }
 
 #[tauri::command]
@@ -154,6 +152,14 @@ pub async fn student_delete(
 ) -> Result<(), String> {
     let db = get_db(&state)?;
 
+    // 先删除该学生的所有积分记录
+    score_record::Entity::delete_many()
+        .filter(score_record::Column::StudentId.eq(id))
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 再删除学生
     student::Entity::delete_by_id(id)
         .exec(&db)
         .await
@@ -169,6 +175,8 @@ pub async fn student_batch_create(
 ) -> Result<Vec<student::Model>, String> {
     let db = get_db(&state)?;
 
+    let txn = db.begin().await.map_err(|e| e.to_string())?;
+
     let mut results = Vec::new();
     for input in students {
         let student = student::ActiveModel {
@@ -180,9 +188,14 @@ pub async fn student_batch_create(
             pet_name: Set(input.pet_name),
             ..Default::default()
         };
-        let result = student.insert(&db).await.map_err(|e| e.to_string())?;
+        let result = student.insert(&txn).await.map_err(|e| {
+            let _ = txn.rollback();
+            e.to_string()
+        })?;
         results.push(result);
     }
+
+    txn.commit().await.map_err(|e| e.to_string())?;
 
     Ok(results)
 }

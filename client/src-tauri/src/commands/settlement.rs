@@ -7,15 +7,12 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Emitter, State};
 
+use super::get_db;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SettlementCreateInput {
     pub name: String,
     pub period: Option<String>,
-}
-
-fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
-    let guard = state.read();
-    guard.get_db().map(|db| db.clone())
 }
 
 #[tauri::command]

@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::State;
 
+use super::get_db;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EvaluationCreateInput {
     pub name: String,
@@ -22,11 +24,6 @@ pub struct EvaluationUpdateInput {
     #[serde(default)]
     pub category: Option<Option<String>>,
     pub is_quick_access: Option<bool>,
-}
-
-fn get_db(state: &State<'_, Arc<RwLock<AppState>>>) -> Result<sea_orm::DatabaseConnection, String> {
-    let guard = state.read();
-    guard.get_db().map(|db| db.clone())
 }
 
 #[tauri::command]
