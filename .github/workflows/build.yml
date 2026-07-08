@@ -139,12 +139,16 @@ jobs:
         run: |
           cd client
           npm run build
-      - name: Build Android (aarch64)
+      - name: Build Android (aarch64, debug)
         run: |
           cd client
-          npm run tauri:android:build -- --target aarch64-linux-android
+          # Tauri 2.x CLI 的 android build 用 Android ABI 命名空间（aarch64 / armv7 / x86_64），
+          # 与 rustup target add 用的 Rust triple（aarch64-linux-android）不同。
+          # 加 --debug 走 debug keystore（Android 默认 debug.keystore），
+          # 不需要用户自行签名即可产出可安装的 APK。
+          npm run tauri:android:build -- --target aarch64 --debug
       - uses: actions/upload-artifact@v4
         with:
           name: ClassIsScore-Android
-          path: client/src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+          path: client/src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
