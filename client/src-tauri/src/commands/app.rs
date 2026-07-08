@@ -9,7 +9,7 @@ pub async fn restart_app(app_handle: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn open_path(path: String) -> Result<(), String> {
+pub async fn open_path(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
     // 安全白名单：仅允许 http/https/tel/mailto 协议
     if let Some(proto) = path.split("://").next() {
         match proto {
@@ -17,18 +17,18 @@ pub async fn open_path(path: String) -> Result<(), String> {
             _ => return Err(format!("不支持的协议: {}", proto)),
         }
     }
-    open_external(&path)
+    open_external(&app_handle, &path)
 }
 
 #[cfg(not(target_os = "android"))]
-fn open_external(path: &str) -> Result<(), String> {
+fn open_external(_app_handle: &tauri::AppHandle, path: &str) -> Result<(), String> {
     open::that(path).map_err(|e| format!("打开失败: {}", e))
 }
 
 #[cfg(target_os = "android")]
-fn open_external(path: &str) -> Result<(), String> {
+fn open_external(app_handle: &tauri::AppHandle, path: &str) -> Result<(), String> {
     use tauri_plugin_shell::ShellExt;
-    let shell = tauri::AppHandle::default().shell();
+    let shell = app_handle.shell();
     shell
         .open(path, None)
         .map_err(|e| format!("打开失败: {}", e))
