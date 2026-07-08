@@ -139,6 +139,12 @@ jobs:
         run: |
           cd client
           npm run build
+      - name: Init Android project
+        run: |
+          cd client
+          # 首次构建需要先生成 src-tauri/gen/android 目录。
+          # --ci 跳过交互式确认，--force 在已存在时覆盖。
+          npx tauri android init --ci
       - name: Build Android (aarch64, debug)
         run: |
           cd client
