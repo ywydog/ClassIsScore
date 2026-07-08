@@ -12,9 +12,12 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "ClassIsScore",
-        "width": 1200,
-        "height": 800,
+        "width": 412,
+        "height": 915,
+        "minWidth": 360,
+        "minHeight": 640,
         "center": true,
         "resizable": true,
         "fullscreen": false
@@ -32,6 +35,10 @@
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.ico"
-    ]
+    ],
+    "android": {
+      "minSdkVersion": 26,
+      "targetSdkVersion": 34
+    }
   }
 }

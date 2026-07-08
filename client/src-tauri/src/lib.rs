@@ -1,10 +1,12 @@
 pub mod commands;
 pub mod db;
+pub mod platform;
 pub mod services;
 
 use crate::db::connection::create_sqlite_connection;
 use crate::db::migration::run_migration;
 use crate::services::logger::init_logger;
+use crate::services::paths::log_dir;
 use parking_lot::RwLock;
 use state::AppState;
 use std::sync::Arc;
@@ -42,41 +44,60 @@ pub mod state {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_notification::init());
+
+    // Android 专属插件
+    #[cfg(target_os = "android")]
+    {
+        builder = builder
+            .plugin(tauri_plugin_haptics::init())
+            .plugin(tauri_plugin_biometric::init());
+    }
+
+    builder
         .setup(|app| {
             let state = AppState::new();
             let app_handle = app.handle().clone();
 
             // 初始化日志
-            let logger = init_logger(&app_handle);
-            let _ = state.logger.set(logger);
-            let _ = state.app_handle.set(app_handle.clone());
-
-            // 初始化数据库（同步阻塞）
-            let db_result = tauri::async_runtime::block_on(async {
-                let db = create_sqlite_connection(&app_handle).await?;
-                run_migration(&db).await?;
-                Ok::<sea_orm::DatabaseConnection, sea_orm::DbErr>(db)
-            });
-
-            match db_result {
-                Ok(db) => {
-                    let _ = state.db.set(db);
-                    tracing::info!("数据库初始化完成");
+            match log_dir(&app_handle) {
+                Ok(dir) => {
+                    let logger = init_logger(&app_handle, dir);
+                    let _ = state.logger.set(logger);
                 }
                 Err(e) => {
-                    tracing::error!("数据库初始化失败: {}", e);
+                    tracing::error!("日志目录初始化失败: {}", e);
                 }
             }
+            let _ = state.app_handle.set(app_handle.clone());
+
+            // 初始化数据库（异步任务，避免 setup 阻塞触发 ANR）
+            let db_state = state.db.clone();
+            let handle_for_db = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                match create_sqlite_connection(&handle_for_db).await {
+                    Ok(db) => {
+                        if let Err(e) = run_migration(&db).await {
+                            tracing::error!("数据库迁移失败: {}", e);
+                            return;
+                        }
+                        let _ = db_state.set(db);
+                        tracing::info!("数据库初始化完成");
+                    }
+                    Err(e) => {
+                        tracing::error!("数据库初始化失败: {}", e);
+                    }
+                }
+            });
 
             app.manage(Arc::new(RwLock::new(state)));
 
-            // 设置托盘
-            #[cfg(desktop)]
-            setup_tray(app)?;
+            // 平台专属初始化
+            platform::init(app)?;
 
             Ok(())
         })
@@ -143,55 +164,7 @@ pub fn run() {
             commands::app::restart_app,
             commands::app::open_path,
             commands::app::open_display_window,
-            commands::app::open_floating_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-#[cfg(desktop)]
-fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    use tauri::{
-        image::Image,
-        menu::{Menu, MenuItem},
-        tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    };
-
-    let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
-    let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
-
-    let _tray = TrayIconBuilder::new()
-        .icon(Image::from_bytes(include_bytes!("../icons/32x32.png")).unwrap())
-        .menu(&menu)
-        .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-            "quit" => {
-                app.exit(0);
-            }
-            _ => {}
-        })
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click {
-                button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
-                ..
-            } = event
-            {
-                let app = tray.app_handle();
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
-        })
-        .build(app)?;
-
-    Ok(())
 }

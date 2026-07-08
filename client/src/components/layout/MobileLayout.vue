@@ -1,0 +1,412 @@
+<template>
+  <div class="mobile-layout">
+    <header class="mobile-layout__header" role="banner">
+      <button
+        type="button"
+        class="mobile-layout__menu-btn"
+        :aria-label="drawerOpen ? '关闭导航菜单' : '打开导航菜单'"
+        :aria-expanded="drawerOpen"
+        @click="drawerOpen = !drawerOpen"
+      >
+        <el-icon :size="22" aria-hidden="true"><Expand v-if="!drawerOpen" /><Fold v-else /></el-icon>
+      </button>
+      <h1 class="mobile-layout__title">{{ pageTitle }}</h1>
+      <button
+        type="button"
+        class="mobile-layout__display-btn"
+        aria-label="打开大屏展示"
+        @click="openDisplay"
+      >
+        <el-icon :size="20" aria-hidden="true"><Monitor /></el-icon>
+      </button>
+    </header>
+
+    <main class="mobile-layout__main" :aria-label="pageTitle">
+      <router-view v-slot="{ Component }">
+        <transition name="page-fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
+
+    <nav class="mobile-layout__bottom-nav" role="navigation" aria-label="主导航">
+      <router-link
+        v-for="item in bottomNav"
+        :key="item.path"
+        :to="item.path"
+        class="mobile-layout__nav-item"
+        active-class="mobile-layout__nav-item--active"
+        :aria-current="route.path.startsWith(item.path) ? 'page' : undefined"
+        :aria-label="item.label"
+      >
+        <el-icon :size="22" aria-hidden="true"><component :is="item.icon" /></el-icon>
+        <span class="mobile-layout__nav-label">{{ item.label }}</span>
+      </router-link>
+    </nav>
+
+    <el-drawer
+      v-model="drawerOpen"
+      direction="ltr"
+      :with-header="false"
+      size="78%"
+      class="mobile-layout__drawer"
+      :aria-label="'次级导航菜单'"
+    >
+      <div class="mobile-layout__drawer-content">
+        <div class="mobile-layout__drawer-header">
+          <div class="mobile-layout__drawer-logo" aria-hidden="true">
+            <el-icon :size="28"><Trophy /></el-icon>
+          </div>
+          <div class="mobile-layout__drawer-title" translate="no">ClassIsScore</div>
+        </div>
+        <el-scrollbar class="mobile-layout__drawer-scroll">
+          <ul class="mobile-layout__drawer-list" role="list">
+            <li v-for="group in drawerMenu" :key="group.title" class="mobile-layout__drawer-group">
+              <h2 class="mobile-layout__drawer-group-title" :id="`drawer-group-${group.title}`">
+                {{ group.title }}
+              </h2>
+              <ul role="list">
+                <li v-for="item in group.items" :key="item.path" role="listitem">
+                  <router-link
+                    :to="item.path"
+                    class="mobile-layout__drawer-item"
+                    active-class="mobile-layout__drawer-item--active"
+                    :aria-current="route.path === item.path ? 'page' : undefined"
+                    @click="drawerOpen = false"
+                  >
+                    <el-icon :size="18" aria-hidden="true"><component :is="item.icon" /></el-icon>
+                    <span>{{ item.label }}</span>
+                  </router-link>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </el-scrollbar>
+        <div class="mobile-layout__drawer-footer">
+          <span translate="no">ClassIsScore v1.0.0</span>
+        </div>
+      </div>
+    </el-drawer>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import {
+  HomeFilled,
+  Trophy,
+  User,
+  Grid,
+  Rank,
+  Timer,
+  Finished,
+  Setting,
+  Box,
+  Brush,
+  Lock,
+  InfoFilled,
+  Monitor,
+  Expand,
+  Fold,
+} from '@element-plus/icons-vue'
+import { invoke } from '@/services/tauri'
+
+const route = useRoute()
+const drawerOpen = ref(false)
+
+const pageTitles: Record<string, string> = {
+  '/admin/dashboard': '总览',
+  '/admin/scores': '积分管理',
+  '/admin/students': '学生管理',
+  '/admin/groups': '分组管理',
+  '/admin/leaderboard': '排行榜',
+  '/admin/evaluation': '自动评估',
+  '/admin/settlement': '结算',
+  '/admin/settings': '设置',
+  '/admin/plugins': '插件管理',
+  '/admin/themes': '主题包',
+  '/admin/admin-settings': '管理员设置',
+  '/admin/about': '关于',
+  '/display': '大屏展示',
+}
+
+const pageTitle = computed(() => pageTitles[route.path] || 'ClassIsScore')
+
+const bottomNav = [
+  { path: '/admin/dashboard', label: '总览', icon: HomeFilled },
+  { path: '/admin/scores', label: '积分', icon: Trophy },
+  { path: '/admin/students', label: '学生', icon: User },
+  { path: '/admin/leaderboard', label: '排行', icon: Rank },
+  { path: '/admin/settings', label: '设置', icon: Setting },
+]
+
+const drawerMenu = [
+  {
+    title: '核心功能',
+    items: [
+      { path: '/admin/dashboard', label: '总览', icon: HomeFilled },
+      { path: '/admin/scores', label: '积分管理', icon: Trophy },
+      { path: '/admin/students', label: '学生管理', icon: User },
+      { path: '/admin/groups', label: '分组管理', icon: Grid },
+      { path: '/admin/leaderboard', label: '排行榜', icon: Rank },
+    ],
+  },
+  {
+    title: '高级功能',
+    items: [
+      { path: '/admin/evaluation', label: '自动评估', icon: Timer },
+      { path: '/admin/settlement', label: '结算', icon: Finished },
+    ],
+  },
+  {
+    title: '系统',
+    items: [
+      { path: '/admin/settings', label: '设置', icon: Setting },
+      { path: '/admin/plugins', label: '插件管理', icon: Box },
+      { path: '/admin/themes', label: '主题包', icon: Brush },
+      { path: '/admin/admin-settings', label: '管理员设置', icon: Lock },
+      { path: '/admin/about', label: '关于', icon: InfoFilled },
+    ],
+  },
+]
+
+function openDisplay() {
+  invoke('open_display_window').catch(() => {
+    // 非 Tauri 环境：使用路由跳转
+    if (typeof window !== 'undefined') {
+      window.location.hash = '#/display'
+    }
+  })
+}
+</script>
+
+<style scoped>
+.mobile-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--cis-bg);
+  padding-top: var(--cis-safe-top, 0);
+  padding-bottom: var(--cis-safe-bottom, 0);
+}
+
+.mobile-layout__header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 8px;
+  background: var(--cis-bg-elevated);
+  border-bottom: 1px solid var(--cis-border-color-light);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.mobile-layout__menu-btn,
+.mobile-layout__display-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--cis-radius-md);
+  background: transparent;
+  color: var(--cis-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color var(--cis-transition-fast), color var(--cis-transition-fast);
+}
+
+.mobile-layout__menu-btn:hover,
+.mobile-layout__display-btn:hover {
+  background: var(--cis-primary-light-9);
+  color: var(--cis-primary);
+}
+
+.mobile-layout__title {
+  flex: 1;
+  font-family: var(--cis-font-family-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+  margin: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-layout__main {
+  flex: 1;
+  padding: 12px 12px 80px;
+  /* 底部 80px 留给 BottomNav */
+}
+
+.mobile-layout__bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  height: calc(56px + var(--cis-safe-bottom, 0));
+  padding-bottom: var(--cis-safe-bottom, 0);
+  background: var(--cis-bg-elevated);
+  border-top: 1px solid var(--cis-border-color-light);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.mobile-layout__nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--cis-text-tertiary);
+  text-decoration: none;
+  transition: color var(--cis-transition-fast);
+  min-height: 48px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-layout__nav-item:active {
+  transform: scale(0.96);
+}
+
+.mobile-layout__nav-item--active {
+  color: var(--cis-primary);
+}
+
+.mobile-layout__nav-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.mobile-layout__drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--cis-bg-elevated);
+  padding-top: var(--cis-safe-top, 0);
+}
+
+.mobile-layout__drawer-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--cis-border-color-light);
+}
+
+.mobile-layout__drawer-logo {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--cis-radius-md);
+  background: linear-gradient(180deg, var(--cis-primary), var(--cis-primary-dark));
+  color: #fff;
+}
+
+.mobile-layout__drawer-title {
+  font-family: var(--cis-font-family-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+}
+
+.mobile-layout__drawer-scroll {
+  flex: 1;
+}
+
+.mobile-layout__drawer-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.mobile-layout__drawer-group-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--cis-text-placeholder);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 16px 6px;
+}
+
+.mobile-layout__drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 16px;
+  color: var(--cis-text-secondary);
+  text-decoration: none;
+  transition: background-color var(--cis-transition-fast), color var(--cis-transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-layout__drawer-item:active {
+  background: var(--cis-primary-light-9);
+}
+
+.mobile-layout__drawer-item--active {
+  color: var(--cis-primary);
+  background: var(--cis-primary-light-9);
+  font-weight: 500;
+}
+
+.mobile-layout__drawer-footer {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--cis-text-placeholder);
+  border-top: 1px solid var(--cis-border-color-light);
+  text-align: center;
+}
+
+.page-fade-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.page-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-layout__nav-item,
+  .mobile-layout__menu-btn,
+  .mobile-layout__display-btn,
+  .mobile-layout__drawer-item,
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition: none;
+  }
+  .mobile-layout__nav-item:active {
+    transform: none;
+  }
+  .page-fade-enter-from,
+  .page-fade-leave-to {
+    transform: none;
+  }
+}
+</style>

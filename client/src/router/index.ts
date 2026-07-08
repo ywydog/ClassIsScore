@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import MobileLayout from '@/components/layout/MobileLayout.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -8,8 +9,10 @@ const routes: RouteRecordRaw[] = [
     redirect: '/admin/dashboard',
   },
   {
+    // 桌面端：嵌套 AdminLayout
     path: '/admin',
     component: AdminLayout,
+    meta: { layout: 'admin' },
     children: [
       {
         path: 'dashboard',
@@ -92,22 +95,90 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
+    // 移动端：扁平化路由，MobileLayout 包裹
+    path: '/m',
+    component: MobileLayout,
+    meta: { layout: 'mobile' },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'MobileDashboard',
+        component: () => import('@/views/admin/Dashboard.vue'),
+      },
+      {
+        path: 'scores',
+        name: 'MobileScoreManagement',
+        component: () => import('@/views/admin/ScoreManagement.vue'),
+      },
+      {
+        path: 'students',
+        name: 'MobileStudentManagement',
+        component: () => import('@/views/admin/StudentManagement.vue'),
+      },
+      {
+        path: 'students/:id',
+        name: 'MobileStudentProfile',
+        component: () => import('@/views/admin/StudentProfile.vue'),
+      },
+      {
+        path: 'groups',
+        name: 'MobileGroupManagement',
+        component: () => import('@/views/admin/GroupManagement.vue'),
+      },
+      {
+        path: 'leaderboard',
+        name: 'MobileLeaderboard',
+        component: () => import('@/views/admin/Leaderboard.vue'),
+      },
+      {
+        path: 'evaluation',
+        name: 'MobileAutoEvaluation',
+        component: () => import('@/views/admin/AutoEvaluation.vue'),
+      },
+      {
+        path: 'settlement',
+        name: 'MobileSettlement',
+        component: () => import('@/views/admin/Settlement.vue'),
+      },
+      {
+        path: 'settings',
+        name: 'MobileSettings',
+        component: () => import('@/views/admin/Settings.vue'),
+      },
+      {
+        path: 'plugins',
+        name: 'MobilePluginManagement',
+        component: () => import('@/views/admin/PluginManagement.vue'),
+      },
+      {
+        path: 'themes',
+        name: 'MobileThemeManagement',
+        component: () => import('@/views/admin/ThemeManagement.vue'),
+      },
+      {
+        path: 'admin-settings',
+        name: 'MobileAdminSettings',
+        component: () => import('@/views/admin/AdminSettings.vue'),
+      },
+      {
+        path: 'about',
+        name: 'MobileAbout',
+        component: () => import('@/views/admin/About.vue'),
+      },
+    ],
+  },
+  {
+    // 桌面：大屏展示走独立窗口；移动端：单窗口内 /display 路由
     path: '/display',
     name: 'ScoreDisplay',
     component: () => import('@/views/display/ScoreDisplay.vue'),
-    meta: { title: '大屏展示' },
-  },
-  {
-    path: '/floating',
-    name: 'FloatingBar',
-    component: () => import('@/views/floating/FloatingBar.vue'),
-    meta: { title: '浮动积分条' },
+    meta: { title: '大屏展示', layout: 'none' },
   },
   {
     path: '/onboarding',
     name: 'Onboarding',
     component: () => import('@/views/onboarding/Onboarding.vue'),
-    meta: { title: '引导' },
+    meta: { title: '引导', layout: 'none' },
   },
 ]
 
@@ -119,7 +190,7 @@ const router = createRouter({
 // 路由守卫：首次启动引导
 router.beforeEach(async (to, _from, next) => {
   // 引导页面和展示页面不需要检查
-  if (to.name === 'Onboarding' || to.name === 'ScoreDisplay' || to.name === 'FloatingBar') {
+  if (to.name === 'Onboarding' || to.name === 'ScoreDisplay') {
     next()
     return
   }

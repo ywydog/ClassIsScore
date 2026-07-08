@@ -1,0 +1,10 @@
+{
+  "identifier": "mobile",
+  "description": "Android 专属权限：触觉反馈、生物识别",
+  "platforms": ["android"],
+  "windows": ["main"],
+  "permissions": [
+    "haptics:default",
+    "biometric:default"
+  ]
+}

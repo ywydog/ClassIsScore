@@ -1,11 +1,12 @@
 {
   "identifier": "default",
-  "description": "Capability for the main window",
-  "windows": ["main", "display", "floating"],
+  "description": "跨平台通用权限",
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "shell:allow-open",
     "dialog:default",
-    "fs:default"
+    "fs:default",
+    "notification:default"
   ]
 }

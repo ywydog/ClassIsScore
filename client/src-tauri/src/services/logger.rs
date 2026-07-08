@@ -201,13 +201,7 @@ impl LoggerService {
 }
 
 /// 初始化日志系统，返回 LoggerService 实例
-pub fn init_logger(_app_handle: &AppHandle) -> LoggerService {
-    // 日志目录：在软件所在目录下创建 data/logs 文件夹
-    let exe_dir = std::env::current_exe()
-        .map(|p| p.parent().map(|pp| pp.to_path_buf()).unwrap_or_else(|| PathBuf::from(".")))
-        .unwrap_or_else(|_| PathBuf::from("."));
-
-    let log_dir = exe_dir.join("data").join("logs");
+pub fn init_logger(_app_handle: &AppHandle, log_dir: PathBuf) -> LoggerService {
     let _ = fs::create_dir_all(&log_dir);
 
     // 初始化 tracing（输出到控制台 + 文件）
