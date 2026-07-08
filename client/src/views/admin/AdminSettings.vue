@@ -1,8 +1,6 @@
 <template>
   <div class="admin-settings">
-    <div class="admin-settings__header">
-      <h2>管理员设置</h2>
-    </div>
+    <h2 id="admin-settings-title" class="admin-settings__header">管理员设置</h2>
 
     <div class="admin-settings__content">
       <el-card class="admin-settings__card">
@@ -28,15 +26,19 @@
                 <el-input
                   v-model="newPassword"
                   type="password"
-                  placeholder="请输入新密码"
+                  placeholder="请输入新密码…"
                   show-password
+                  autocomplete="new-password"
+                  aria-label="新密码"
                   style="flex: 1"
                 />
                 <el-input
                   v-model="confirmPassword"
                   type="password"
-                  placeholder="确认密码"
+                  placeholder="确认密码…"
                   show-password
+                  autocomplete="new-password"
+                  aria-label="确认密码"
                   style="flex: 1; margin-left: 8px"
                 />
                 <el-button type="primary" @click="handleSetPassword" :disabled="!newPassword || !confirmPassword">
@@ -53,8 +55,8 @@
           <template v-if="adminSettings.verificationMethod === 'Usb' && adminSettings.isEnabled">
             <el-form-item label="U盘设备">
               <div class="usb-section">
-                <el-button @click="detectUsb" :loading="detectingUsb">
-                  <el-icon style="margin-right: 4px"><Monitor /></el-icon>
+                <el-button @click="detectUsb" :loading="detectingUsb" aria-label="检测U盘设备">
+                  <el-icon style="margin-right: 4px" aria-hidden="true"><Monitor /></el-icon>
                   检测U盘
                 </el-button>
                 <span v-if="adminSettings.usbDeviceId" class="usb-bound">
@@ -66,8 +68,10 @@
             <el-form-item label="设备ID">
               <el-input
                 v-model="manualUsbDeviceId"
-                placeholder="手动输入U盘设备ID"
+                placeholder="手动输入U盘设备ID…"
                 clearable
+                autocomplete="off"
+                aria-label="U盘设备ID"
                 style="max-width: 300px"
               />
               <el-button style="margin-left: 8px" @click="handleBindUsb" :disabled="!manualUsbDeviceId">
@@ -90,8 +94,8 @@
           <template v-if="adminSettings.verificationMethod === 'Face' && adminSettings.isEnabled">
             <el-form-item label="人脸验证">
               <div class="face-section">
-                <el-button disabled>
-                  <el-icon style="margin-right: 4px"><Camera /></el-icon>
+                <el-button disabled aria-label="录入人脸（暂不可用）">
+                  <el-icon style="margin-right: 4px" aria-hidden="true"><Camera /></el-icon>
                   录入人脸
                 </el-button>
               </div>
@@ -126,10 +130,22 @@
     <!-- 验证对话框 -->
     <el-dialog v-model="showVerifyDialog" title="验证管理员身份" width="400px">
       <template v-if="adminSettings.verificationMethod === 'Password'">
-        <el-input v-model="verifyCredential" type="password" placeholder="请输入管理员密码" show-password />
+        <el-input
+          v-model="verifyCredential"
+          type="password"
+          placeholder="请输入管理员密码…"
+          show-password
+          autocomplete="current-password"
+          aria-label="管理员密码"
+        />
       </template>
       <template v-else-if="adminSettings.verificationMethod === 'Usb'">
-        <el-input v-model="verifyCredential" placeholder="请输入U盘设备ID" />
+        <el-input
+          v-model="verifyCredential"
+          placeholder="请输入U盘设备ID…"
+          autocomplete="off"
+          aria-label="U盘设备ID"
+        />
         <p style="color: var(--cis-text-secondary); font-size: 13px; margin-top: 8px">
           请插入已绑定的U盘设备，或手动输入设备ID
         </p>
@@ -298,13 +314,9 @@ async function handleResetAll() {
 
 <style scoped>
 .admin-settings__header {
-  margin-bottom: 24px;
+  margin: 0 0 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.admin-settings__header h2 {
-  margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -314,6 +326,7 @@ async function handleResetAll() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .admin-settings__card {
@@ -322,6 +335,12 @@ async function handleResetAll() {
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
+}
+
+.admin-settings__card:focus-visible,
+.admin-settings__card *:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .admin-settings__card:hover {
@@ -361,5 +380,12 @@ async function handleResetAll() {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

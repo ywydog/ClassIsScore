@@ -49,19 +49,19 @@
     <!-- Footer -->
     <template #footer>
       <template v-if="step === 'select'">
-        <el-button @click="handleClose">取消</el-button>
-        <el-button type="primary" :disabled="!selectedOpponent" @click="startBattle">
+        <el-button aria-label="取消" @click="handleClose">取消</el-button>
+        <el-button type="primary" :disabled="!selectedOpponent" aria-label="开始切磋" @click="startBattle">
           开始切磋
         </el-button>
       </template>
       <template v-else-if="step === 'battle'">
-        <el-button :disabled="battleInProgress" @click="skipBattle" v-if="!isBattleFinished">
+        <el-button :disabled="battleInProgress" aria-label="跳过动画" @click="skipBattle" v-if="!isBattleFinished">
           跳过动画
         </el-button>
       </template>
       <template v-else-if="step === 'result'">
-        <el-button @click="backToSelect" v-if="!battleInProgress">重新选择</el-button>
-        <el-button type="primary" @click="handleClose">关闭</el-button>
+        <el-button aria-label="重新选择对手" @click="backToSelect" v-if="!battleInProgress">重新选择</el-button>
+        <el-button type="primary" aria-label="关闭对话框" @click="handleClose">关闭</el-button>
       </template>
     </template>
   </el-dialog>
@@ -298,5 +298,9 @@ function handleClose() {
 <style scoped>
 .battle-dialog {
   background: linear-gradient(135deg, #1a1a2e 0%, #2d1f3f 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

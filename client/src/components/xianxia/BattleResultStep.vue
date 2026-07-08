@@ -1,24 +1,24 @@
 <template>
-  <div class="battle-result">
-    <div class="battle-result__banner" :class="{ 'battle-result__banner--draw': battleResult?.isDraw }">
+  <div class="battle-result" role="group" aria-label="战斗结果">
+    <div class="battle-result__banner" :class="{ 'battle-result__banner--draw': battleResult?.isDraw }" aria-live="polite">
       <span v-if="battleResult?.isDraw">平局</span>
       <span v-else-if="battleResult && challenger && battleResult.winnerId === challenger.id">胜利！</span>
-      <span v-else>战败...</span>
+      <span v-else>战败…</span>
     </div>
 
     <div class="battle-result__summary">
       <div class="battle-result__fighter" :class="{ 'battle-result__fighter--winner': challenger && battleResult?.winnerId === challenger.id }">
-        <div class="battle-result__pet">{{ getPetEmoji(challenger?.petType) }}</div>
+        <div class="battle-result__pet" aria-hidden="true">{{ getPetEmoji(challenger?.petType) }}</div>
         <div class="battle-result__name">{{ combatantA?.name }}</div>
         <div class="battle-result__stats">
           <div>剩余血量 {{ battleResult?.winnerId === challenger?.id ? battleResult?.winnerFinalHp : 0 }}</div>
         </div>
       </div>
 
-      <div class="battle-result__vs">VS</div>
+      <div class="battle-result__vs" aria-hidden="true">VS</div>
 
       <div class="battle-result__fighter" :class="{ 'battle-result__fighter--winner': selectedOpponent && battleResult?.winnerId === selectedOpponent.id }">
-        <div class="battle-result__pet">{{ getPetEmoji(selectedOpponent?.petType) }}</div>
+        <div class="battle-result__pet" aria-hidden="true">{{ getPetEmoji(selectedOpponent?.petType) }}</div>
         <div class="battle-result__name">{{ combatantB?.name }}</div>
         <div class="battle-result__stats">
           <div>剩余血量 {{ battleResult?.winnerId === selectedOpponent?.id ? battleResult?.winnerFinalHp : 0 }}</div>
@@ -42,9 +42,9 @@
     </div>
 
     <!-- 战斗过程 -->
-    <div class="battle-result__log">
-      <div class="battle-result__log-title">切磋过程</div>
-      <div class="battle-result__log-list">
+    <div class="battle-result__log" aria-label="战斗过程记录">
+      <div class="battle-result__log-title" id="battle-log-title">切磋过程</div>
+      <div class="battle-result__log-list" role="list" aria-labelledby="battle-log-title">
         <div
           v-for="(log, idx) in battleResult?.battleLog"
           :key="idx"
@@ -124,7 +124,7 @@ defineProps<{
   padding: 12px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .battle-result__fighter--winner {
@@ -170,6 +170,7 @@ defineProps<{
   padding: 6px 0;
   font-size: 13px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-variant-numeric: tabular-nums;
 }
 
 .battle-result__info-row:last-child {
@@ -198,6 +199,7 @@ defineProps<{
   font-weight: 600;
   color: #C9A84C;
   margin-bottom: 8px;
+  scroll-margin-top: 80px;
 }
 
 .battle-result__log-item {
@@ -239,5 +241,9 @@ defineProps<{
   font-weight: 600;
   margin-top: 6px;
   border-bottom: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

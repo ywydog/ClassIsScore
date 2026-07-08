@@ -1,25 +1,27 @@
 <template>
   <div class="student-management">
     <div class="student-management__header">
-      <h2>学生管理</h2>
+      <h2 id="student-management-title" class="student-management__title">学生管理</h2>
       <div class="student-management__actions">
         <el-input
           v-model="searchText"
-          placeholder="搜索学生..."
+          placeholder="搜索学生…"
           clearable
           style="width: 200px"
           :prefix-icon="Search"
+          role="searchbox"
+          aria-label="搜索学生"
         />
-        <el-button @click="showExportDialog = true">
-          <el-icon><Download /></el-icon>
+        <el-button @click="showExportDialog = true" aria-label="导出">
+          <el-icon aria-hidden="true"><Download /></el-icon>
           导出
         </el-button>
-        <el-button @click="showImportDialog = true">
-          <el-icon><Upload /></el-icon>
+        <el-button @click="showImportDialog = true" aria-label="导入">
+          <el-icon aria-hidden="true"><Upload /></el-icon>
           导入
         </el-button>
-        <el-button type="primary" @click="openAddDialog()">
-          <el-icon><Plus /></el-icon>
+        <el-button type="primary" @click="openAddDialog()" aria-label="添加学生">
+          <el-icon aria-hidden="true"><Plus /></el-icon>
           添加学生
         </el-button>
       </div>
@@ -34,16 +36,17 @@
         style="width: 100%"
         v-loading="studentStore.loading"
         empty-text="暂无学生数据"
+        aria-label="学生列表"
       >
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="studentNumber" label="学号" width="120">
           <template #default="{ row }">
-            {{ row.studentNumber || '-' }}
+            {{ row.studentNumber || '—' }}
           </template>
         </el-table-column>
         <el-table-column prop="gender" label="性别" width="80">
           <template #default="{ row }">
-            {{ row.gender || '-' }}
+            {{ row.gender || '—' }}
           </template>
         </el-table-column>
         <el-table-column label="小组" width="120">
@@ -54,7 +57,7 @@
         </el-table-column>
         <el-table-column prop="score" label="积分" width="100" sortable>
           <template #default="{ row }">
-            <span :class="row.score > 0 ? 'score-positive' : row.score < 0 ? 'score-negative' : ''">
+            <span :class="row.score > 0 ? 'score-positive' : row.score < 0 ? 'score-negative' : ''" style="font-variant-numeric: tabular-nums">
               {{ row.score }}
             </span>
           </template>
@@ -74,6 +77,7 @@
           :total="filteredStudents.length"
           layout="total, prev, pager, next"
           small
+          aria-label="学生列表分页"
         />
       </div>
     </el-card>
@@ -93,13 +97,29 @@
       <!-- 步骤1: 选择导入方式 -->
       <div v-if="importStep === 0">
         <div class="import-methods">
-          <div class="import-method" @click="importMode = 'file'; importStep = 1">
-            <el-icon :size="32" color="var(--cis-primary)"><Document /></el-icon>
+          <div
+            class="import-method"
+            role="button"
+            tabindex="0"
+            aria-label="从文件导入"
+            @click="importMode = 'file'; importStep = 1"
+            @keydown.enter="importMode = 'file'; importStep = 1"
+            @keydown.space.prevent="importMode = 'file'; importStep = 1"
+          >
+            <el-icon :size="32" color="var(--cis-primary)" aria-hidden="true"><Document /></el-icon>
             <div class="import-method__title">从文件导入</div>
             <div class="import-method__desc">支持 Excel (.xlsx/.xls) 和 CSV 文件</div>
           </div>
-          <div class="import-method" @click="importMode = 'text'; importStep = 1">
-            <el-icon :size="32" color="var(--cis-warning)"><EditPen /></el-icon>
+          <div
+            class="import-method"
+            role="button"
+            tabindex="0"
+            aria-label="手动输入"
+            @click="importMode = 'text'; importStep = 1"
+            @keydown.enter="importMode = 'text'; importStep = 1"
+            @keydown.space.prevent="importMode = 'text'; importStep = 1"
+          >
+            <el-icon :size="32" color="var(--cis-warning)" aria-hidden="true"><EditPen /></el-icon>
             <div class="import-method__title">手动输入</div>
             <div class="import-method__desc">逐行输入学生信息</div>
           </div>
@@ -116,7 +136,7 @@
           :on-change="handleFileChange"
           :on-remove="() => importFile = null"
         >
-          <el-icon :size="40" style="color: var(--cis-text-tertiary)"><Upload /></el-icon>
+          <el-icon :size="40" style="color: var(--cis-text-tertiary)" aria-hidden="true"><Upload /></el-icon>
           <div style="margin-top: 8px">拖拽文件到此处，或 <em>点击选择文件</em></div>
           <template #tip>
             <div style="font-size: 12px; color: var(--cis-text-tertiary); margin-top: 8px">
@@ -138,6 +158,7 @@
           type="textarea"
           :rows="8"
           placeholder="张三,2024001,男,第一组&#10;李四,2024002,女,第一组"
+          aria-label="学生数据"
         />
       </div>
 
@@ -148,22 +169,22 @@
         </el-alert>
         <el-form label-width="80px">
           <el-form-item label="姓名列" required>
-            <el-select v-model="importMapping.nameColumnIndex" placeholder="选择姓名列" style="width: 100%">
+            <el-select v-model="importMapping.nameColumnIndex" placeholder="选择姓名列…" style="width: 100%" aria-label="姓名列">
               <el-option v-for="(h, i) in importHeaders" :key="i" :label="h" :value="i" />
             </el-select>
           </el-form-item>
           <el-form-item label="学号列">
-            <el-select v-model="importMapping.numberColumnIndex" placeholder="可选" clearable style="width: 100%">
+            <el-select v-model="importMapping.numberColumnIndex" placeholder="可选…" clearable style="width: 100%" aria-label="学号列">
               <el-option v-for="(h, i) in importHeaders" :key="i" :label="h" :value="i" />
             </el-select>
           </el-form-item>
           <el-form-item label="性别列">
-            <el-select v-model="importMapping.genderColumnIndex" placeholder="可选" clearable style="width: 100%">
+            <el-select v-model="importMapping.genderColumnIndex" placeholder="可选…" clearable style="width: 100%" aria-label="性别列">
               <el-option v-for="(h, i) in importHeaders" :key="i" :label="h" :value="i" />
             </el-select>
           </el-form-item>
           <el-form-item label="小组列">
-            <el-select v-model="importMapping.groupColumnIndex" placeholder="可选" clearable style="width: 100%">
+            <el-select v-model="importMapping.groupColumnIndex" placeholder="可选…" clearable style="width: 100%" aria-label="小组列">
               <el-option v-for="(h, i) in importHeaders" :key="i" :label="h" :value="i" />
             </el-select>
           </el-form-item>
@@ -171,9 +192,9 @@
 
         <div v-if="importPreviewStudents.length > 0" style="margin-top: 16px">
           <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--cis-text-primary)">
-            预览 (前5条)
+            预览 (前 5 条)
           </div>
-          <el-table :data="importPreviewStudents.slice(0, 5)" size="small" border>
+          <el-table :data="importPreviewStudents.slice(0, 5)" size="small" border aria-label="导入预览">
             <el-table-column prop="name" label="姓名" width="100" />
             <el-table-column prop="studentNumber" label="学号" width="100" />
             <el-table-column prop="gender" label="性别" width="60" />
@@ -189,22 +210,22 @@
       <div v-else-if="importStep === 3">
         <el-result :icon="importResult.failCount === 0 ? 'success' : 'warning'" :title="importResultTitle">
           <template #sub-title>
-            <p>成功: {{ importResult.successCount }} 条</p>
-            <p v-if="importResult.skipCount > 0">跳过(姓名为空): {{ importResult.skipCount }} 条</p>
-            <p v-if="importResult.failCount > 0">失败: {{ importResult.failCount }} 条</p>
+            <p>成功: <span style="font-variant-numeric: tabular-nums">{{ importResult.successCount }}</span> 条</p>
+            <p v-if="importResult.skipCount > 0">跳过 (姓名为空): <span style="font-variant-numeric: tabular-nums">{{ importResult.skipCount }}</span> 条</p>
+            <p v-if="importResult.failCount > 0">失败: <span style="font-variant-numeric: tabular-nums">{{ importResult.failCount }}</span> 条</p>
           </template>
         </el-result>
       </div>
 
       <template #footer>
         <el-button v-if="importStep > 0 && importStep < 3" @click="importStep--">上一步</el-button>
-        <el-button v-if="importStep === 1 && importMode === 'text'" type="primary" :disabled="!importText.trim()" @click="handleTextImport">
+        <el-button v-if="importStep === 1 && importMode === 'text'" type="primary" :disabled="!importText.trim()" :aria-disabled="!importText.trim()" @click="handleTextImport">
           导入
         </el-button>
-        <el-button v-if="importStep === 1 && importMode === 'file'" :disabled="!importFile" type="primary" @click="handleFileParse">
+        <el-button v-if="importStep === 1 && importMode === 'file'" :disabled="!importFile" :aria-disabled="!importFile" type="primary" @click="handleFileParse">
           下一步
         </el-button>
-        <el-button v-if="importStep === 2" type="primary" :disabled="importPreviewStudents.length === 0" @click="handleFileImport">
+        <el-button v-if="importStep === 2" type="primary" :disabled="importPreviewStudents.length === 0" :aria-disabled="importPreviewStudents.length === 0" @click="handleFileImport">
           确认导入 ({{ importPreviewStudents.length }}条)
         </el-button>
         <el-button v-if="importStep === 3" type="primary" @click="closeImportDialog">完成</el-button>
@@ -215,13 +236,13 @@
     <el-dialog v-model="showExportDialog" title="导出学生列表" width="420px">
       <el-form :model="exportForm" label-width="80px">
         <el-form-item label="导出格式">
-          <el-radio-group v-model="exportForm.format">
+          <el-radio-group v-model="exportForm.format" aria-label="导出格式">
             <el-radio-button value="xlsx">Excel</el-radio-button>
             <el-radio-button value="csv">CSV</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="导出范围">
-          <el-radio-group v-model="exportForm.scope">
+          <el-radio-group v-model="exportForm.scope" aria-label="导出范围">
             <el-radio-button value="all">全部学生</el-radio-button>
             <el-radio-button value="filtered">当前筛选</el-radio-button>
           </el-radio-group>
@@ -345,7 +366,11 @@ function openEditDialog(student: Student) {
 }
 
 async function handleDelete(id: string) {
-  await ElMessageBox.confirm('确定删除该学生吗？删除后积分记录将保留。', '确认删除', { type: 'warning' })
+  try {
+    await ElMessageBox.confirm('确定删除该学生吗？删除后积分记录将保留。', '确认删除', { type: 'warning' })
+  } catch {
+    return
+  }
   try {
     await studentStore.deleteStudent(id)
     ElMessage.success('已删除')
@@ -521,7 +546,7 @@ function handleExport() {
     score: s.score,
   }))
 
-  const filename = `学生列表_${new Date().toISOString().slice(0, 10)}`
+  const filename = `学生列表_${new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}`
 
   if (exportForm.format === 'xlsx') {
     exportToExcel(data, columns, filename)
@@ -542,9 +567,11 @@ function handleExport() {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.student-management__header h2 {
+.student-management__title {
   margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
@@ -555,12 +582,14 @@ function handleExport() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .student-management__actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .student-management__table-card {
@@ -609,7 +638,12 @@ function handleExport() {
   border-radius: var(--cis-radius-lg);
   border: 2px solid var(--cis-border-color-light);
   cursor: pointer;
-  transition: all var(--cis-transition-fast);
+  transition: border-color var(--cis-transition-fast), background-color var(--cis-transition-fast), transform var(--cis-transition-fast), box-shadow var(--cis-transition-fast);
+}
+
+.import-method:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .import-method:hover {
@@ -650,5 +684,12 @@ function handleExport() {
 
 .import-hint p {
   margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

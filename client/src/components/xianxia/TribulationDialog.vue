@@ -10,18 +10,18 @@
     @close="handleClose"
   >
     <div v-if="!isTribulating && !tribulationResult" class="tribulation-confirm">
-      <div class="tribulation-icon">⚡</div>
-      <h3 class="tribulation-title">
+      <div class="tribulation-icon" aria-hidden="true">⚡</div>
+      <h3 class="tribulation-title" id="tribulation-title">
         {{ isPetTribulation ? '仙宠渡劫' : '道友渡劫' }}
       </h3>
-      <div class="tribulation-info">
+      <div class="tribulation-info" role="group" aria-labelledby="tribulation-title">
         <div class="tribulation-info-row">
           <span class="tribulation-info-label">目标</span>
           <span class="tribulation-info-value">{{ targetName }}</span>
         </div>
         <div class="tribulation-info-row">
           <span class="tribulation-info-label">成功率</span>
-          <span class="tribulation-info-value tribulation-info-value--rate">
+          <span class="tribulation-info-value tribulation-info-value--rate" :aria-label="`成功率 ${Math.round(successRate * 100)}%`">
             {{ Math.round(successRate * 100) }}%
           </span>
         </div>
@@ -40,23 +40,23 @@
     </div>
 
     <!-- 渡劫动画 -->
-    <div v-else-if="isTribulating" class="tribulation-animation">
+    <div v-else-if="isTribulating" class="tribulation-animation" aria-live="polite" aria-label="天劫降临">
       <div class="tribulation-lightning" v-for="i in lightningCount" :key="i"
-        :style="{ animationDelay: `${i * 0.3}s` }">
+        :style="{ animationDelay: `${i * 0.3}s` }" aria-hidden="true">
         ⚡
       </div>
-      <div class="tribulation-animation-text">天劫降临...</div>
+      <div class="tribulation-animation-text">天劫降临…</div>
     </div>
 
     <!-- 渡劫结果 -->
-    <div v-else class="tribulation-result">
+    <div v-else class="tribulation-result" aria-live="polite" role="status">
       <div v-if="tribulationResult?.success" class="tribulation-result--success">
-        <div class="tribulation-result-icon">✨</div>
+        <div class="tribulation-result-icon" aria-hidden="true">✨</div>
         <h3>渡劫成功！</h3>
         <p>{{ tribulationResult?.description }}</p>
       </div>
       <div v-else class="tribulation-result--fail">
-        <div class="tribulation-result-icon">💀</div>
+        <div class="tribulation-result-icon" aria-hidden="true">💀</div>
         <h3>渡劫失败</h3>
         <p>{{ tribulationResult?.description }}</p>
         <p class="tribulation-result-penalty">
@@ -67,13 +67,13 @@
 
     <template #footer>
       <template v-if="!isTribulating && !tribulationResult">
-        <el-button @click="handleClose">取消</el-button>
-        <el-button type="primary" @click="startTribulation" class="tribulation-start-btn">
+        <el-button aria-label="取消" @click="handleClose">取消</el-button>
+        <el-button type="primary" aria-label="开始渡劫" @click="startTribulation" class="tribulation-start-btn">
           开始渡劫
         </el-button>
       </template>
       <template v-else-if="tribulationResult">
-        <el-button type="primary" @click="handleClose">确定</el-button>
+        <el-button type="primary" aria-label="确定" @click="handleClose">确定</el-button>
       </template>
     </template>
   </el-dialog>
@@ -175,6 +175,7 @@ function handleClose() {
 .tribulation-info-value--rate {
   color: #C9A84C;
   font-size: 18px;
+  font-variant-numeric: tabular-nums;
 }
 
 .tribulation-warning {
@@ -286,5 +287,10 @@ function handleClose() {
 .tribulation-result-penalty {
   color: #f87171 !important;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

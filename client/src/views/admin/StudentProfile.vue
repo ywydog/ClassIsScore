@@ -2,8 +2,8 @@
   <div class="student-profile" v-loading="loading">
     <!-- 返回按钮 -->
     <div class="student-profile__back">
-      <el-button text @click="goBack">
-        <el-icon><ArrowLeft /></el-icon>
+      <el-button text @click="goBack" aria-label="返回学生列表">
+        <el-icon aria-hidden="true"><ArrowLeft /></el-icon>
         返回学生列表
       </el-button>
     </div>
@@ -12,28 +12,28 @@
       <!-- 学生信息卡片 -->
       <el-card class="student-profile__card student-profile__info-card">
         <div class="profile-info">
-          <div class="profile-info__avatar" :style="avatarStyle">
+          <div class="profile-info__avatar" :style="avatarStyle" aria-hidden="true">
             <img v-if="student.avatar" :src="student.avatar" :alt="student.name" />
             <span v-else class="profile-info__initial">{{ student.name.charAt(0) }}</span>
           </div>
           <div class="profile-info__details">
-            <h2 class="profile-info__name">{{ student.name }}</h2>
+            <h2 id="student-profile-name" class="profile-info__name">{{ student.name }}</h2>
             <div class="profile-info__meta">
               <span v-if="student.studentNumber">学号: {{ student.studentNumber }}</span>
-              <span>当前积分: <strong :class="scoreClass">{{ student.score }}</strong></span>
+              <span>当前积分: <strong :class="scoreClass" style="font-variant-numeric: tabular-nums">{{ student.score }}</strong></span>
             </div>
             <div class="profile-info__pet" v-if="hasPet">
-              <span class="profile-info__pet-emoji">{{ petEmoji }}</span>
+              <span class="profile-info__pet-emoji" aria-hidden="true">{{ petEmoji }}</span>
               <span>{{ petName }} Lv.{{ petLevel }} ({{ levelTitle }})</span>
-              <div class="profile-info__pet-exp">
+              <div class="profile-info__pet-exp" role="progressbar" :aria-valuenow="levelProgress.percentage" aria-valuemin="0" aria-valuemax="100" :aria-label="`宠物经验 ${expText}`">
                 <div class="profile-info__pet-exp-track">
                   <div class="profile-info__pet-exp-bar" :style="expBarStyle"></div>
                 </div>
-                <span class="profile-info__pet-exp-text">{{ expText }}</span>
+                <span class="profile-info__pet-exp-text" aria-live="polite">{{ expText }}</span>
               </div>
             </div>
             <div class="profile-info__pet" v-else>
-              <span class="profile-info__pet-emoji">❓</span>
+              <span class="profile-info__pet-emoji" aria-hidden="true">❓</span>
               <span style="color: var(--cis-text-tertiary)">尚未领养宠物</span>
             </div>
           </div>
@@ -50,19 +50,19 @@
         </template>
         <div class="stats-grid">
           <div class="stats-item">
-            <span class="stats-item__value stats-item__value--primary">{{ stats.totalChanges }}</span>
+            <span class="stats-item__value stats-item__value--primary" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.totalChanges }}</span>
             <span class="stats-item__label">总变动</span>
           </div>
           <div class="stats-item">
-            <span class="stats-item__value stats-item__value--success">{{ stats.positiveChanges }}</span>
+            <span class="stats-item__value stats-item__value--success" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.positiveChanges }}</span>
             <span class="stats-item__label">加分</span>
           </div>
           <div class="stats-item">
-            <span class="stats-item__value stats-item__value--danger">{{ stats.negativeChanges }}</span>
+            <span class="stats-item__value stats-item__value--danger" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.negativeChanges }}</span>
             <span class="stats-item__label">减分</span>
           </div>
           <div class="stats-item">
-            <span class="stats-item__value stats-item__value--primary">{{ stats.netChange > 0 ? '+' : '' }}{{ stats.netChange }}</span>
+            <span class="stats-item__value stats-item__value--primary" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.netChange > 0 ? '+' : '' }}{{ stats.netChange }}</span>
             <span class="stats-item__label">净变动</span>
           </div>
         </div>
@@ -73,9 +73,9 @@
         <template #header>
           <span class="card-title">积分趋势</span>
         </template>
-        <div class="trend-chart" ref="trendChartRef">
+        <div class="trend-chart" ref="trendChartRef" role="img" aria-label="最近积分趋势图">
           <div v-if="trendData.length === 0" class="trend-chart__empty">暂无趋势数据</div>
-          <svg v-else :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="trend-chart__svg">
+          <svg v-else :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="trend-chart__svg" aria-hidden="true">
             <!-- 网格线 -->
             <line v-for="i in 4" :key="'grid-'+i"
               :x1="chartPadding" :y1="chartPadding + (i-1) * (chartHeight - 2*chartPadding) / 3"
@@ -123,16 +123,18 @@
         <template #header>
           <span class="card-title">最近记录</span>
         </template>
-        <div class="recent-records">
-          <div v-for="record in recentRecords" :key="record.id" class="recent-record">
-            <span class="recent-record__change" :class="record.scoreChange > 0 ? 'recent-record__change--positive' : 'recent-record__change--negative'">
+        <ol class="recent-records" aria-label="最近积分记录">
+          <li v-for="record in recentRecords" :key="record.id" class="recent-record">
+            <span class="recent-record__change" :class="record.scoreChange > 0 ? 'recent-record__change--positive' : 'recent-record__change--negative'" style="font-variant-numeric: tabular-nums">
               {{ record.scoreChange > 0 ? '+' : '' }}{{ record.scoreChange }}
             </span>
             <span class="recent-record__reason">{{ record.reason }}</span>
             <span class="recent-record__time">{{ formatTime(record.createdAt) }}</span>
-          </div>
-          <el-empty v-if="recentRecords.length === 0" description="暂无积分记录" :image-size="60" />
-        </div>
+          </li>
+          <li v-if="recentRecords.length === 0" class="recent-records__empty">
+            <el-empty description="暂无积分记录" :image-size="60" />
+          </li>
+        </ol>
       </el-card>
     </div>
 
@@ -311,10 +313,12 @@ function goBack() {
   router.push('/admin/students')
 }
 
+const profileDateFormatter = new Intl.DateTimeFormat('zh-CN', { month: '2-digit', day: '2-digit' })
+const profileTimeFormatter = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+
 function formatTime(dateStr: string): string {
   const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) + ' ' +
-    date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return `${profileDateFormatter.format(date)} ${profileTimeFormatter.format(date)}`
 }
 
 function onPetImageError() {
@@ -396,6 +400,7 @@ function onPetImageError() {
   font-size: 22px;
   font-weight: 700;
   color: var(--cis-text-primary);
+  scroll-margin-top: 80px;
 }
 
 .profile-info__meta {
@@ -513,6 +518,9 @@ function onPetImageError() {
 .recent-records {
   display: flex;
   flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .recent-record {
@@ -521,10 +529,15 @@ function onPetImageError() {
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--cis-border-color-light);
+  list-style: none;
 }
 
 .recent-record:last-child {
   border-bottom: none;
+}
+
+.recent-records__empty {
+  list-style: none;
 }
 
 .recent-record__change {
@@ -549,5 +562,12 @@ function onPetImageError() {
   font-size: 12px;
   color: var(--cis-text-tertiary);
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

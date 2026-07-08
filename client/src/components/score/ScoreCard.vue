@@ -11,23 +11,30 @@
     <div class="score-card__body">
       <div class="score-card__header">
         <span class="score-card__name">{{ studentName }}</span>
-        <span class="score-card__change" :class="scoreChange > 0 ? 'score-card__change--up' : 'score-card__change--down'">
+        <span
+          class="score-card__change"
+          :class="scoreChange > 0 ? 'score-card__change--up' : 'score-card__change--down'"
+          :aria-label="`积分变化 ${scoreChange > 0 ? '+' : ''}${scoreChange}`"
+        >
           {{ scoreChange > 0 ? '+' : '' }}{{ scoreChange }}
         </span>
       </div>
       <div class="score-card__reason">
-        <span v-if="categoryColor" class="score-card__color-dot" :style="{ backgroundColor: categoryColor }"></span>
+        <span v-if="categoryColor" class="score-card__color-dot" :style="{ backgroundColor: categoryColor }" aria-hidden="true"></span>
         {{ reason }}
       </div>
       <div class="score-card__footer">
-        <span class="score-card__time">{{ formatTime(createdAt) }}</span>
+        <span class="score-card__time" :aria-label="`时间 ${formatTime(createdAt)}`">
+          <time :datetime="createdAt">{{ formatTime(createdAt) }}</time>
+        </span>
         <el-tag v-if="isReverted" type="info" size="small">已撤销</el-tag>
         <el-button
           v-else-if="canQuickRevert"
           type="danger"
           size="small"
           text
-          @click="$emit('revert', id)"
+          aria-label="撤销积分"
+          @click="handleRevert"
         >
           撤销
         </el-button>
@@ -36,7 +43,8 @@
           type="warning"
           size="small"
           text
-          @click="$emit('adminRevert', id)"
+          aria-label="申请撤销积分"
+          @click="handleAdminRevert"
         >
           申请撤销
         </el-button>
@@ -46,7 +54,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { ElMessageBox } from 'element-plus'
+
+const props = defineProps<{
   id: string
   studentName: string
   scoreChange: number
@@ -58,14 +68,54 @@ defineProps<{
   categoryColor?: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   revert: [id: string]
   adminRevert: [id: string]
 }>()
 
+const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
 function formatTime(dateStr: string): string {
   const date = new Date(dateStr)
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return timeFormatter.format(date)
+}
+
+async function handleRevert() {
+  try {
+    await ElMessageBox.confirm(
+      `确定要撤销「${props.studentName}」的这次积分变更（${props.scoreChange > 0 ? '+' : ''}${props.scoreChange} 分）吗？`,
+      '撤销确认',
+      {
+        type: 'warning',
+        confirmButtonText: '撤销',
+        cancelButtonText: '取消',
+      }
+    )
+    emit('revert', props.id)
+  } catch {
+    // 用户取消
+  }
+}
+
+async function handleAdminRevert() {
+  try {
+    await ElMessageBox.confirm(
+      `确定要申请撤销「${props.studentName}」的这次积分变更（${props.scoreChange > 0 ? '+' : ''}${props.scoreChange} 分）吗？此操作将提交给管理员审核。`,
+      '申请撤销确认',
+      {
+        type: 'warning',
+        confirmButtonText: '申请撤销',
+        cancelButtonText: '取消',
+      }
+    )
+    emit('adminRevert', props.id)
+  } catch {
+    // 用户取消
+  }
 }
 </script>
 
@@ -137,6 +187,7 @@ function formatTime(dateStr: string): string {
   font-family: var(--cis-font-family-display);
   flex-shrink: 0;
   margin-left: 8px;
+  font-variant-numeric: tabular-nums;
 }
 
 .score-card__change--up {
@@ -175,5 +226,10 @@ function formatTime(dateStr: string): string {
 .score-card__time {
   font-size: 12px;
   color: var(--cis-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

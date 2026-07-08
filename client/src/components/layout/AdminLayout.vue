@@ -1,6 +1,10 @@
 <template>
   <el-container class="admin-layout">
-    <el-aside :width="isCollapsed ? '64px' : '240px'" class="admin-layout__aside">
+    <el-aside
+      :width="isCollapsed ? '64px' : '240px'"
+      class="admin-layout__aside"
+      aria-label="主导航"
+    >
       <AppSidebar :collapsed="isCollapsed" @toggle="toggleCollapse" />
     </el-aside>
     <el-container class="admin-layout__main">
@@ -16,11 +20,16 @@
       </el-main>
       <el-footer class="admin-layout__footer" height="28px">
         <div class="admin-layout__footer-left">
-          <span class="admin-layout__status-dot" :class="isConnected ? 'connected' : 'disconnected'"></span>
-          <span class="admin-layout__status-text">{{ isConnected ? '已连接' : '未连接' }}</span>
+          <span
+            class="admin-layout__status-dot"
+            :class="isConnected ? 'connected' : 'disconnected'"
+            :aria-label="isConnected ? '服务已连接' : '服务未连接'"
+            role="status"
+          ></span>
+          <span class="admin-layout__status-text" aria-live="polite">{{ isConnected ? '已连接' : '未连接' }}</span>
         </div>
         <div class="admin-layout__footer-right">
-          <span>ClassIsScore v1.0.0</span>
+          <span translate="no">ClassIsScore v1.0.0</span>
         </div>
       </el-footer>
     </el-container>
@@ -165,5 +174,18 @@ onUnmounted(() => {
 .page-fade-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-layout__aside,
+  .admin-layout__status-dot,
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition: none;
+  }
+  .page-fade-enter-from,
+  .page-fade-leave-to {
+    transform: none;
+  }
 }
 </style>

@@ -11,17 +11,17 @@
   >
     <!-- 突破确认/展示 -->
     <div v-if="!isBreaking && !isTribulating && !breakthroughResult" class="breakthrough-confirm">
-      <div class="breakthrough-icon">{{ needsTribulation ? '⚡' : '🌟' }}</div>
-      <div class="breakthrough-level-change">
+      <div class="breakthrough-icon" aria-hidden="true">{{ needsTribulation ? '⚡' : '🌟' }}</div>
+      <div class="breakthrough-level-change" id="breakthrough-level-title">
         <span class="breakthrough-level-old">{{ oldLevelName }}</span>
-        <span class="breakthrough-arrow">→</span>
+        <span class="breakthrough-arrow" aria-hidden="true">→</span>
         <span class="breakthrough-level-new">{{ newLevelName }}</span>
       </div>
 
       <div v-if="needsTribulation" class="breakthrough-tribulation-info">
         <div class="breakthrough-info-row">
           <span class="breakthrough-info-label">突破成功率</span>
-          <span class="breakthrough-info-value breakthrough-info-value--rate">
+          <span class="breakthrough-info-value breakthrough-info-value--rate" :aria-label="`突破成功率 ${Math.round(successRate * 100)}%`">
             {{ Math.round(successRate * 100) }}%
           </span>
         </div>
@@ -43,36 +43,36 @@
     </div>
 
     <!-- 突破动画 -->
-    <div v-else-if="isBreaking" class="breakthrough-animation">
+    <div v-else-if="isBreaking" class="breakthrough-animation" aria-live="polite" aria-label="突破中">
       <div class="breakthrough-particles" v-for="i in 12" :key="i"
-        :style="{ animationDelay: `${i * 0.1}s` }">
+        :style="{ animationDelay: `${i * 0.1}s` }" aria-hidden="true">
         ✦
       </div>
-      <div class="breakthrough-animation-text">突破中...</div>
+      <div class="breakthrough-animation-text">突破中…</div>
     </div>
 
     <!-- 渡劫动画（复用渡劫逻辑） -->
-    <div v-else-if="isTribulating" class="breakthrough-animation">
+    <div v-else-if="isTribulating" class="breakthrough-animation" aria-live="polite" aria-label="天劫降临">
       <div class="breakthrough-lightning" v-for="i in 9" :key="i"
-        :style="{ animationDelay: `${i * 0.3}s` }">
+        :style="{ animationDelay: `${i * 0.3}s` }" aria-hidden="true">
         ⚡
       </div>
-      <div class="breakthrough-animation-text">天劫降临...</div>
+      <div class="breakthrough-animation-text">天劫降临…</div>
     </div>
 
     <!-- 突破结果 -->
-    <div v-else-if="breakthroughResult" class="breakthrough-result">
+    <div v-else-if="breakthroughResult" class="breakthrough-result" aria-live="polite" role="status">
       <div v-if="breakthroughResult.success" class="breakthrough-result--success">
-        <div class="breakthrough-result-icon">🎉</div>
+        <div class="breakthrough-result-icon" aria-hidden="true">🎉</div>
         <h3>突破成功！</h3>
         <div class="breakthrough-level-change">
           <span class="breakthrough-level-old">{{ oldLevelName }}</span>
-          <span class="breakthrough-arrow">→</span>
+          <span class="breakthrough-arrow" aria-hidden="true">→</span>
           <span class="breakthrough-level-new">{{ newLevelName }}</span>
         </div>
       </div>
       <div v-else class="breakthrough-result--fail">
-        <div class="breakthrough-result-icon">💥</div>
+        <div class="breakthrough-result-icon" aria-hidden="true">💥</div>
         <h3>突破失败</h3>
         <p>{{ breakthroughResult.description }}</p>
         <p class="breakthrough-result-penalty">
@@ -83,9 +83,10 @@
 
     <template #footer>
       <template v-if="!isBreaking && !isTribulating && !breakthroughResult">
-        <el-button @click="handleClose">取消</el-button>
+        <el-button aria-label="取消" @click="handleClose">取消</el-button>
         <el-button
           :type="needsTribulation ? 'warning' : 'primary'"
+          :aria-label="needsTribulation ? '开始渡劫' : '确认突破'"
           @click="startBreakthrough"
           class="breakthrough-start-btn"
         >
@@ -93,7 +94,7 @@
         </el-button>
       </template>
       <template v-else-if="breakthroughResult">
-        <el-button type="primary" @click="handleClose">确定</el-button>
+        <el-button type="primary" aria-label="确定" @click="handleClose">确定</el-button>
       </template>
     </template>
   </el-dialog>
@@ -365,5 +366,9 @@ function handleClose() {
 .breakthrough-result-penalty {
   color: #f87171 !important;
   font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

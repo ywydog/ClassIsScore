@@ -1,18 +1,20 @@
 <template>
   <div class="score-history">
     <div class="score-history__header">
-      <span class="score-history__title">积分记录</span>
-      <span class="score-history__count">共 {{ filteredRecords.length }} 条</span>
+      <span class="score-history__title" id="score-history-title">积分记录</span>
+      <span class="score-history__count" aria-live="polite">共 {{ filteredRecords.length }} 条</span>
     </div>
 
     <div class="score-history__filters">
       <el-input
         v-model="searchText"
-        placeholder="搜索学生..."
+        placeholder="搜索学生…"
         size="small"
         clearable
         class="score-history__search"
         :prefix-icon="Search"
+        aria-label="搜索学生"
+        autocomplete="off"
       />
       <el-date-picker
         v-model="dateRange"
@@ -23,6 +25,7 @@
         size="small"
         clearable
         class="score-history__date-picker"
+        aria-label="日期范围"
       />
     </div>
 
@@ -135,11 +138,13 @@ const paginatedRecords = computed(() => {
   font-size: 15px;
   font-weight: 600;
   color: var(--cis-text-primary);
+  scroll-margin-top: 80px;
 }
 
 .score-history__count {
   font-size: 12px;
   color: var(--cis-text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .score-history__filters {
@@ -180,5 +185,9 @@ const paginatedRecords = computed(() => {
   margin-top: 12px;
   padding-top: 8px;
   border-top: 1px solid var(--cis-border-color-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

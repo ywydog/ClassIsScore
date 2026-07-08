@@ -1,25 +1,23 @@
 <template>
   <div class="settings-page">
-    <div class="settings-page__header">
-      <h2>设置</h2>
-    </div>
+    <h2 id="settings-title" class="settings-page__header">设置</h2>
 
-    <el-tabs v-model="activeTab" class="settings-page__tabs">
-      <el-tab-pane label="通用" name="general">
+    <el-tabs v-model="activeTab" class="settings-page__tabs" role="tablist">
+      <el-tab-pane label="通用" name="general" role="tab">
         <el-card class="settings-page__card">
           <el-form label-width="100px">
             <el-form-item label="主题">
-              <el-select v-model="settings.theme" @change="handleThemeChange">
+              <el-select v-model="settings.theme" @change="handleThemeChange" aria-label="主题">
                 <el-option label="浅色" value="light" />
                 <el-option label="深色" value="dark" />
                 <el-option label="跟随系统" value="system" />
               </el-select>
             </el-form-item>
             <el-form-item label="字体大小">
-              <el-slider v-model="settings.fontSize" :min="12" :max="20" :step="1" show-input @change="handleFontSizeChange" />
+              <el-slider v-model="settings.fontSize" :min="12" :max="20" :step="1" show-input :aria-label="`字体大小：${settings.fontSize}`" @change="handleFontSizeChange" />
             </el-form-item>
             <el-form-item label="字体">
-              <el-select v-model="settings.fontFamily" @change="handleFontFamilyChange" placeholder="选择字体">
+              <el-select v-model="settings.fontFamily" @change="handleFontFamilyChange" placeholder="选择字体…" aria-label="字体">
                 <el-option label="系统默认" value="system" />
                 <el-option label="LXGW WenKai" value="LXGW WenKai" />
                 <el-option label="HarmonyOS Sans SC" value="HarmonyOS Sans SC" />
@@ -29,17 +27,17 @@
               </el-select>
             </el-form-item>
             <el-form-item label="显示模式">
-              <el-radio-group v-model="settings.displayMode" @change="handleSave">
+              <el-radio-group v-model="settings.displayMode" @change="handleSave" aria-label="显示模式">
                 <el-radio-button value="Card">卡片</el-radio-button>
                 <el-radio-button value="Circle">圆形</el-radio-button>
                 <el-radio-button value="Pet">宠物</el-radio-button>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="主题色">
-              <el-color-picker v-model="settings.customAccentColor" @change="handleSave" />
+              <el-color-picker v-model="settings.customAccentColor" @change="handleSave" aria-label="主题色" />
             </el-form-item>
             <el-form-item label="主题模式">
-              <el-radio-group v-model="themeMode" @change="handleThemeModeChange">
+              <el-radio-group v-model="themeMode" @change="handleThemeModeChange" aria-label="主题模式">
                 <el-radio-button value="default">默认模式</el-radio-button>
                 <el-radio-button value="xianxia">修仙模式</el-radio-button>
               </el-radio-group>
@@ -48,10 +46,11 @@
               <el-date-picker
                 v-model="settings.semesterStartDate"
                 type="date"
-                placeholder="选择开学日期"
+                placeholder="选择开学日期…"
                 format="YYYY-MM-DD"
                 value-format="YYYY-MM-DD"
                 style="max-width: 200px"
+                aria-label="开学日期"
                 @change="handleSemesterStartDateChange"
               />
               <span v-if="currentWeek" class="semester-week-hint">当前第 {{ currentWeek }} 周</span>
@@ -73,6 +72,7 @@
                 closable
                 size="large"
                 class="custom-scores__tag"
+                :aria-label="`移除快捷分值 ${val >= 0 ? '+' : ''}${val}`"
                 @close="removeCustomScore(idx)"
               >
                 {{ val >= 0 ? '+' : '' }}{{ val }}
@@ -88,45 +88,47 @@
                 :max="999"
                 size="small"
                 style="width: 140px"
+                inputmode="numeric"
+                aria-label="新快捷分值"
                 @keyup.enter="addCustomScore"
               />
               <el-button type="primary" size="small" @click="addCustomScore">确认</el-button>
               <el-button size="small" @click="showAddScoreInput = false">取消</el-button>
             </div>
-            <el-button v-else type="primary" size="small" @click="showAddScoreInput = true">
-              <el-icon><Plus /></el-icon>
+            <el-button v-else type="primary" size="small" @click="showAddScoreInput = true" aria-label="添加快捷分值">
+              <el-icon aria-hidden="true"><Plus /></el-icon>
               添加
             </el-button>
           </div>
         </el-card>
       </el-tab-pane>
 
-      <el-tab-pane label="悬浮窗" name="floating">
+      <el-tab-pane label="悬浮窗" name="floating" role="tab">
         <el-card class="settings-page__card">
           <el-form label-width="100px">
             <el-form-item label="启用悬浮窗">
-              <el-switch v-model="floatingSettings.enabled" @change="handleFloatingSave" />
+              <el-switch v-model="floatingSettings.enabled" @change="handleFloatingSave" aria-label="启用悬浮窗" />
             </el-form-item>
             <el-form-item label="窗口样式">
-              <el-radio-group v-model="floatingSettings.style" @change="handleFloatingSave">
+              <el-radio-group v-model="floatingSettings.style" @change="handleFloatingSave" aria-label="窗口样式">
                 <el-radio-button value="classic">经典</el-radio-button>
                 <el-radio-button value="modern">现代</el-radio-button>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="透明度">
-              <el-slider v-model="floatingSettings.opacity" :min="0.3" :max="1" :step="0.05" show-input @change="handleFloatingSave" />
+              <el-slider v-model="floatingSettings.opacity" :min="0.3" :max="1" :step="0.05" show-input :aria-label="`悬浮窗透明度：${floatingSettings.opacity}`" @change="handleFloatingSave" />
             </el-form-item>
             <el-form-item label="大小">
-              <el-slider v-model="floatingSettings.size" :min="40" :max="80" :step="2" show-input @change="handleFloatingSave" />
+              <el-slider v-model="floatingSettings.size" :min="40" :max="80" :step="2" show-input :aria-label="`悬浮窗大小：${floatingSettings.size}`" @change="handleFloatingSave" />
             </el-form-item>
             <el-form-item label="显示文字">
-              <el-input v-model="floatingSettings.displayText" placeholder="悬浮窗显示文字" @change="handleFloatingSave" style="max-width: 200px" />
+              <el-input v-model="floatingSettings.displayText" placeholder="悬浮窗显示文字…" @change="handleFloatingSave" style="max-width: 200px" aria-label="显示文字" autocomplete="off" />
             </el-form-item>
             <el-form-item label="显示标签">
-              <el-switch v-model="floatingSettings.showLabel" @change="handleFloatingSave" />
+              <el-switch v-model="floatingSettings.showLabel" @change="handleFloatingSave" aria-label="显示标签" />
             </el-form-item>
             <el-form-item label="强调色">
-              <el-color-picker v-model="floatingSettings.accentColor" @change="handleFloatingSave" />
+              <el-color-picker v-model="floatingSettings.accentColor" @change="handleFloatingSave" aria-label="强调色" />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="handleFloatingSave">保存悬浮窗设置</el-button>
@@ -135,14 +137,14 @@
         </el-card>
       </el-tab-pane>
 
-      <el-tab-pane label="宠物" name="pet">
+      <el-tab-pane label="宠物" name="pet" role="tab">
         <el-card class="settings-page__card">
           <el-form label-width="120px">
             <el-form-item label="启用宠物系统">
-              <el-switch v-model="petSettings.enabled" @change="handlePetSave" />
+              <el-switch v-model="petSettings.enabled" @change="handlePetSave" aria-label="启用宠物系统" />
             </el-form-item>
             <el-form-item label="默认宠物类型">
-              <el-select v-model="petSettings.defaultPetType" @change="handlePetSave" placeholder="选择默认宠物" style="max-width: 200px">
+              <el-select v-model="petSettings.defaultPetType" @change="handlePetSave" placeholder="选择默认宠物…" style="max-width: 200px" aria-label="默认宠物类型">
                 <el-option
                   v-for="pet in ALL_PET_TYPES"
                   :key="pet.id"
@@ -159,6 +161,8 @@
                 :max="9999"
                 size="small"
                 style="width: 140px"
+                inputmode="numeric"
+                :aria-label="`等级 ${i} 到 ${i + 1} 阈值`"
                 @change="handlePetSave"
               />
             </el-form-item>
@@ -169,19 +173,19 @@
         </el-card>
       </el-tab-pane>
 
-      <el-tab-pane label="数据管理" name="data">
+      <el-tab-pane label="数据管理" name="data" role="tab">
         <el-card class="settings-page__card">
           <el-form label-width="140px">
             <el-form-item label="导出所有数据">
-              <el-button type="primary" @click="handleExportAll" :loading="dataLoading">
-                <el-icon><Download /></el-icon>
+              <el-button type="primary" @click="handleExportAll" :loading="dataLoading" :aria-disabled="dataLoading" aria-label="导出所有数据">
+                <el-icon aria-hidden="true"><Download /></el-icon>
                 导出所有数据
               </el-button>
               <span class="data-hint">将学生、积分、分组、评价项全部导出到一个 Excel 文件</span>
             </el-form-item>
             <el-form-item label="导入数据">
-              <el-button @click="handleImportData" :loading="dataLoading">
-                <el-icon><Upload /></el-icon>
+              <el-button @click="handleImportData" :loading="dataLoading" :aria-disabled="dataLoading" aria-label="导入数据">
+                <el-icon aria-hidden="true"><Upload /></el-icon>
                 导入数据
               </el-button>
               <input ref="importFileInput" type="file" accept=".xlsx,.xls" style="display: none" @change="onImportFileChange" />
@@ -189,14 +193,14 @@
             </el-form-item>
             <el-divider />
             <el-form-item label="仅导出学生数据">
-              <el-button @click="handleExportStudents" :loading="dataLoading">
-                <el-icon><Download /></el-icon>
+              <el-button @click="handleExportStudents" :loading="dataLoading" :aria-disabled="dataLoading" aria-label="仅导出学生数据">
+                <el-icon aria-hidden="true"><Download /></el-icon>
                 仅导出学生数据
               </el-button>
             </el-form-item>
             <el-form-item label="仅导入学生数据">
-              <el-button @click="handleImportStudents" :loading="dataLoading">
-                <el-icon><Upload /></el-icon>
+              <el-button @click="handleImportStudents" :loading="dataLoading" :aria-disabled="dataLoading" aria-label="仅导入学生数据">
+                <el-icon aria-hidden="true"><Upload /></el-icon>
                 仅导入学生数据
               </el-button>
               <input ref="importStudentFileInput" type="file" accept=".xlsx,.xls" style="display: none" @change="onImportStudentFileChange" />
@@ -204,8 +208,8 @@
             <el-divider />
             <el-form-item label="数据目录">
               <div class="data-folder-row">
-                <el-input :model-value="dataFolderPath" readonly style="flex: 1" />
-                <el-button @click="handleOpenDataFolder" style="margin-left: 8px">
+                <el-input :model-value="dataFolderPath" readonly style="flex: 1" aria-label="数据目录路径" />
+                <el-button @click="handleOpenDataFolder" style="margin-left: 8px" aria-label="打开数据目录">
                   打开数据目录
                 </el-button>
               </div>
@@ -646,13 +650,9 @@ function handleOpenDataFolder() {
 
 <style scoped>
 .settings-page__header {
-  margin-bottom: 24px;
+  margin: 0 0 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.settings-page__header h2 {
-  margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -662,6 +662,7 @@ function handleOpenDataFolder() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .settings-page__card {
@@ -670,6 +671,11 @@ function handleOpenDataFolder() {
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
+}
+
+.settings-page__card:focus-within {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .settings-page__card:hover {
@@ -719,5 +725,12 @@ function handleOpenDataFolder() {
   font-size: 13px;
   color: var(--cis-text-secondary);
   font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

@@ -1,16 +1,21 @@
 <template>
-  <div class="student-circle-display" @click="$emit('click', student)">
+  <button
+    type="button"
+    class="student-circle-display"
+    :aria-label="`${student.name}，积分 ${student.score}`"
+    @click="$emit('click', student)"
+  >
     <div class="student-circle-display__avatar-wrapper">
       <div class="student-circle-display__avatar">
         <img v-if="student.avatar" :src="student.avatar" :alt="student.name" />
-        <span v-else class="student-circle-display__initial">{{ student.name.charAt(0) }}</span>
+        <span v-else class="student-circle-display__initial" aria-hidden="true">{{ student.name.charAt(0) }}</span>
       </div>
-      <div class="student-circle-display__score-badge">
+      <div class="student-circle-display__score-badge" :aria-label="`积分 ${student.score}`">
         {{ student.score }}
       </div>
     </div>
     <span class="student-circle-display__name">{{ student.name }}</span>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -34,10 +39,20 @@ defineEmits<{
   cursor: pointer;
   padding: 8px;
   transition: transform var(--cis-transition-fast);
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
 }
 
 .student-circle-display:hover {
   transform: scale(1.05);
+}
+
+.student-circle-display:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
+  border-radius: var(--cis-radius-md);
 }
 
 .student-circle-display__avatar-wrapper {
@@ -82,6 +97,7 @@ defineEmits<{
   padding: 2px 10px;
   border-radius: 10px;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .student-circle-display__name {
@@ -93,5 +109,9 @@ defineEmits<{
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

@@ -7,8 +7,8 @@
     trigger="click"
   >
     <template #reference>
-      <button class="display-settings-trigger" :title="t('settings')">
-        <el-icon><Setting /></el-icon>
+      <button class="display-settings-trigger" :title="t('settings')" :aria-label="t('settings')">
+        <el-icon aria-hidden="true"><Setting /></el-icon>
       </button>
     </template>
 
@@ -75,10 +75,10 @@
 
       <!-- 高级设置入口 -->
       <section class="display-settings__section display-settings__section--footer">
-        <button class="display-settings__link" @click="$emit('open-advanced')">
-          <el-icon><Tools /></el-icon>
+        <button class="display-settings__link" @click="$emit('open-advanced')" :aria-label="t('advancedSettings')">
+          <el-icon aria-hidden="true"><Tools /></el-icon>
           <span>{{ t('advancedSettings') }}</span>
-          <el-icon class="display-settings__link-arrow"><ArrowRight /></el-icon>
+          <el-icon class="display-settings__link-arrow" aria-hidden="true"><ArrowRight /></el-icon>
         </button>
       </section>
     </div>
@@ -165,12 +165,17 @@ watch(
   background: transparent;
   color: var(--cis-text-secondary);
   cursor: pointer;
-  transition: all var(--cis-transition-fast);
+  transition: background-color var(--cis-transition-fast), color var(--cis-transition-fast);
 }
 
 .display-settings-trigger:hover {
   background: var(--cis-bg-secondary);
   color: var(--cis-text-primary);
+}
+
+.display-settings-trigger:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .display-settings-trigger .el-icon {
@@ -292,5 +297,14 @@ watch(
   margin-left: auto;
   color: var(--cis-text-tertiary);
   font-size: 14px;
+}
+
+.display-settings__link:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

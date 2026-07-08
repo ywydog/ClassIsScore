@@ -1,9 +1,9 @@
 <template>
   <div class="settlement">
     <div class="settlement__header">
-      <h2>结算</h2>
-      <el-button type="primary" @click="handleSettle" :disabled="studentStore.studentCount === 0">
-        <el-icon><Finished /></el-icon>
+      <h2 id="settlement-title" class="settlement__title">结算</h2>
+      <el-button type="primary" @click="handleSettle" :disabled="studentStore.studentCount === 0" aria-label="执行结算">
+        <el-icon aria-hidden="true"><Finished /></el-icon>
         执行结算
       </el-button>
     </div>
@@ -19,7 +19,7 @@
     <!-- 导出区域 -->
     <div class="settlement__export">
       <div class="settlement__export-controls">
-        <el-radio-group v-model="exportFormat" size="small">
+        <el-radio-group v-model="exportFormat" size="small" aria-label="导出周期">
           <el-radio-button value="daily">日度</el-radio-button>
           <el-radio-button value="weekly">周度</el-radio-button>
           <el-radio-button value="monthly">月度</el-radio-button>
@@ -31,38 +31,43 @@
           size="small"
           :value-format="exportDateFormat"
           style="width: 180px"
+          aria-label="选择导出日期"
         />
-        <el-button size="small" type="primary" :icon="Download" @click="handleExport">
+        <el-button size="small" type="primary" :icon="Download" @click="handleExport" aria-label="导出结算数据">
           导出结算数据
         </el-button>
       </div>
     </div>
 
-    <div class="settlement__list">
-      <el-card v-for="record in settlements" :key="record.id" class="settlement__card">
-        <div class="settlement__card-content">
-          <div class="settlement__card-left">
-            <div class="settlement__card-time">
-              <el-icon><Clock /></el-icon>
-              {{ formatTime(record.settledAt || record.createdAt || '') }}
+    <ol class="settlement__list" aria-label="结算记录">
+      <li v-for="record in settlements" :key="record.id" class="settlement__list-item">
+        <el-card class="settlement__card">
+          <div class="settlement__card-content">
+            <div class="settlement__card-left">
+              <div class="settlement__card-time">
+                <el-icon aria-hidden="true"><Clock /></el-icon>
+                {{ formatTime(record.settledAt || record.createdAt || '') }}
+              </div>
+              <div class="settlement__card-stats">
+                <span>参与学生: <strong style="font-variant-numeric: tabular-nums">{{ record.studentCount }}</strong> 人</span>
+                <span>总积分: <strong style="font-variant-numeric: tabular-nums">{{ record.totalScore }}</strong></span>
+              </div>
             </div>
-            <div class="settlement__card-stats">
-              <span>参与学生: <strong>{{ record.studentCount }}</strong> 人</span>
-              <span>总积分: <strong>{{ record.totalScore }}</strong></span>
+            <div class="settlement__card-right">
+              <el-tag v-if="record.isReverted || record.status === 2" type="info" size="small">已撤销</el-tag>
+              <template v-else>
+                <el-button type="danger" size="small" @click="handleRevert(record.id)" aria-label="撤销此条结算">
+                  撤销结算
+                </el-button>
+              </template>
             </div>
           </div>
-          <div class="settlement__card-right">
-            <el-tag v-if="record.isReverted || record.status === 2" type="info" size="small">已撤销</el-tag>
-            <template v-else>
-              <el-button type="danger" size="small" @click="handleRevert(record.id)">
-                撤销结算
-              </el-button>
-            </template>
-          </div>
-        </div>
-      </el-card>
-      <el-empty v-if="settlements.length === 0" description="暂无结算记录" />
-    </div>
+        </el-card>
+      </li>
+      <li v-if="settlements.length === 0" class="settlement__list-empty">
+        <el-empty description="暂无结算记录" />
+      </li>
+    </ol>
   </div>
 </template>
 
@@ -143,8 +148,11 @@ async function handleRevert(id: string) {
   } catch { /* ignore */ }
 }
 
+const settlementTimeFormatter = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+
 function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('zh-CN')
+  if (!dateStr) return ''
+  return settlementTimeFormatter.format(new Date(dateStr))
 }
 
 function getDateRange(): { start: Date; end: Date } | null {
@@ -259,7 +267,7 @@ function handleExport() {
   border-bottom: 1px solid var(--cis-border-color-light);
 }
 
-.settlement__header h2 {
+.settlement__title {
   margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
@@ -270,6 +278,7 @@ function handleExport() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .settlement__export {
@@ -291,6 +300,14 @@ function handleExport() {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settlement__list-item,
+.settlement__list-empty {
+  list-style: none;
 }
 
 .settlement__card {
@@ -302,6 +319,11 @@ function handleExport() {
 
 .settlement__card:hover {
   box-shadow: var(--cis-shadow-card-hover);
+}
+
+.settlement__card:focus-within {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .settlement__card-content {
@@ -335,5 +357,12 @@ function handleExport() {
 .settlement__card-stats strong {
   color: var(--cis-primary);
   font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

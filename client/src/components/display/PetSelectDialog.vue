@@ -8,41 +8,47 @@
     @update:model-value="emit('update:visible', $event)"
     @close="emit('update:visible', false)"
   >
-    <div class="pet-select-grid">
+    <div class="pet-select-grid" role="list">
       <div class="pet-select-grid__section">
-        <div class="pet-select-grid__section-title">普通动物</div>
-        <div class="pet-select-grid__items">
-          <div
+        <div class="pet-select-grid__section-title" id="pet-select-normal-title">普通动物</div>
+        <div class="pet-select-grid__items" role="group" aria-labelledby="pet-select-normal-title">
+          <button
             v-for="pet in normalPets"
             :key="pet.id"
+            type="button"
             class="pet-select-item"
             :class="{ 'pet-select-item--active': pet.id === student?.petType }"
+            :aria-label="`选择 ${pet.name}`"
+            :aria-pressed="pet.id === student?.petType"
             @click="emit('select-pet', pet.id)"
           >
-            <span class="pet-select-item__emoji">{{ pet.emoji }}</span>
+            <span class="pet-select-item__emoji" aria-hidden="true">{{ pet.emoji }}</span>
             <span class="pet-select-item__name">{{ pet.name }}</span>
-          </div>
+          </button>
         </div>
       </div>
       <div class="pet-select-grid__section">
-        <div class="pet-select-grid__section-title">神兽</div>
-        <div class="pet-select-grid__items">
-          <div
+        <div class="pet-select-grid__section-title" id="pet-select-mythical-title">神兽</div>
+        <div class="pet-select-grid__items" role="group" aria-labelledby="pet-select-mythical-title">
+          <button
             v-for="pet in mythicalPets"
             :key="pet.id"
+            type="button"
             class="pet-select-item"
             :class="{ 'pet-select-item--active': pet.id === student?.petType }"
+            :aria-label="`选择 ${pet.name}`"
+            :aria-pressed="pet.id === student?.petType"
             @click="emit('select-pet', pet.id)"
           >
-            <span class="pet-select-item__emoji">{{ pet.emoji }}</span>
+            <span class="pet-select-item__emoji" aria-hidden="true">{{ pet.emoji }}</span>
             <span class="pet-select-item__name">{{ pet.name }}</span>
-          </div>
+          </button>
         </div>
       </div>
     </div>
     <template #footer>
-      <el-button @click="emit('update:visible', false)">取消</el-button>
-      <el-button type="danger" plain @click="emit('select-pet', '')">{{ t('removePet') }}</el-button>
+      <el-button @click="emit('update:visible', false)" aria-label="取消">取消</el-button>
+      <el-button type="danger" plain aria-label="移除仙宠" @click="emit('select-pet', '')">{{ t('removePet') }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -101,14 +107,21 @@ const mythicalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === Pet
   border-radius: var(--cis-radius-md, 8px);
   border: 1px solid var(--cis-border-color-light);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
   background: var(--cis-card-bg);
+  font: inherit;
+  color: inherit;
 }
 
 .pet-select-item:hover {
   border-color: rgba(13, 148, 136, 0.4);
   background: rgba(13, 148, 136, 0.06);
   transform: translateY(-1px);
+}
+
+.pet-select-item:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .pet-select-item--active {
@@ -127,5 +140,9 @@ const mythicalPets = computed(() => ALL_PET_TYPES.filter(p => p.category === Pet
   font-weight: 500;
   color: var(--cis-text-primary);
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

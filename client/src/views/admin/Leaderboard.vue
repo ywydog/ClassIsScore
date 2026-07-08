@@ -1,68 +1,68 @@
 <template>
   <div class="leaderboard">
-    <div class="leaderboard__header">
-      <h2>排行榜</h2>
-      <div class="leaderboard__controls">
-        <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard">
-          <el-radio-button value="personal">个人</el-radio-button>
-          <el-radio-button value="group">小组</el-radio-button>
-        </el-radio-group>
-        <el-radio-group v-model="timeRange" size="small" @change="handleTimeRangeChange">
-          <el-radio-button value="today">今日</el-radio-button>
-          <el-radio-button value="week">本周</el-radio-button>
-          <el-radio-button value="month">本月</el-radio-button>
-          <el-radio-button value="all">全部</el-radio-button>
-        </el-radio-group>
-        <el-button size="small" text :icon="Refresh" @click="fetchLeaderboard" />
-        <el-button size="small" type="primary" :icon="Download" @click="handleExport">
-          导出
-        </el-button>
-      </div>
+    <h2 id="leaderboard-title" class="leaderboard__header">排行榜</h2>
+    <div class="leaderboard__toolbar">
+      <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard" aria-label="排行榜类型">
+        <el-radio-button value="personal">个人</el-radio-button>
+        <el-radio-button value="group">小组</el-radio-button>
+      </el-radio-group>
+      <el-radio-group v-model="timeRange" size="small" @change="handleTimeRangeChange" aria-label="时间范围">
+        <el-radio-button value="today">今日</el-radio-button>
+        <el-radio-button value="week">本周</el-radio-button>
+        <el-radio-button value="month">本月</el-radio-button>
+        <el-radio-button value="all">全部</el-radio-button>
+      </el-radio-group>
+      <el-button size="small" text :icon="Refresh" aria-label="刷新排行榜" @click="fetchLeaderboard" />
+      <el-button size="small" type="primary" :icon="Download" @click="handleExport">
+        导出
+      </el-button>
     </div>
 
     <!-- 前三名展示 -->
     <el-skeleton v-if="loading" :loading="loading" :rows="5" animated />
     <template v-else>
-    <div v-if="topThree.length > 0" class="leaderboard__podium">
-      <div class="leaderboard__podium-item leaderboard__podium--2" v-if="topThree.length >= 2">
+    <div v-if="topThree.length > 0" class="leaderboard__podium" role="list" aria-label="前三名">
+      <div class="leaderboard__podium-item leaderboard__podium--2" v-if="topThree.length >= 2" role="listitem">
         <div class="leaderboard__podium-avatar">
-          <el-avatar :size="48">{{ topThree[1].name.charAt(0) }}</el-avatar>
-          <span class="leaderboard__medal leaderboard__medal--silver">2</span>
+          <el-avatar :size="48" :aria-label="`第二名 ${topThree[1].name}`">{{ topThree[1].name.charAt(0) }}</el-avatar>
+          <span class="leaderboard__medal leaderboard__medal--silver" aria-hidden="true">2</span>
         </div>
         <span class="leaderboard__podium-name">{{ topThree[1].name }}</span>
-        <span class="leaderboard__podium-score">{{ topThree[1].score }}</span>
+        <span class="leaderboard__podium-score" style="font-variant-numeric: tabular-nums">{{ topThree[1].score }}</span>
       </div>
-      <div class="leaderboard__podium-item leaderboard__podium--1" v-if="topThree.length >= 1">
+      <div class="leaderboard__podium-item leaderboard__podium--1" v-if="topThree.length >= 1" role="listitem">
         <div class="leaderboard__podium-avatar">
-          <el-avatar :size="56">{{ topThree[0].name.charAt(0) }}</el-avatar>
-          <span class="leaderboard__medal leaderboard__medal--gold">1</span>
+          <el-avatar :size="56" :aria-label="`第一名 ${topThree[0].name}`">{{ topThree[0].name.charAt(0) }}</el-avatar>
+          <span class="leaderboard__medal leaderboard__medal--gold" aria-hidden="true">1</span>
         </div>
         <span class="leaderboard__podium-name">{{ topThree[0].name }}</span>
-        <span class="leaderboard__podium-score">{{ topThree[0].score }}</span>
+        <span class="leaderboard__podium-score" style="font-variant-numeric: tabular-nums">{{ topThree[0].score }}</span>
       </div>
-      <div class="leaderboard__podium-item leaderboard__podium--3" v-if="topThree.length >= 3">
+      <div class="leaderboard__podium-item leaderboard__podium--3" v-if="topThree.length >= 3" role="listitem">
         <div class="leaderboard__podium-avatar">
-          <el-avatar :size="44">{{ topThree[2].name.charAt(0) }}</el-avatar>
-          <span class="leaderboard__medal leaderboard__medal--bronze">3</span>
+          <el-avatar :size="44" :aria-label="`第三名 ${topThree[2].name}`">{{ topThree[2].name.charAt(0) }}</el-avatar>
+          <span class="leaderboard__medal leaderboard__medal--bronze" aria-hidden="true">3</span>
         </div>
         <span class="leaderboard__podium-name">{{ topThree[2].name }}</span>
-        <span class="leaderboard__podium-score">{{ topThree[2].score }}</span>
+        <span class="leaderboard__podium-score" style="font-variant-numeric: tabular-nums">{{ topThree[2].score }}</span>
       </div>
     </div>
 
     <!-- 其余排名 -->
-    <div class="leaderboard__list">
-      <div
+    <ol class="leaderboard__list" aria-label="其余排名">
+      <li
         v-for="entry in restEntries"
         :key="entry.rank"
         class="leaderboard__item"
       >
-        <span class="leaderboard__rank">{{ entry.rank }}</span>
+        <span class="leaderboard__rank" style="font-variant-numeric: tabular-nums" :aria-label="`第 ${entry.rank} 名`">{{ entry.rank }}</span>
         <span class="leaderboard__name">{{ entry.name }}</span>
-        <span class="leaderboard__score">{{ entry.score }}</span>
-      </div>
-      <el-empty v-if="entries.length === 0" description="暂无排行数据" />
-    </div>
+        <span class="leaderboard__score" style="font-variant-numeric: tabular-nums">{{ entry.score }}</span>
+      </li>
+      <li v-if="entries.length === 0">
+        <el-empty description="暂无排行数据" />
+      </li>
+    </ol>
     </template>
   </div>
 </template>
@@ -150,6 +150,8 @@ async function fetchLeaderboard() {
   }
 }
 
+const dateFilenameFormatter = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
+
 function handleExport() {
   if (entries.value.length === 0) {
     ElMessage.warning('暂无数据可导出')
@@ -170,7 +172,7 @@ function handleExport() {
 
   const modeLabel = mode.value === 'personal' ? '个人' : '小组'
   const rangeLabel = { today: '今日', week: '本周', month: '本月', all: '全部' }[timeRange.value]
-  const filename = `排行榜_${modeLabel}_${rangeLabel}_${new Date().toISOString().slice(0, 10)}`
+  const filename = `排行榜_${modeLabel}_${rangeLabel}_${dateFilenameFormatter.format(new Date())}`
 
   exportToExcel(data, columns, filename)
   ElMessage.success('导出成功')
@@ -179,16 +181,9 @@ function handleExport() {
 
 <style scoped>
 .leaderboard__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin: 0 0 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.leaderboard__header h2 {
-  margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -198,12 +193,15 @@ function handleExport() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
-.leaderboard__controls {
+.leaderboard__toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
 /* 领奖台 */
@@ -289,6 +287,9 @@ function handleExport() {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .leaderboard__item {
@@ -334,5 +335,12 @@ function handleExport() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

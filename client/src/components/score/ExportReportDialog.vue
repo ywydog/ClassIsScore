@@ -19,7 +19,7 @@
     <div v-if="step === 0">
       <el-form label-width="100px">
         <el-form-item label="时间维度" required>
-          <el-radio-group v-model="config.dimension">
+          <el-radio-group v-model="config.dimension" aria-label="时间维度">
             <el-radio-button value="day">按日</el-radio-button>
             <el-radio-button value="week">按周</el-radio-button>
             <el-radio-button value="month">按月</el-radio-button>
@@ -33,6 +33,7 @@
             range-separator="至"
             start-placeholder="开始日期"
             end-placeholder="结束日期"
+            aria-label="日期范围"
             style="width: 100%"
             @change="onDateRangeChange"
           />
@@ -44,13 +45,13 @@
     <div v-if="step === 1">
       <el-form label-width="120px">
         <el-form-item label="积分显示方式" required>
-          <el-radio-group v-model="config.scoreDisplayMode">
+          <el-radio-group v-model="config.scoreDisplayMode" aria-label="积分显示方式">
             <el-radio value="net">净加分（加分 - 减分）</el-radio>
             <el-radio value="split">加减分两列显示</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="总计列">
-          <el-checkbox-group v-model="config.totalColumns">
+          <el-checkbox-group v-model="config.totalColumns" aria-label="总计列">
             <el-checkbox value="rangeNet">日期范围内净积分</el-checkbox>
             <el-checkbox value="currentTotal">当前总积分</el-checkbox>
           </el-checkbox-group>
@@ -60,9 +61,9 @@
           label="周列头格式"
           required
         >
-          <el-radio-group v-model="config.weekHeaderFormat">
-            <el-radio value="weekNumber">第1周、第2周...</el-radio>
-            <el-radio value="dateRange">3/1-3/7、3/8-3/14...</el-radio>
+          <el-radio-group v-model="config.weekHeaderFormat" aria-label="周列头格式">
+            <el-radio value="weekNumber">第1周、第2周…</el-radio>
+            <el-radio value="dateRange">3/1-3/7、3/8-3/14…</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -72,13 +73,13 @@
     <div v-if="step === 2">
       <el-form label-width="120px">
         <el-form-item label="按小组排列">
-          <el-switch v-model="config.groupByGroup" />
+          <el-switch v-model="config.groupByGroup" aria-label="按小组排列" />
           <span style="margin-left: 12px; font-size: 12px; color: var(--cis-text-tertiary)">
             开启后姓名按小组分组显示
           </span>
         </el-form-item>
         <el-form-item label="排序方式">
-          <el-radio-group v-model="config.sortOrder">
+          <el-radio-group v-model="config.sortOrder" aria-label="排序方式">
             <el-radio value="desc">积分从高到低</el-radio>
             <el-radio value="asc">积分从低到高</el-radio>
           </el-radio-group>
@@ -92,10 +93,10 @@
         <el-alert type="info" :closable="false" style="margin-bottom: 12px">
           以下为报表预览（最多显示前10行）
         </el-alert>
-        <table class="preview-table">
+        <table class="preview-table" aria-label="报表预览">
           <thead>
             <tr>
-              <th v-for="(h, i) in preview.headers" :key="i">{{ h }}</th>
+              <th v-for="(h, i) in preview.headers" :key="i" scope="col">{{ h }}</th>
             </tr>
           </thead>
           <tbody>
@@ -107,7 +108,7 @@
             </tr>
           </tbody>
         </table>
-        <div v-if="preview.rows.length > 10" style="margin-top: 8px; font-size: 12px; color: var(--cis-text-tertiary)">
+        <div v-if="preview.rows.length > 10" style="margin-top: 8px; font-size: 12px; color: var(--cis-text-tertiary)" aria-live="polite">
           共 {{ preview.rows.length }} 行，仅显示前 10 行
         </div>
       </div>
@@ -118,12 +119,12 @@
     <div v-if="step === 4">
       <el-result icon="success" title="配置完成" sub-title="选择导出格式并下载">
         <template #extra>
-          <el-radio-group v-model="exportFormat" style="margin-bottom: 16px">
+          <el-radio-group v-model="exportFormat" style="margin-bottom: 16px" aria-label="导出格式">
             <el-radio-button value="xlsx">Excel (.xlsx)</el-radio-button>
             <el-radio-button value="csv">CSV</el-radio-button>
           </el-radio-group>
           <div>
-            <el-button type="primary" size="large" @click="handleExport">
+            <el-button type="primary" size="large" aria-label="导出报表" @click="handleExport">
               导出报表
             </el-button>
           </div>
@@ -132,11 +133,11 @@
     </div>
 
     <template #footer>
-      <el-button v-if="step > 0" @click="step--">上一步</el-button>
-      <el-button v-if="step < 4" type="primary" :disabled="!canNext" @click="nextStep">
+      <el-button v-if="step > 0" aria-label="上一步" @click="step--">上一步</el-button>
+      <el-button v-if="step < 4" type="primary" :disabled="!canNext" aria-label="下一步" @click="nextStep">
         {{ step === 3 ? '确认' : '下一步' }}
       </el-button>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button aria-label="取消" @click="$emit('update:modelValue', false)">取消</el-button>
     </template>
   </el-dialog>
 </template>
@@ -330,9 +331,12 @@ function handleExport() {
     }
   }
 
-  const now = new Date()
-  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
-  const filename = `积分报表_${dateStr}`
+  const filenameDate = new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date()).replace(/\//g, '')
+  const filename = `积分报表_${filenameDate}`
 
   if (exportFormat.value === 'xlsx') {
     exportReportToExcel(preview.value, filename, config.groupByGroup)
@@ -357,6 +361,7 @@ function handleExport() {
   padding: 6px 10px;
   text-align: center;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .preview-table th {
@@ -374,5 +379,9 @@ function handleExport() {
   background: var(--cis-fill-color, #f0f2f5);
   font-weight: 600;
   color: var(--cis-text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

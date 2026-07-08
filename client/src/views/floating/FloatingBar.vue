@@ -1,21 +1,31 @@
 <template>
-  <div class="floating-bar" @dblclick="openMainWindow">
+  <button
+    type="button"
+    class="floating-bar"
+    aria-label="双击打开主窗口"
+    @dblclick="openMainWindow"
+    @keydown.enter.prevent="openMainWindow"
+    @keydown.space.prevent="openMainWindow"
+  >
     <div class="floating-bar__content">
-      <div class="floating-bar__brand">
+      <div class="floating-bar__brand" aria-hidden="true">
         <div class="floating-bar__brand-icon">
           <el-icon :size="12"><Trophy /></el-icon>
         </div>
       </div>
-      <div class="floating-bar__divider"></div>
-      <div class="floating-bar__items">
-        <div v-for="(entry, index) in topStudents" :key="entry.name" class="floating-bar__item">
-          <span class="floating-bar__rank" :class="`floating-bar__rank--${index + 1}`">{{ index + 1 }}</span>
+      <div class="floating-bar__divider" aria-hidden="true"></div>
+      <ol class="floating-bar__items" aria-label="实时排行榜 Top 5">
+        <li v-for="(entry, index) in topStudents" :key="entry.name" class="floating-bar__item">
+          <span class="floating-bar__rank" :class="`floating-bar__rank--${index + 1}`" :aria-label="`第 ${index + 1} 名`">{{ index + 1 }}</span>
           <span class="floating-bar__name">{{ entry.name }}</span>
-          <span class="floating-bar__score">{{ entry.score }}</span>
-        </div>
-      </div>
+          <span class="floating-bar__score" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ entry.score }}</span>
+        </li>
+        <li v-if="topStudents.length === 0" class="floating-bar__item floating-bar__item--empty">
+          <span>暂无数据</span>
+        </li>
+      </ol>
     </div>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -82,6 +92,16 @@ async function openMainWindow() {
   backdrop-filter: blur(20px);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.floating-bar:focus-visible {
+  outline: 2px solid var(--cis-primary, #14b8a6);
+  outline-offset: 2px;
 }
 
 .floating-bar__content {
@@ -117,6 +137,9 @@ async function openMainWindow() {
   display: flex;
   gap: 14px;
   overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .floating-bar__item {
@@ -126,6 +149,11 @@ async function openMainWindow() {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.8);
   white-space: nowrap;
+  list-style: none;
+}
+
+.floating-bar__item--empty {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .floating-bar__rank {
@@ -161,5 +189,12 @@ async function openMainWindow() {
 .floating-bar__score {
   font-weight: 700;
   color: #2dd4bf;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

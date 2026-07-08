@@ -1,4 +1,6 @@
 :root {
+  color-scheme: light dark;
+
   /* 主色调 - 思源教育绿 */
   --cis-primary: #0D7C5F;
   --cis-primary-light: #3FB28F;
@@ -66,4 +68,13 @@
 
   /* Z-index */
   --cis-z-toast: 500;
+
+  /* 安全区 - 用于 Tauri 窗口与移动端 notch */
+  --cis-safe-top: env(safe-area-inset-top, 0);
+  --cis-safe-right: env(safe-area-inset-right, 0);
+  --cis-safe-bottom: env(safe-area-inset-bottom, 0);
+  --cis-safe-left: env(safe-area-inset-left, 0);
+
+  /* 全局减少动画变体开关（可被 prefers-reduced-motion 媒体查询覆盖） */
+  --cis-motion-duration: 0.25s;
 }

@@ -1,14 +1,12 @@
 <template>
   <div class="about-page">
-    <div class="about-page__header">
-      <h2>关于</h2>
-    </div>
+    <h2 id="about-title" class="about-page__header">关于</h2>
 
     <div class="about-page__content">
       <el-card class="about-page__card">
         <div class="about-page__app-info">
-          <el-icon :size="72" color="var(--cis-primary)"><Trophy /></el-icon>
-          <h3 class="about-page__app-name">ClassIsScore</h3>
+          <el-icon :size="72" color="var(--cis-primary)" aria-hidden="true"><Trophy /></el-icon>
+          <h3 class="about-page__app-name"><span translate="no">ClassIsScore</span></h3>
           <p class="about-page__version">版本 1.0.0-web</p>
           <p class="about-page__description">
             一款面向课堂场景的积分管理工具，支持学生管理、积分记录、排行榜、宠物系统等功能。
@@ -55,13 +53,9 @@ import { Trophy } from '@element-plus/icons-vue'
 
 <style scoped>
 .about-page__header {
-  margin-bottom: 24px;
+  margin: 0 0 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.about-page__header h2 {
-  margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -71,6 +65,7 @@ import { Trophy } from '@element-plus/icons-vue'
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .about-page__content {
@@ -85,6 +80,11 @@ import { Trophy } from '@element-plus/icons-vue'
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
+}
+
+.about-page__card:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .about-page__card:hover {
@@ -117,5 +117,12 @@ import { Trophy } from '@element-plus/icons-vue'
   font-size: 14px;
   color: var(--cis-text-secondary);
   line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

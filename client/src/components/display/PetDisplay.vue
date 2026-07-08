@@ -1,7 +1,9 @@
 <template>
-  <div
+  <button
+    type="button"
     class="pet-display"
     :style="{ borderColor: levelBorderColor }"
+    :aria-label="`${student.name}，${hasPet ? petName : '未领养'}，等级 ${petLevel}`"
     @click="$emit('click', student)"
   >
     <!-- 宠物图片区域 + 等级徽章 -->
@@ -40,13 +42,13 @@
     <!-- 学生姓名 + 积分 -->
     <div class="pet-display__info">
       <span class="pet-display__name">{{ student.name }}</span>
-      <span class="pet-display__score">{{ student.score }}</span>
+      <span class="pet-display__score" :aria-label="`积分 ${student.score}`">{{ student.score }}</span>
       <span class="pet-display__pet-name">
         {{ hasPet ? petName : '未领养' }}
         <template v-if="hasPet"> · {{ levelTitle }}</template>
       </span>
     </div>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -124,14 +126,21 @@ function onImageError() {
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   cursor: pointer;
-  transition: all var(--cis-transition-fast);
+  transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
   border: 2px solid var(--cis-border-color-light);
   width: 180px;
+  font: inherit;
+  color: inherit;
 }
 
 .pet-display:hover {
   box-shadow: var(--cis-shadow-card-hover);
   transform: translateY(-2px);
+}
+
+.pet-display:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .pet-display__top {
@@ -238,10 +247,15 @@ function onImageError() {
   font-size: 18px;
   font-weight: 700;
   color: var(--cis-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .pet-display__pet-name {
   font-size: 11px;
   color: var(--cis-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

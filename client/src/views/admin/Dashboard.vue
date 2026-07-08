@@ -1,40 +1,40 @@
 <template>
   <div class="dashboard">
     <!-- Section 1: Stats Row -->
-    <div class="dashboard__stats">
+    <div class="dashboard__stats" aria-label="总体数据概览">
       <div class="dashboard__stat-card dashboard__stat-card--students">
-        <div class="dashboard__stat-icon">
+        <div class="dashboard__stat-icon" aria-hidden="true">
           <el-icon :size="24"><User /></el-icon>
         </div>
         <div class="dashboard__stat-info">
-          <span class="dashboard__stat-number">{{ stats.studentCount }}</span>
+          <span class="dashboard__stat-number" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.studentCount }}</span>
           <span class="dashboard__stat-label">学生总数</span>
         </div>
       </div>
       <div class="dashboard__stat-card dashboard__stat-card--avg">
-        <div class="dashboard__stat-icon">
+        <div class="dashboard__stat-icon" aria-hidden="true">
           <el-icon :size="24"><TrendCharts /></el-icon>
         </div>
         <div class="dashboard__stat-info">
-          <span class="dashboard__stat-number">{{ stats.avgScore }}</span>
+          <span class="dashboard__stat-number" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.avgScore }}</span>
           <span class="dashboard__stat-label">平均积分</span>
         </div>
       </div>
       <div class="dashboard__stat-card dashboard__stat-card--today">
-        <div class="dashboard__stat-icon">
+        <div class="dashboard__stat-icon" aria-hidden="true">
           <el-icon :size="24"><Timer /></el-icon>
         </div>
         <div class="dashboard__stat-info">
-          <span class="dashboard__stat-number">{{ stats.todayCount }}</span>
+          <span class="dashboard__stat-number" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.todayCount }}</span>
           <span class="dashboard__stat-label">今日变动</span>
         </div>
       </div>
       <div class="dashboard__stat-card dashboard__stat-card--groups">
-        <div class="dashboard__stat-icon">
+        <div class="dashboard__stat-icon" aria-hidden="true">
           <el-icon :size="24"><Grid /></el-icon>
         </div>
         <div class="dashboard__stat-info">
-          <span class="dashboard__stat-number">{{ stats.groupCount }}</span>
+          <span class="dashboard__stat-number" style="font-variant-numeric: tabular-nums" aria-live="polite">{{ stats.groupCount }}</span>
           <span class="dashboard__stat-label">活跃分组</span>
         </div>
       </div>
@@ -43,15 +43,16 @@
     <!-- Section 2: Score Trend Chart -->
     <div class="dashboard__chart">
       <div class="dashboard__section-header">
-        <h3>积分趋势</h3>
+        <h3 id="dashboard-trend-title">积分趋势</h3>
         <router-link to="/admin/scores" class="dashboard__link">查看详情</router-link>
       </div>
-      <div class="dashboard__chart-body">
+      <div class="dashboard__chart-body" role="img" aria-labelledby="dashboard-trend-title" aria-label="最近7日积分变动趋势图">
         <svg
           v-if="trendData.length"
           :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
           class="dashboard__svg"
           preserveAspectRatio="xMidYMid meet"
+          aria-hidden="true"
         >
           <!-- Grid lines -->
           <line
@@ -109,7 +110,7 @@
           </defs>
         </svg>
         <div v-else class="dashboard__chart-empty">
-          <el-icon :size="32" color="var(--cis-text-tertiary)"><TrendCharts /></el-icon>
+          <el-icon :size="32" color="var(--cis-text-tertiary)" aria-hidden="true"><TrendCharts /></el-icon>
           <span>暂无趋势数据</span>
         </div>
       </div>
@@ -118,29 +119,35 @@
     <!-- Section 3: Quick Actions Grid -->
     <div class="dashboard__actions">
       <div class="dashboard__section-header">
-        <h3>快捷操作</h3>
+        <h3 id="dashboard-actions-title">快捷操作</h3>
       </div>
-      <div class="dashboard__actions-grid">
-        <div
+      <ul class="dashboard__actions-grid" role="list" aria-labelledby="dashboard-actions-title">
+        <li
           v-for="action in quickActions"
           :key="action.path"
           class="dashboard__action-card"
-          @click="router.push(action.path)"
+          :class="`dashboard__action-card--${action.path.replace(/\//g, '-')}`"
         >
-          <el-icon :size="28"><component :is="action.icon" /></el-icon>
-          <span class="dashboard__action-label">{{ action.label }}</span>
-        </div>
-      </div>
+          <router-link
+            :to="action.path"
+            class="dashboard__action-link"
+            :aria-label="`前往${action.label}`"
+          >
+            <el-icon :size="28" aria-hidden="true"><component :is="action.icon" /></el-icon>
+            <span class="dashboard__action-label">{{ action.label }}</span>
+          </router-link>
+        </li>
+      </ul>
     </div>
 
     <!-- Section 4: Recent Activity -->
     <div class="dashboard__activity">
       <div class="dashboard__section-header">
-        <h3>最近动态</h3>
+        <h3 id="dashboard-activity-title">最近动态</h3>
         <router-link to="/admin/scores" class="dashboard__link">查看全部</router-link>
       </div>
-      <div class="dashboard__activity-list">
-        <div
+      <ol class="dashboard__activity-list" aria-labelledby="dashboard-activity-title">
+        <li
           v-for="record in recentActivity"
           :key="record.id"
           class="dashboard__activity-item"
@@ -153,30 +160,29 @@
             <span
               class="dashboard__activity-score"
               :class="record.scoreChange >= 0 ? 'is-positive' : 'is-negative'"
+              style="font-variant-numeric: tabular-nums"
             >
               {{ record.scoreChange >= 0 ? '+' : '' }}{{ record.scoreChange }}
             </span>
             <span class="dashboard__activity-time">{{ formatTime(record.createdAt) }}</span>
           </div>
-        </div>
-        <div v-if="!recentActivity.length" class="dashboard__activity-empty">
+        </li>
+        <li v-if="!recentActivity.length" class="dashboard__activity-empty">
           暂无积分记录
-        </div>
-      </div>
+        </li>
+      </ol>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { User, Grid, Timer, Trophy, Rank, Finished, TrendCharts } from '@element-plus/icons-vue'
 import { useStudentStore } from '@/stores/student'
 import { useScoreStore } from '@/stores/score'
 import { groupApi } from '@/services/group'
 import api from '@/services/api'
 
-const router = useRouter()
 const studentStore = useStudentStore()
 const scoreStore = useScoreStore()
 
@@ -238,16 +244,18 @@ const areaPath = computed(() => {
   return `${line} L${last.x},${bottom} L${first.x},${bottom} Z`
 })
 
+const timeFormatter = new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+
 function formatTime(dateStr: string): string {
   const d = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - d.getTime()
   const diffMin = Math.floor(diffMs / 60000)
   if (diffMin < 1) return '刚刚'
-  if (diffMin < 60) return `${diffMin}分钟前`
+  if (diffMin < 60) return `${diffMin} 分钟前`
   const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `${diffHour}小时前`
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  if (diffHour < 24) return `${diffHour} 小时前`
+  return timeFormatter.format(d)
 }
 
 async function fetchDashboardData() {
@@ -492,9 +500,17 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--cis-spacing-md);
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .dashboard__action-card {
+  display: block;
+  list-style: none;
+}
+
+.dashboard__action-link {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -505,14 +521,21 @@ onMounted(async () => {
   border: 1px solid var(--cis-border-color-light);
   background: var(--cis-bg);
   cursor: pointer;
-  transition: all var(--cis-transition-fast);
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--cis-transition-fast), box-shadow var(--cis-transition-fast), border-color var(--cis-transition-fast), color var(--cis-transition-fast);
 }
 
-.dashboard__action-card:hover {
+.dashboard__action-link:hover {
   border-color: var(--cis-primary);
   transform: translateY(-2px);
   box-shadow: var(--cis-shadow-card-hover);
   color: var(--cis-primary);
+}
+
+.dashboard__action-link:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .dashboard__action-card .el-icon {
@@ -525,7 +548,7 @@ onMounted(async () => {
   color: var(--cis-text-secondary);
 }
 
-.dashboard__action-card:hover .dashboard__action-label {
+.dashboard__action-link:hover .dashboard__action-label {
   color: var(--cis-primary);
 }
 
@@ -618,6 +641,13 @@ onMounted(async () => {
 
   .dashboard__actions-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
   }
 }
 </style>

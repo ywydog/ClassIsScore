@@ -1,24 +1,22 @@
 <template>
   <div class="score-management">
-    <div class="score-management__header">
-      <h2>{{ t('scoreManagement') }}</h2>
-      <div class="score-management__actions">
-        <el-button @click="showExportDialog = true">
-          <el-icon><Download /></el-icon>
-          {{ t('exportReport') }}
-        </el-button>
-        <el-button @click="showImportDialog = true">
-          <el-icon><Upload /></el-icon>
-          从表格导入
-        </el-button>
-        <el-button @click="showBatchDialog = true">
-          <el-icon><Operation /></el-icon>
-          {{ t('batchOperation') }}
-        </el-button>
-        <el-button v-if="isXianxiaMode" type="warning" @click="openBattleDialog">
-          ⚔️ 道友切磋
-        </el-button>
-      </div>
+    <h2 id="score-management-title" class="score-management__header">{{ t('scoreManagement') }}</h2>
+    <div class="score-management__actions">
+      <el-button @click="showExportDialog = true" aria-label="导出报表">
+        <el-icon aria-hidden="true"><Download /></el-icon>
+        {{ t('exportReport') }}
+      </el-button>
+      <el-button @click="showImportDialog = true" aria-label="从表格导入">
+        <el-icon aria-hidden="true"><Upload /></el-icon>
+        从表格导入
+      </el-button>
+      <el-button @click="showBatchDialog = true" aria-label="批量操作">
+        <el-icon aria-hidden="true"><Operation /></el-icon>
+        {{ t('batchOperation') }}
+      </el-button>
+      <el-button v-if="isXianxiaMode" type="warning" @click="openBattleDialog" aria-label="道友切磋">
+        ⚔️ 道友切磋
+      </el-button>
     </div>
 
     <!-- 内联积分操作区 -->
@@ -30,6 +28,7 @@
             :placeholder="t('selectStudent')"
             filterable
             class="score-operator__student-select"
+            aria-label="选择学生"
           >
             <el-option
               v-for="s in studentStore.students"
@@ -38,7 +37,7 @@
               :value="s.id"
             >
               <span>{{ s.name }}</span>
-              <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px">{{ s.score }}{{ t('scoreUnit') }}</span>
+              <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px; font-variant-numeric: tabular-nums">{{ s.score }}{{ t('scoreUnit') }}</span>
             </el-option>
           </el-select>
           <el-input-number
@@ -48,12 +47,16 @@
             :max="100"
             controls-position="right"
             class="score-operator__score-input"
+            inputmode="numeric"
+            aria-label="分值变化"
           />
           <el-input
             v-model="addForm.reason"
-            placeholder="请输入原因"
+            placeholder="请输入原因…"
             maxlength="50"
             class="score-operator__reason-input"
+            aria-label="原因"
+            autocomplete="off"
             @keyup.enter="handleAddScore"
           />
           <el-button type="success" :loading="scoreStore.loading" @click="handleAddScore">
@@ -86,7 +89,12 @@
               v-for="item in evaluationItems"
               :key="item.id"
               :class="['score-operator__quick-item', item.isPositive ? 'score-operator__quick-item--positive' : 'score-operator__quick-item--negative']"
+              role="button"
+              tabindex="0"
+              :aria-label="`应用评估项 ${item.name}，分值变化 ${item.isPositive ? '+' : ''}${item.scoreChange}`"
               @click="applyEvaluationItem(item)"
+              @keydown.enter="applyEvaluationItem(item)"
+              @keydown.space.prevent="applyEvaluationItem(item)"
             >
               <span class="score-operator__quick-item-name">{{ item.name }}</span>
               <span class="score-operator__quick-item-value">{{ item.isPositive ? '+' : '' }}{{ item.scoreChange }}</span>
@@ -127,12 +135,12 @@
               :class="{ 'stats-panel__row--highlight': addForm.studentId && String(stat.studentId) === String(addForm.studentId) }"
             >
               <span class="stats-panel__name">{{ stat.studentName }}</span>
-              <span class="stats-panel__detail">
+              <span class="stats-panel__detail" style="font-variant-numeric: tabular-nums">
                 <span class="stats-panel__plus">+{{ stat.plus }}</span>
                 <span class="stats-panel__slash">/</span>
                 <span class="stats-panel__minus">{{ stat.minus }}</span>
               </span>
-              <span class="stats-panel__net" :class="stat.net > 0 ? 'stats-panel__net--pos' : stat.net < 0 ? 'stats-panel__net--neg' : ''">
+              <span class="stats-panel__net" :class="stat.net > 0 ? 'stats-panel__net--pos' : stat.net < 0 ? 'stats-panel__net--neg' : ''" style="font-variant-numeric: tabular-nums">
                 {{ formatStatNet(stat.net) }}
               </span>
             </div>
@@ -148,7 +156,7 @@
     <el-dialog v-model="showBatchDialog" :title="t('batchScore')" width="520px" destroy-on-close>
       <el-form :model="batchForm" label-width="80px">
         <el-form-item :label="t('targetStudent')">
-          <el-select v-model="batchForm.studentIds" multiple :placeholder="t('selectStudent')" filterable style="width: 100%">
+          <el-select v-model="batchForm.studentIds" multiple :placeholder="t('selectStudent')" filterable style="width: 100%" aria-label="选择学生">
             <el-option
               v-for="s in studentStore.students"
               :key="s.id"
@@ -158,7 +166,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="或按小组">
-          <el-select v-model="batchForm.groupId" placeholder="选择小组" clearable style="width: 100%" @change="handleGroupSelect">
+          <el-select v-model="batchForm.groupId" placeholder="选择小组…" clearable style="width: 100%" aria-label="选择小组" @change="handleGroupSelect">
             <el-option
               v-for="g in groups"
               :key="g.id"
@@ -168,10 +176,10 @@
           </el-select>
         </el-form-item>
         <el-form-item :label="t('scoreChange')" required>
-          <el-input-number v-model="batchForm.scoreChange" :step="1" style="width: 100%" />
+          <el-input-number v-model="batchForm.scoreChange" :step="1" style="width: 100%" inputmode="numeric" aria-label="分值变化" />
         </el-form-item>
         <el-form-item label="原因" required>
-          <el-input v-model="batchForm.reason" placeholder="请输入原因" maxlength="50" show-word-limit />
+          <el-input v-model="batchForm.reason" placeholder="请输入原因…" maxlength="50" show-word-limit aria-label="原因" autocomplete="off" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -328,7 +336,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { Operation, Upload, Download } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useScoreStore } from '@/stores/score'
 import { useStudentStore } from '@/stores/student'
 import { useSettingsStore } from '@/stores/settings'
@@ -568,6 +576,15 @@ function handleGroupSelect(groupId: string) {
 
 async function handleRevert(recordId: string) {
   try {
+    await ElMessageBox.confirm('确定要撤销这条积分记录吗？此操作将恢复该学生的对应分值。', '撤销确认', {
+      type: 'warning',
+      confirmButtonText: '确定撤销',
+      cancelButtonText: '取消',
+    })
+  } catch {
+    return
+  }
+  try {
     await scoreStore.revertScore(recordId)
     ElMessage.success('已撤销')
   } catch { /* error handled in store */ }
@@ -702,16 +719,9 @@ function closeImportDialog() {
 
 <style scoped>
 .score-management__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin: 0 0 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.score-management__header h2 {
-  margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -721,11 +731,14 @@ function closeImportDialog() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .score-management__actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
 /* 内联积分操作区 */
@@ -931,7 +944,12 @@ function closeImportDialog() {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.stats-panel__toggle:focus-visible {
+  outline: 2px solid var(--cis-primary, #0d9488);
+  outline-offset: 2px;
 }
 
 .stats-panel__toggle:hover {
@@ -1038,6 +1056,13 @@ function closeImportDialog() {
   }
   .score-operator__score-input {
     width: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
   }
 }
 </style>

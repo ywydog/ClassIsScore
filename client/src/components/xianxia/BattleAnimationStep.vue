@@ -1,14 +1,18 @@
 <template>
   <div class="battle-screen">
-    <div class="battle-screen__arena">
+    <div class="battle-screen__arena" role="group" aria-label="战斗双方">
       <!-- 挑战者 -->
-      <div class="battle-fighter" :class="{ 'battle-fighter--active': currentAttackerId === combatantA?.id }">
-        <div class="battle-fighter__pet" :class="{ 'battle-fighter__pet--attacking': currentAttackerId === combatantA?.id && isAttacking }">
+      <div
+        class="battle-fighter"
+        :class="{ 'battle-fighter--active': currentAttackerId === combatantA?.id }"
+        :aria-current="currentAttackerId === combatantA?.id ? 'true' : 'false'"
+      >
+        <div class="battle-fighter__pet" :class="{ 'battle-fighter__pet--attacking': currentAttackerId === combatantA?.id && isAttacking }" aria-hidden="true">
           {{ getPetEmoji(challenger?.petType) }}
         </div>
         <div class="battle-fighter__name">{{ combatantA?.name }}</div>
         <div class="battle-fighter__level">{{ combatantA?.cultivationName }}</div>
-        <div class="battle-fighter__hp-bar">
+        <div class="battle-fighter__hp-bar" role="progressbar" :aria-valuenow="combatantAHpPercent" aria-valuemin="0" aria-valuemax="100" :aria-label="`${combatantA?.name} 剩余血量`">
           <div
             class="battle-fighter__hp-fill"
             :style="{ width: combatantAHpPercent + '%' }"
@@ -19,18 +23,22 @@
       </div>
 
       <!-- VS -->
-      <div class="battle-screen__vs">
+      <div class="battle-screen__vs" aria-hidden="true">
         <span class="battle-screen__vs-text">⚔️</span>
       </div>
 
       <!-- 对手 -->
-      <div class="battle-fighter" :class="{ 'battle-fighter--active': currentAttackerId === combatantB?.id }">
-        <div class="battle-fighter__pet" :class="{ 'battle-fighter__pet--attacking': currentAttackerId === combatantB?.id && isAttacking }">
+      <div
+        class="battle-fighter"
+        :class="{ 'battle-fighter--active': currentAttackerId === combatantB?.id }"
+        :aria-current="currentAttackerId === combatantB?.id ? 'true' : 'false'"
+      >
+        <div class="battle-fighter__pet" :class="{ 'battle-fighter__pet--attacking': currentAttackerId === combatantB?.id && isAttacking }" aria-hidden="true">
           {{ getPetEmoji(selectedOpponent?.petType) }}
         </div>
         <div class="battle-fighter__name">{{ combatantB?.name }}</div>
         <div class="battle-fighter__level">{{ combatantB?.cultivationName }}</div>
-        <div class="battle-fighter__hp-bar">
+        <div class="battle-fighter__hp-bar" role="progressbar" :aria-valuenow="combatantBHpPercent" aria-valuemin="0" aria-valuemax="100" :aria-label="`${combatantB?.name} 剩余血量`">
           <div
             class="battle-fighter__hp-fill"
             :style="{ width: combatantBHpPercent + '%' }"
@@ -42,13 +50,13 @@
     </div>
 
     <!-- 当前回合描述 -->
-    <div class="battle-screen__round-desc">
+    <div class="battle-screen__round-desc" aria-live="polite">
       <span v-if="currentRoundDescription" class="battle-screen__round-text">{{ currentRoundDescription }}</span>
       <span v-else class="battle-screen__round-text battle-screen__round-text--start">战斗开始！</span>
     </div>
 
     <!-- 战斗日志 -->
-    <div class="battle-screen__log" ref="logRef">
+    <div class="battle-screen__log" ref="logRef" aria-live="polite" aria-label="战斗日志">
       <div
         v-for="(log, idx) in displayedLogs"
         :key="idx"
@@ -140,7 +148,7 @@ defineExpose({
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   border: 2px solid rgba(201, 168, 76, 0.3);
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .battle-fighter__pet--attacking {
@@ -273,5 +281,9 @@ defineExpose({
 .battle-screen__log-item--end {
   color: #f87171;
   font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

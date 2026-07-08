@@ -1,14 +1,19 @@
 <template>
-  <div class="student-card-display" @click="$emit('click', student)">
+  <button
+    type="button"
+    class="student-card-display"
+    :aria-label="`${student.name}，积分 ${student.score}`"
+    @click="$emit('click', student)"
+  >
     <div class="student-card-display__avatar">
       <img v-if="student.avatar" :src="student.avatar" :alt="student.name" />
-      <span v-else class="student-card-display__initial">{{ student.name.charAt(0) }}</span>
+      <span v-else class="student-card-display__initial" aria-hidden="true">{{ student.name.charAt(0) }}</span>
     </div>
     <div class="student-card-display__info">
       <span class="student-card-display__name">{{ student.name }}</span>
-      <span class="student-card-display__score">{{ student.score }}</span>
+      <span class="student-card-display__score" :aria-label="`积分 ${student.score}`">{{ student.score }}</span>
     </div>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -33,13 +38,20 @@ defineEmits<{
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   cursor: pointer;
-  transition: all var(--cis-transition-fast);
+  transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
   border: 1px solid var(--cis-border-color-light);
+  font: inherit;
+  color: inherit;
 }
 
 .student-card-display:hover {
   box-shadow: var(--cis-shadow-card-hover);
   transform: translateY(-2px);
+}
+
+.student-card-display:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .student-card-display__avatar {
@@ -89,5 +101,10 @@ defineEmits<{
   font-weight: 700;
   color: var(--cis-primary);
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

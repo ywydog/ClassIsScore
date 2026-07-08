@@ -1,19 +1,19 @@
 <template>
   <div class="group-management">
-    <div class="group-management__header">
-      <h2>分组管理</h2>
-      <el-button type="primary" @click="openCreateDialog">
-        <el-icon><Plus /></el-icon>
+    <h2 id="group-management-title" class="group-management__header">分组管理</h2>
+    <div class="group-management__toolbar">
+      <el-button type="primary" @click="openCreateDialog" aria-label="创建小组">
+        <el-icon aria-hidden="true"><Plus /></el-icon>
         创建小组
       </el-button>
     </div>
 
-    <div class="group-management__list">
-      <el-card v-for="group in groups" :key="group.id" class="group-card">
+    <div class="group-management__list" role="list" aria-label="小组列表">
+      <el-card v-for="group in groups" :key="group.id" class="group-card" role="listitem">
         <template #header>
           <div class="group-card__header">
             <div class="group-card__title">
-              <el-icon color="var(--cis-primary)"><Grid /></el-icon>
+              <el-icon color="var(--cis-primary)" aria-hidden="true"><Grid /></el-icon>
               <span>{{ group.name }}</span>
             </div>
             <div class="group-card__actions">
@@ -26,11 +26,11 @@
           <div class="group-card__stats">
             <div class="group-card__stat">
               <span class="group-card__stat-label">成员数</span>
-              <span class="group-card__stat-value">{{ group.studentIds.length }}</span>
+              <span class="group-card__stat-value" style="font-variant-numeric: tabular-nums">{{ group.studentIds.length }}</span>
             </div>
             <div class="group-card__stat">
               <span class="group-card__stat-label">小组总分</span>
-              <span class="group-card__stat-value">{{ getGroupScore(group) }}</span>
+              <span class="group-card__stat-value" style="font-variant-numeric: tabular-nums">{{ getGroupScore(group) }}</span>
             </div>
           </div>
           <div class="group-card__members" v-if="group.studentIds.length > 0">
@@ -39,6 +39,7 @@
               :key="sid"
               size="small"
               closable
+              :aria-label="`移除成员 ${getStudentName(sid)}`"
               @close="removeStudentFromGroup(group.id, sid)"
               class="group-card__member-tag"
             >
@@ -46,8 +47,8 @@
             </el-tag>
           </div>
           <div v-else class="group-card__empty">暂无成员</div>
-          <el-button size="small" text type="primary" @click="openMemberDialog(group)">
-            <el-icon><Plus /></el-icon> 添加成员
+          <el-button size="small" text type="primary" @click="openMemberDialog(group)" aria-label="添加成员">
+            <el-icon aria-hidden="true"><Plus /></el-icon> 添加成员
           </el-button>
         </div>
       </el-card>
@@ -58,7 +59,7 @@
     <el-dialog v-model="showFormDialog" :title="editingGroup ? '编辑小组' : '创建小组'" width="480px">
       <el-form :model="groupForm" label-width="80px">
         <el-form-item label="小组名称" required>
-          <el-input v-model="groupForm.name" placeholder="请输入小组名称" />
+          <el-input v-model="groupForm.name" placeholder="请输入小组名称…" aria-label="小组名称" autocomplete="off" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -69,7 +70,7 @@
 
     <!-- 添加成员对话框 -->
     <el-dialog v-model="showMemberDialog" title="添加成员" width="480px">
-      <el-select v-model="selectedStudentIds" multiple placeholder="选择学生" filterable style="width: 100%">
+      <el-select v-model="selectedStudentIds" multiple placeholder="选择学生…" filterable style="width: 100%" aria-label="选择学生">
         <el-option
           v-for="s in availableStudents"
           :key="s.id"
@@ -202,16 +203,9 @@ async function removeStudentFromGroup(groupId: string, studentId: string) {
 
 <style scoped>
 .group-management__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin: 0 0 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.group-management__header h2 {
-  margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -221,6 +215,11 @@ async function removeStudentFromGroup(groupId: string, studentId: string) {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
+}
+
+.group-management__toolbar {
+  margin-bottom: 16px;
 }
 
 .group-management__list {
@@ -234,6 +233,11 @@ async function removeStudentFromGroup(groupId: string, studentId: string) {
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
+}
+
+.group-card:focus-within {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .group-card:hover {
@@ -299,5 +303,12 @@ async function removeStudentFromGroup(groupId: string, studentId: string) {
   color: var(--cis-text-tertiary);
   font-size: 13px;
   margin-bottom: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

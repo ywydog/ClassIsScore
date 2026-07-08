@@ -1,20 +1,37 @@
 <template>
   <div class="app-header">
-    <el-button
-      :icon="Fold"
-      text
-      class="app-header__toggle"
-      @click="$emit('toggle-sidebar')"
-    />
-    <span class="app-header__title">{{ pageTitle }}</span>
+    <h1 class="app-header__title">
+      <el-button
+        :icon="Fold"
+        text
+        class="app-header__toggle"
+        aria-label="切换侧边栏"
+        @click="$emit('toggle-sidebar')"
+      />
+      <span>{{ pageTitle }}</span>
+    </h1>
     <div class="app-header__actions">
       <el-tooltip content="打开大屏展示" placement="bottom">
-        <el-button :icon="Monitor" text size="small" class="app-header__action-btn" @click="openDisplayWindow" />
+        <el-button
+          :icon="Monitor"
+          text
+          size="small"
+          class="app-header__action-btn"
+          aria-label="打开大屏展示窗口"
+          @click="openDisplayWindow"
+        />
       </el-tooltip>
       <el-tooltip content="打开浮动积分条" placement="bottom">
-        <el-button :icon="DataLine" text size="small" class="app-header__action-btn" @click="openFloatingBar" />
+        <el-button
+          :icon="DataLine"
+          text
+          size="small"
+          class="app-header__action-btn"
+          aria-label="打开浮动积分条窗口"
+          @click="openFloatingBar"
+        />
       </el-tooltip>
-      <div class="app-header__divider"></div>
+      <div class="app-header__divider" aria-hidden="true"></div>
       <ThemeToggle />
     </div>
   </div>
@@ -80,6 +97,18 @@ function openFloatingBar() {
   height: 100%;
 }
 
+.app-header__title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--cis-font-family-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+  margin: 0;
+  padding-left: 4px;
+}
+
 .app-header__toggle {
   -webkit-app-region: no-drag;
   cursor: pointer;
@@ -89,14 +118,6 @@ function openFloatingBar() {
 
 .app-header__toggle:hover {
   color: var(--cis-primary);
-}
-
-.app-header__title {
-  font-family: var(--cis-font-family-display);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--cis-text-primary);
-  margin-left: 4px;
 }
 
 .app-header__actions {

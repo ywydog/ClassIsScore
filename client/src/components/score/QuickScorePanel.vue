@@ -10,6 +10,7 @@
         filterable
         size="default"
         class="quick-score-panel__student-select"
+        aria-label="选择学生"
       >
         <el-option
           v-for="s in students"
@@ -26,33 +27,37 @@
       <div class="quick-score-panel__group">
         <div class="quick-score-panel__group-label">{{ t('scorePlusItem') }}</div>
         <div class="quick-score-panel__group-items">
-          <div
+          <button
             v-for="item in positiveItems"
             :key="item.id"
+            type="button"
             class="quick-score-panel__item quick-score-panel__item--positive"
+            :aria-label="`${item.name}，加 ${item.scoreChange} 分`"
             @click="handleScore(item)"
           >
             <span class="quick-score-panel__item-name">{{ item.name }}</span>
-            <span class="quick-score-panel__item-value">+{{ item.scoreChange }}</span>
-          </div>
+            <span class="quick-score-panel__item-value" aria-hidden="true">+{{ item.scoreChange }}</span>
+          </button>
         </div>
       </div>
       <div class="quick-score-panel__group">
         <div class="quick-score-panel__group-label">{{ t('scoreMinusItem') }}</div>
         <div class="quick-score-panel__group-items">
-          <div
+          <button
             v-for="item in negativeItems"
             :key="item.id"
+            type="button"
             class="quick-score-panel__item quick-score-panel__item--negative"
+            :aria-label="`${item.name}，减 ${Math.abs(item.scoreChange)} 分`"
             @click="handleScore(item)"
           >
             <span class="quick-score-panel__item-name">{{ item.name }}</span>
-            <span class="quick-score-panel__item-value">{{ item.scoreChange }}</span>
-          </div>
+            <span class="quick-score-panel__item-value" aria-hidden="true">{{ item.scoreChange }}</span>
+          </button>
         </div>
       </div>
     </div>
-    <div v-else class="quick-score-panel__hint">
+    <div v-else class="quick-score-panel__hint" aria-live="polite">
       {{ t('selectStudentFirst') }}
     </div>
   </div>
@@ -151,10 +156,12 @@ function handleScore(item: EvaluationItem) {
   border-radius: var(--cis-radius-md);
   cursor: pointer;
   font-size: 13px;
-  transition: all var(--cis-transition-fast);
+  transition: transform var(--cis-transition-fast), box-shadow var(--cis-transition-fast);
   user-select: none;
   position: relative;
   overflow: hidden;
+  font: inherit;
+  color: inherit;
 }
 
 .quick-score-panel__item::after {
@@ -162,7 +169,7 @@ function handleScore(item: EvaluationItem) {
   position: absolute;
   inset: 0;
   background: rgba(255, 255, 255, 0);
-  transition: background var(--cis-transition-fast);
+  transition: background-color var(--cis-transition-fast);
 }
 
 .quick-score-panel__item:hover {
@@ -176,6 +183,11 @@ function handleScore(item: EvaluationItem) {
 
 .quick-score-panel__item:active::after {
   background: rgba(255, 255, 255, 0.15);
+}
+
+.quick-score-panel__item:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .quick-score-panel__item--positive {
@@ -209,6 +221,7 @@ function handleScore(item: EvaluationItem) {
 .quick-score-panel__item-value {
   font-weight: 700;
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 .quick-score-panel__hint {
@@ -216,5 +229,9 @@ function handleScore(item: EvaluationItem) {
   padding: 24px 0;
   color: var(--cis-text-tertiary);
   font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

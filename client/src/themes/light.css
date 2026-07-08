@@ -1,4 +1,5 @@
 [data-theme='light'] {
+  color-scheme: light;
   --cis-bg: #f5f7f5;
   --cis-bg-secondary: #ecf0ed;
   --cis-card-bg: #ffffff;

@@ -1,11 +1,11 @@
 <template>
   <div class="app-sidebar">
     <div class="app-sidebar__logo">
-      <div class="app-sidebar__logo-icon">
+      <div class="app-sidebar__logo-icon" aria-hidden="true">
         <el-icon :size="22"><Trophy /></el-icon>
       </div>
       <transition name="fade">
-        <span v-if="!collapsed" class="app-sidebar__logo-text">ClassIsScore</span>
+        <span v-if="!collapsed" class="app-sidebar__logo-text" translate="no">ClassIsScore</span>
       </transition>
     </div>
     <el-scrollbar class="app-sidebar__scroll">
@@ -18,75 +18,82 @@
         background-color="transparent"
         :text-color="'var(--cis-text-secondary)'"
         :active-text-color="'var(--cis-primary)'"
+        aria-label="主菜单"
       >
         <el-menu-item-group>
           <template #title><span v-if="!collapsed" class="menu-group-label">核心功能</span></template>
           <el-menu-item index="/admin/dashboard">
-            <el-icon><HomeFilled /></el-icon>
+            <el-icon aria-hidden="true"><HomeFilled /></el-icon>
             <template #title>总览</template>
           </el-menu-item>
           <el-menu-item index="/admin/scores">
-            <el-icon><Trophy /></el-icon>
+            <el-icon aria-hidden="true"><Trophy /></el-icon>
             <template #title>积分管理</template>
           </el-menu-item>
           <el-menu-item index="/admin/students">
-            <el-icon><User /></el-icon>
+            <el-icon aria-hidden="true"><User /></el-icon>
             <template #title>学生管理</template>
           </el-menu-item>
           <el-menu-item index="/admin/groups">
-            <el-icon><Grid /></el-icon>
+            <el-icon aria-hidden="true"><Grid /></el-icon>
             <template #title>分组管理</template>
           </el-menu-item>
           <el-menu-item index="/admin/leaderboard">
-            <el-icon><Rank /></el-icon>
+            <el-icon aria-hidden="true"><Rank /></el-icon>
             <template #title>排行榜</template>
           </el-menu-item>
         </el-menu-item-group>
         <el-menu-item-group>
           <template #title><span v-if="!collapsed" class="menu-group-label">高级功能</span></template>
           <el-menu-item index="/admin/evaluation">
-            <el-icon><Timer /></el-icon>
+            <el-icon aria-hidden="true"><Timer /></el-icon>
             <template #title>自动评估</template>
           </el-menu-item>
           <el-menu-item index="/admin/settlement">
-            <el-icon><Finished /></el-icon>
+            <el-icon aria-hidden="true"><Finished /></el-icon>
             <template #title>结算</template>
           </el-menu-item>
         </el-menu-item-group>
         <el-menu-item-group>
           <template #title><span v-if="!collapsed" class="menu-group-label">系统</span></template>
           <el-menu-item index="/admin/settings">
-            <el-icon><Setting /></el-icon>
+            <el-icon aria-hidden="true"><Setting /></el-icon>
             <template #title>设置</template>
           </el-menu-item>
           <el-menu-item index="/admin/plugins">
-            <el-icon><Box /></el-icon>
+            <el-icon aria-hidden="true"><Box /></el-icon>
             <template #title>插件管理</template>
           </el-menu-item>
           <el-menu-item index="/admin/themes">
-            <el-icon><Brush /></el-icon>
+            <el-icon aria-hidden="true"><Brush /></el-icon>
             <template #title>主题包</template>
           </el-menu-item>
           <el-menu-item index="/admin/admin-settings">
-            <el-icon><Lock /></el-icon>
+            <el-icon aria-hidden="true"><Lock /></el-icon>
             <template #title>管理员设置</template>
           </el-menu-item>
           <el-menu-item index="/admin/about">
-            <el-icon><InfoFilled /></el-icon>
+            <el-icon aria-hidden="true"><InfoFilled /></el-icon>
             <template #title>关于</template>
           </el-menu-item>
         </el-menu-item-group>
       </el-menu>
     </el-scrollbar>
-    <div v-if="!collapsed" class="app-sidebar__version">
+    <div v-if="!collapsed" class="app-sidebar__version" aria-hidden="true">
       v1.0.0-web
     </div>
-    <div class="app-sidebar__collapse-btn" @click="$emit('toggle')">
-      <el-icon :size="16">
+    <button
+      type="button"
+      class="app-sidebar__collapse-btn"
+      :aria-label="collapsed ? '展开侧边栏' : '折叠侧边栏'"
+      :aria-expanded="!collapsed"
+      @click="$emit('toggle')"
+    >
+      <el-icon :size="16" aria-hidden="true">
         <Expand v-if="collapsed" />
         <Fold v-else />
       </el-icon>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -215,11 +222,14 @@ const activeMenu = computed(() => route.path)
   align-items: center;
   justify-content: center;
   padding: 12px 0;
+  border: none;
   border-top: 1px solid var(--cis-border-color-light);
+  background: transparent;
   cursor: pointer;
   color: var(--cis-text-tertiary);
   transition: color var(--cis-transition-fast), background-color var(--cis-transition-fast);
   flex-shrink: 0;
+  font-family: inherit;
 }
 
 .app-sidebar__collapse-btn:hover {
@@ -235,5 +245,16 @@ const activeMenu = computed(() => route.path)
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar__collapse-btn,
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: none;
+  }
+  .app-sidebar__menu :deep(.el-menu-item) {
+    transition: none;
+  }
 }
 </style>

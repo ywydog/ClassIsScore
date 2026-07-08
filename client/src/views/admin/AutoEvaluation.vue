@@ -1,8 +1,6 @@
 <template>
   <div class="auto-evaluation">
-    <div class="auto-evaluation__header">
-      <h2>{{ t('autoEvaluation') }}</h2>
-    </div>
+    <h2 id="auto-evaluation-title" class="auto-evaluation__header">{{ t('autoEvaluation') }}</h2>
 
     <div class="auto-evaluation__content">
       <!-- 评估项目 Section -->
@@ -10,8 +8,8 @@
         <template #header>
           <div class="card-header">
             <span>{{ t('evaluationItem') }}</span>
-            <el-button type="primary" size="small" @click="openItemDialog()">
-              <el-icon><Plus /></el-icon>
+            <el-button type="primary" size="small" @click="openItemDialog()" aria-label="添加评估项目">
+              <el-icon aria-hidden="true"><Plus /></el-icon>
               添加项目
             </el-button>
           </div>
@@ -19,13 +17,13 @@
         <el-table :data="evaluationItems" stripe empty-text="暂无评估项目">
           <el-table-column prop="name" label="名称">
             <template #default="{ row }">
-              <span v-if="row.color" class="eval-color-dot" :style="{ backgroundColor: row.color }"></span>
+              <span v-if="row.color" class="eval-color-dot" :style="{ backgroundColor: row.color }" aria-hidden="true"></span>
               {{ row.name }}
             </template>
           </el-table-column>
           <el-table-column prop="scoreChange" :label="t('scoreChange')" width="120">
             <template #default="{ row }">
-              <span :class="row.scoreChange >= 0 ? 'score-positive' : 'score-negative'">
+              <span :class="row.scoreChange >= 0 ? 'score-positive' : 'score-negative'" style="font-variant-numeric: tabular-nums">
                 {{ row.scoreChange >= 0 ? '+' : '' }}{{ row.scoreChange }}
               </span>
             </template>
@@ -51,8 +49,8 @@
         <template #header>
           <div class="card-header">
             <span>自动评估配置</span>
-            <el-button type="primary" size="small" @click="openConfigDialog()">
-              <el-icon><Plus /></el-icon>
+            <el-button type="primary" size="small" @click="openConfigDialog()" aria-label="添加自动评估配置">
+              <el-icon aria-hidden="true"><Plus /></el-icon>
               添加配置
             </el-button>
           </div>
@@ -78,7 +76,7 @@
           </el-table-column>
           <el-table-column :label="t('scoreChange')" width="100">
             <template #default="{ row }">
-              <span :class="(row.scoreChange ?? 0) >= 0 ? 'score-positive' : 'score-negative'">
+              <span :class="(row.scoreChange ?? 0) >= 0 ? 'score-positive' : 'score-negative'" style="font-variant-numeric: tabular-nums">
                 {{ (row.scoreChange ?? 0) >= 0 ? '+' : '' }}{{ row.scoreChange }}
               </span>
             </template>
@@ -89,6 +87,7 @@
               <el-switch
                 :model-value="row.isEnabled"
                 size="small"
+                :aria-label="`启用自动评估配置 ${row.name}`"
                 @change="handleToggleConfig(row)"
               />
             </template>
@@ -107,10 +106,10 @@
     <el-dialog v-model="showItemDialog" :title="editingItem ? t('editEvaluationItem') : t('addEvaluationItem')" width="420px">
       <el-form :model="itemForm" label-width="80px">
         <el-form-item label="名称" required>
-          <el-input v-model="itemForm.name" placeholder="如：回答问题" />
+          <el-input v-model="itemForm.name" placeholder="如：回答问题…" aria-label="评估项名称" autocomplete="off" />
         </el-form-item>
         <el-form-item :label="t('scoreChange')" required>
-          <el-input-number v-model="itemForm.scoreChange" :min="-100" :max="100" />
+          <el-input-number v-model="itemForm.scoreChange" :min="-100" :max="100" inputmode="numeric" aria-label="分值变化" />
         </el-form-item>
         <el-form-item label="类型">
           <el-radio-group v-model="itemForm.isPositive">
@@ -119,16 +118,19 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="颜色标签">
-          <div class="color-picker-row">
-            <span
+          <div class="color-picker-row" role="radiogroup" aria-label="颜色标签">
+            <button
               v-for="c in presetColors"
               :key="c.value"
+              type="button"
               class="color-preset-dot"
               :class="{ 'color-preset-dot--active': itemForm.color === c.value }"
               :style="{ backgroundColor: c.value }"
+              :aria-label="c.label"
+              :aria-pressed="itemForm.color === c.value"
               @click="itemForm.color = itemForm.color === c.value ? '' : c.value"
               :title="c.label"
-            ></span>
+            ></button>
             <el-color-picker v-model="itemForm.color" size="small" @change="onColorPickerChange" />
           </div>
         </el-form-item>
@@ -143,10 +145,10 @@
     <el-dialog v-model="showConfigDialog" :title="editingConfig ? '编辑自动评估配置' : '添加自动评估配置'" width="520px">
       <el-form :model="configForm" label-width="100px">
         <el-form-item label="配置名称" required>
-          <el-input v-model="configForm.name" placeholder="如：每日签到加分" />
+          <el-input v-model="configForm.name" placeholder="如：每日签到加分…" aria-label="配置名称" autocomplete="off" />
         </el-form-item>
         <el-form-item label="触发方式" required>
-          <el-select v-model="configForm.triggerType" placeholder="选择触发方式" style="width: 100%">
+          <el-select v-model="configForm.triggerType" placeholder="选择触发方式…" style="width: 100%" aria-label="触发方式">
             <el-option label="每天" value="Daily" />
             <el-option label="每周" value="Weekly" />
             <el-option label="每月" value="Monthly" />
@@ -157,12 +159,13 @@
           <el-time-picker
             v-model="configForm.triggerTimeObj"
             format="HH:mm"
-            placeholder="选择时间"
+            placeholder="选择时间…"
             style="width: 100%"
+            aria-label="触发时间"
           />
         </el-form-item>
         <el-form-item v-if="configForm.triggerType === 'Weekly'" label="星期">
-          <el-select v-model="configForm.dayOfWeek" placeholder="选择星期" style="width: 100%">
+          <el-select v-model="configForm.dayOfWeek" placeholder="选择星期…" style="width: 100%" aria-label="星期">
             <el-option label="周一" :value="1" />
             <el-option label="周二" :value="2" />
             <el-option label="周三" :value="3" />
@@ -173,14 +176,15 @@
           </el-select>
         </el-form-item>
         <el-form-item v-if="configForm.triggerType === 'Monthly'" label="日期">
-          <el-input-number v-model="configForm.dayOfMonth" :min="1" :max="31" placeholder="几号" style="width: 100%" />
+          <el-input-number v-model="configForm.dayOfMonth" :min="1" :max="31" placeholder="几号…" style="width: 100%" inputmode="numeric" aria-label="日期" />
         </el-form-item>
         <el-form-item label="评估项目">
           <el-select
             v-model="configForm.evaluationItemId"
-            placeholder="选择评估项目（可选）"
+            placeholder="选择评估项目（可选）…"
             clearable
             style="width: 100%"
+            aria-label="评估项目"
             @change="onEvaluationItemChange"
           >
             <el-option
@@ -192,20 +196,20 @@
           </el-select>
         </el-form-item>
         <el-form-item :label="t('scoreChange')">
-          <el-input-number v-model="configForm.scoreChange" :min="-1000" :max="1000" :precision="1" style="width: 100%" />
+          <el-input-number v-model="configForm.scoreChange" :min="-1000" :max="1000" :precision="1" style="width: 100%" inputmode="numeric" aria-label="分值变化" />
         </el-form-item>
         <el-form-item label="原因">
-          <el-input v-model="configForm.reason" placeholder="评估原因" />
+          <el-input v-model="configForm.reason" placeholder="评估原因…" aria-label="原因" autocomplete="off" />
         </el-form-item>
         <el-form-item label="目标类型" required>
-          <el-select v-model="configForm.targetType" placeholder="选择目标类型" style="width: 100%">
+          <el-select v-model="configForm.targetType" placeholder="选择目标类型…" style="width: 100%" aria-label="目标类型">
             <el-option :label="t('allStudents')" value="AllStudents" />
             <el-option label="指定小组" value="SpecificGroup" />
             <el-option label="指定学生" value="SpecificStudent" />
           </el-select>
         </el-form-item>
         <el-form-item v-if="configForm.targetType === 'SpecificGroup'" label="目标小组">
-          <el-select v-model="configForm.targetGroupId" placeholder="选择小组" style="width: 100%">
+          <el-select v-model="configForm.targetGroupId" placeholder="选择小组…" style="width: 100%" aria-label="目标小组">
             <el-option
               v-for="g in groups"
               :key="g.id"
@@ -215,7 +219,7 @@
           </el-select>
         </el-form-item>
         <el-form-item v-if="configForm.targetType === 'SpecificStudent'" label="目标学生">
-          <el-select v-model="configForm.targetStudentId" placeholder="选择学生" filterable style="width: 100%">
+          <el-select v-model="configForm.targetStudentId" placeholder="选择学生…" filterable style="width: 100%" aria-label="目标学生">
             <el-option
               v-for="s in students"
               :key="s.id"
@@ -225,7 +229,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="启用">
-          <el-switch v-model="configForm.isEnabled" />
+          <el-switch v-model="configForm.isEnabled" aria-label="启用配置" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -531,16 +535,9 @@ onMounted(async () => {
 
 <style scoped>
 .auto-evaluation__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  margin: 0 0 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.auto-evaluation__header h2 {
-  margin: 0;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -550,6 +547,7 @@ onMounted(async () => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .auto-evaluation__content {
@@ -564,6 +562,11 @@ onMounted(async () => {
   border-radius: var(--cis-radius-lg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast);
+}
+
+.auto-evaluation__card:focus-within {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .auto-evaluation__card:hover {
@@ -613,6 +616,12 @@ onMounted(async () => {
   cursor: pointer;
   border: 2px solid transparent;
   transition: border-color var(--cis-transition-fast), transform var(--cis-transition-fast);
+  padding: 0;
+}
+
+.color-preset-dot:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .color-preset-dot:hover {
@@ -622,5 +631,12 @@ onMounted(async () => {
 .color-preset-dot--active {
   border-color: var(--cis-text-primary);
   box-shadow: 0 0 0 2px var(--cis-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

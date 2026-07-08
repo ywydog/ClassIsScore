@@ -1,18 +1,16 @@
 <template>
   <div class="plugin-page">
-    <div class="plugin-page__header">
-      <h2>插件管理</h2>
-      <p class="plugin-page__desc">管理已安装的插件，启用或禁用功能扩展</p>
-    </div>
+    <h2 id="plugin-management-title" class="plugin-page__header">插件管理</h2>
+    <p class="plugin-page__desc">管理已安装的插件，启用或禁用功能扩展</p>
 
     <div class="plugin-page__content">
       <div v-if="loading" class="plugin-page__loading">
         <el-skeleton :rows="4" animated />
       </div>
       <template v-else>
-        <div class="plugin-list">
-          <div v-for="plugin in plugins" :key="plugin.id" class="plugin-card">
-            <div class="plugin-card__icon">
+        <ul class="plugin-list" role="list" aria-label="已安装插件">
+          <li v-for="plugin in plugins" :key="plugin.id" class="plugin-card" role="listitem">
+            <div class="plugin-card__icon" aria-hidden="true">
               <el-icon :size="28" color="var(--cis-primary)"><Box /></el-icon>
             </div>
             <div class="plugin-card__info">
@@ -30,14 +28,15 @@
                 v-model="plugin.enabled"
                 active-text="启用"
                 inactive-text="禁用"
+                :aria-label="`${plugin.enabled ? '禁用' : '启用'}插件 ${plugin.name}`"
                 @change="handlePluginToggle(plugin)"
               />
             </div>
-          </div>
-        </div>
+          </li>
+        </ul>
         <el-empty v-if="plugins.length === 0" description="暂无已安装插件">
           <template #image>
-            <el-icon :size="64" color="var(--cis-text-quaternary)"><Box /></el-icon>
+            <el-icon :size="64" color="var(--cis-text-quaternary)" aria-hidden="true"><Box /></el-icon>
           </template>
         </el-empty>
       </template>
@@ -45,7 +44,7 @@
 
     <div class="plugin-page__footer">
       <el-button @click="handleOpenPluginDir">
-        <el-icon><FolderOpened /></el-icon>
+        <el-icon aria-hidden="true"><FolderOpened /></el-icon>
         打开插件目录
       </el-button>
     </div>
@@ -109,13 +108,9 @@ function handleOpenPluginDir() {
 
 <style scoped>
 .plugin-page__header {
-  margin-bottom: 24px;
+  margin: 0 0 4px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.plugin-page__header h2 {
-  margin: 0 0 4px;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -125,10 +120,11 @@ function handleOpenPluginDir() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .plugin-page__desc {
-  margin: 0;
+  margin: 0 0 24px;
   padding-left: 12px;
   font-size: 13px;
   color: var(--cis-text-tertiary);
@@ -142,6 +138,9 @@ function handleOpenPluginDir() {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .plugin-card {
@@ -154,6 +153,12 @@ function handleOpenPluginDir() {
   background: var(--cis-card-bg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
+  list-style: none;
+}
+
+.plugin-card:focus-within {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .plugin-card:hover {
@@ -216,5 +221,12 @@ function handleOpenPluginDir() {
   padding-top: 16px;
   border-top: 1px solid var(--cis-border-color-light);
   max-width: 800px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>

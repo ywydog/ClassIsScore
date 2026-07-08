@@ -1,5 +1,13 @@
 <template>
-  <div class="student-card" @click="$emit('click', student)">
+  <div
+    class="student-card"
+    role="button"
+    tabindex="0"
+    :aria-label="`${student.name}，积分 ${student.score}`"
+    @click="$emit('click', student)"
+    @keydown.enter="$emit('click', student)"
+    @keydown.space.prevent="$emit('click', student)"
+  >
     <div class="student-card__avatar">
       <div class="student-card__avatar-wrapper">
         <el-avatar :size="40" :src="student.avatar">
@@ -14,14 +22,14 @@
         <el-tag v-if="groupName" size="small" type="info">{{ groupName }}</el-tag>
       </div>
     </div>
-    <div class="student-card__score-badge" :class="scoreClass">
+    <div class="student-card__score-badge" :class="scoreClass" :aria-label="`积分 ${student.score}`">
       {{ student.score }}
     </div>
     <div class="student-card__actions">
-      <el-button type="primary" size="small" text @click.stop="$emit('edit', student)">
+      <el-button type="primary" size="small" text aria-label="编辑学生" @click.stop="$emit('edit', student)">
         编辑
       </el-button>
-      <el-button type="danger" size="small" text @click.stop="$emit('delete', student.id)">
+      <el-button type="danger" size="small" text aria-label="删除学生" @click.stop="$emit('delete', student.id)">
         删除
       </el-button>
     </div>
@@ -71,6 +79,11 @@ const scoreClass = computed(() => {
   transform: translateY(-2px);
 }
 
+.student-card:focus-visible {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
+}
+
 .student-card__avatar-wrapper {
   position: relative;
   border-radius: var(--cis-radius-full);
@@ -111,6 +124,7 @@ const scoreClass = computed(() => {
   padding: 4px 10px;
   border-radius: var(--cis-radius-md);
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .student-card__score-badge--positive {
@@ -131,5 +145,9 @@ const scoreClass = computed(() => {
 .student-card__actions {
   display: flex;
   gap: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }
 </style>

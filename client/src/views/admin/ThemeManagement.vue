@@ -1,60 +1,61 @@
 <template>
   <div class="theme-page">
-    <div class="theme-page__header">
-      <h2>主题包管理</h2>
-      <p class="theme-page__desc">安装和管理主题包，自定义应用外观</p>
-    </div>
+    <h2 id="theme-management-title" class="theme-page__title">主题包管理</h2>
+    <p class="theme-page__desc">安装和管理主题包，自定义应用外观</p>
 
     <div class="theme-page__content">
       <div v-if="loading" class="theme-page__loading">
         <el-skeleton :rows="4" animated />
       </div>
       <template v-else>
-        <div class="theme-list">
-          <div v-for="theme in themes" :key="theme.id" class="theme-card">
-            <div class="theme-card__preview">
-              <div class="theme-card__preview-bg" :style="{ background: (theme as any).previewGradient || 'var(--cis-gradient-primary)' }">
-                <span class="theme-card__preview-label">Aa</span>
+        <ul class="theme-list" role="list" aria-label="主题包列表">
+          <li v-for="theme in themes" :key="theme.id" class="theme-list__item">
+            <div class="theme-card">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__preview-bg" :style="{ background: (theme as any).previewGradient || 'var(--cis-gradient-primary)' }">
+                  <span class="theme-card__preview-label">Aa</span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__header">
+                  <span class="theme-card__name">{{ theme.name }}</span>
+                  <el-tag size="small" type="info">v{{ theme.version }}</el-tag>
+                </div>
+                <div class="theme-card__meta">
+                  <span v-if="theme.author">{{ theme.author }}</span>
+                  <span>{{ theme.description || '暂无描述' }}</span>
+                </div>
+              </div>
+              <div class="theme-card__actions">
+                <el-switch
+                  v-model="theme.enabled"
+                  active-text="启用"
+                  inactive-text="禁用"
+                  :aria-label="`${theme.enabled ? '禁用' : '启用'}主题包 ${theme.name}`"
+                  @change="handleThemeToggle(theme)"
+                />
+                <el-button type="danger" size="small" text @click="handleDeleteTheme(theme.id)" :aria-label="`删除主题包 ${theme.name}`">
+                  删除
+                </el-button>
               </div>
             </div>
-            <div class="theme-card__info">
-              <div class="theme-card__header">
-                <span class="theme-card__name">{{ theme.name }}</span>
-                <el-tag size="small" type="info">v{{ theme.version }}</el-tag>
-              </div>
-              <div class="theme-card__meta">
-                <span v-if="theme.author">{{ theme.author }}</span>
-                <span>{{ theme.description || '暂无描述' }}</span>
-              </div>
-            </div>
-            <div class="theme-card__actions">
-              <el-switch
-                v-model="theme.enabled"
-                active-text="启用"
-                inactive-text="禁用"
-                @change="handleThemeToggle(theme)"
-              />
-              <el-button type="danger" size="small" text @click="handleDeleteTheme(theme.id)">
-                删除
-              </el-button>
-            </div>
-          </div>
-        </div>
+          </li>
+        </ul>
         <el-empty v-if="themes.length === 0" description="暂无已安装主题包">
           <template #image>
-            <el-icon :size="64" color="var(--cis-text-quaternary)"><Brush /></el-icon>
+            <el-icon :size="64" color="var(--cis-text-quaternary)" aria-hidden="true"><Brush /></el-icon>
           </template>
         </el-empty>
       </template>
     </div>
 
     <div class="theme-page__footer">
-      <el-button @click="handleImportTheme">
-        <el-icon><Upload /></el-icon>
+      <el-button @click="handleImportTheme" aria-label="导入主题包">
+        <el-icon aria-hidden="true"><Upload /></el-icon>
         导入主题包 (.cisui)
       </el-button>
-      <el-button @click="handleOpenThemeDir">
-        <el-icon><FolderOpened /></el-icon>
+      <el-button @click="handleOpenThemeDir" aria-label="打开主题目录">
+        <el-icon aria-hidden="true"><FolderOpened /></el-icon>
         打开主题目录
       </el-button>
     </div>
@@ -131,14 +132,10 @@ async function promptRelaunch(reason: string) {
 </script>
 
 <style scoped>
-.theme-page__header {
-  margin-bottom: 24px;
+.theme-page__title {
+  margin: 0 0 4px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--cis-border-color-light);
-}
-
-.theme-page__header h2 {
-  margin: 0 0 4px;
   font-family: var(--cis-font-family-display);
   font-size: 22px;
   color: var(--cis-text-primary);
@@ -148,10 +145,11 @@ async function promptRelaunch(reason: string) {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  scroll-margin-top: 80px;
 }
 
 .theme-page__desc {
-  margin: 0;
+  margin: 0 0 24px;
   padding-left: 12px;
   font-size: 13px;
   color: var(--cis-text-tertiary);
@@ -165,6 +163,13 @@ async function promptRelaunch(reason: string) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.theme-list__item {
+  list-style: none;
 }
 
 .theme-card {
@@ -177,6 +182,11 @@ async function promptRelaunch(reason: string) {
   background: var(--cis-card-bg);
   box-shadow: var(--cis-shadow-card);
   transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
+}
+
+.theme-card:focus-within {
+  outline: 2px solid var(--cis-primary);
+  outline-offset: 2px;
 }
 
 .theme-card:hover {
@@ -244,5 +254,13 @@ async function promptRelaunch(reason: string) {
   max-width: 800px;
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>
