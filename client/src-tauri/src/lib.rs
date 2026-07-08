@@ -16,6 +16,7 @@ pub mod state {
     use crate::services::logger::LoggerService;
     use once_cell::sync::OnceCell;
     use sea_orm::DatabaseConnection;
+    use std::path::PathBuf;
     use std::sync::Arc;
     use tauri::AppHandle;
 
@@ -23,6 +24,8 @@ pub mod state {
         pub db: Arc<OnceCell<DatabaseConnection>>,
         pub logger: Arc<OnceCell<LoggerService>>,
         pub app_handle: Arc<OnceCell<AppHandle>>,
+        /// 后端数据目录（SQLite 文件所在目录）
+        pub data_dir: Arc<OnceCell<PathBuf>>,
     }
 
     impl AppState {
@@ -31,6 +34,7 @@ pub mod state {
                 db: Arc::new(OnceCell::new()),
                 logger: Arc::new(OnceCell::new()),
                 app_handle: Arc::new(OnceCell::new()),
+                data_dir: Arc::new(OnceCell::new()),
             }
         }
 
@@ -38,6 +42,13 @@ pub mod state {
             self.db
                 .get()
                 .ok_or_else(|| "数据库未初始化".to_string())
+        }
+
+        /// 读取后端数据目录路径（前端用来展示"数据存放在哪里"）
+        pub fn get_data_dir(&self) -> &PathBuf {
+            self.data_dir
+                .get()
+                .expect("数据目录未初始化")
         }
     }
 }
@@ -74,6 +85,11 @@ pub fn run() {
                 }
             }
             let _ = state.app_handle.set(app_handle.clone());
+
+            // 初始化数据目录（同步算出来即可，不依赖数据库）
+            if let Ok(dir) = crate::services::paths::data_dir(&app_handle) {
+                let _ = state.data_dir.set(dir);
+            }
 
             // 初始化数据库（异步任务，避免 setup 阻塞触发 ANR）
             let db_state = state.db.clone();
@@ -117,6 +133,8 @@ pub fn run() {
             commands::score::score_revert,
             commands::score::score_recent,
             commands::score::score_stats,
+            commands::score::score_today_count,
+            commands::score::score_trend,
             // 小组管理
             commands::group::group_list,
             commands::group::group_get,
@@ -132,6 +150,7 @@ pub fn run() {
             commands::leaderboard::leaderboard_query,
             commands::leaderboard::leaderboard_by_group,
             commands::leaderboard::leaderboard_individual,
+            commands::leaderboard::leaderboard_all_groups,
             // 结算
             commands::settlement::settlement_list,
             commands::settlement::settlement_create,
@@ -143,18 +162,32 @@ pub fn run() {
             commands::settings::settings_set,
             commands::settings::settings_export,
             commands::settings::settings_import,
+            commands::settings::settings_data_path,
             // 认证
             commands::auth::auth_login,
             commands::auth::auth_change_password,
             commands::auth::auth_verify,
             commands::auth::auth_get_info,
             commands::auth::auth_set_passwords,
+            commands::auth::admin_reset,
             // 自动评估
             commands::auto_score::auto_score_get_rules,
             commands::auto_score::auto_score_add_rule,
             commands::auto_score::auto_score_update_rule,
             commands::auto_score::auto_score_delete_rule,
             commands::auto_score::auto_score_toggle_rule,
+            // 主题
+            commands::theme::theme_list,
+            commands::theme::theme_get,
+            commands::theme::theme_install,
+            commands::theme::theme_toggle,
+            commands::theme::theme_delete,
+            // 插件
+            commands::plugin::plugin_list,
+            commands::plugin::plugin_get,
+            commands::plugin::plugin_install,
+            commands::plugin::plugin_toggle,
+            commands::plugin::plugin_delete,
             // 日志
             commands::log::log_query,
             commands::log::log_clear,

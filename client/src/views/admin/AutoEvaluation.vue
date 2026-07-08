@@ -245,10 +245,13 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { EvaluationItem, AutoEvaluationConfig, StudentGroup, Student } from '@/types'
-import api from '@/services/api'
+import { invoke } from '@/services/tauri'
+import { groupApi } from '@/services/group'
+import { useStudentStore } from '@/stores/student'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
 
 const { t } = useTerminology()
+const studentStore = useStudentStore()
 
 // ==================== 评估项目 ====================
 const evaluationItems = ref<EvaluationItem[]>([])
@@ -279,8 +282,9 @@ function onColorPickerChange(val: string | null) {
 
 async function fetchItems() {
   try {
-    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluation/items')
-    evaluationItems.value = response.data.data
+    // IPC 改造：evaluation_list
+    const items = await invoke<EvaluationItem[]>('evaluation_list', {})
+    evaluationItems.value = items || []
   } catch { /* ignore */ }
 }
 
@@ -313,9 +317,9 @@ async function handleSaveItem() {
   }
   try {
     if (editingItem.value) {
-      await api.put(`/api/evaluation/items/${editingItem.value.id}`, payload)
+      await invoke('evaluation_update', { id: editingItem.value.id, ...payload })
     } else {
-      await api.post('/api/evaluation/items', payload)
+      await invoke('evaluation_create', payload)
     }
     ElMessage.success('已保存')
     showItemDialog.value = false
@@ -326,7 +330,7 @@ async function handleSaveItem() {
 async function handleDeleteItem(id: string) {
   await ElMessageBox.confirm('确定删除该评估项？', '确认', { type: 'warning' })
   try {
-    await api.delete(`/api/evaluation/items/${id}`)
+    await invoke('evaluation_delete', { id })
     ElMessage.success('已删除')
     await fetchItems()
   } catch { /* ignore */ }
@@ -356,22 +360,25 @@ const configForm = reactive({
 
 async function fetchConfigs() {
   try {
-    const response = await api.get<{ data: AutoEvaluationConfig[] }>('/api/auto-evaluation-configs')
-    configList.value = response.data.data
+    // IPC 改造：auto-evaluation-configs → auto_score_get_rules
+    const configs = await invoke<AutoEvaluationConfig[]>('auto_score_get_rules', {})
+    configList.value = configs || []
   } catch { /* ignore */ }
 }
 
 async function fetchGroups() {
   try {
-    const response = await api.get<{ data: StudentGroup[] }>('/api/groups')
-    groups.value = response.data.data
+    // 改用 groupApi（已走 invoke）
+    const response = await groupApi.getAll()
+    groups.value = response.data.data || []
   } catch { /* ignore */ }
 }
 
 async function fetchStudents() {
   try {
-    const response = await api.get<{ data: { records: Student[] } }>('/api/students?current=1&size=9999')
-    students.value = response.data.data.records || []
+    // 改用 studentStore（store 内已走 invoke）
+    await studentStore.fetchStudents()
+    students.value = studentStore.students
   } catch { /* ignore */ }
 }
 
@@ -501,9 +508,9 @@ async function handleSaveConfig() {
   }
   try {
     if (editingConfig.value) {
-      await api.put(`/api/auto-evaluation-configs/${editingConfig.value.id}`, payload)
+      await invoke('auto_score_update_rule', { id: editingConfig.value.id, ...payload })
     } else {
-      await api.post('/api/auto-evaluation-configs', payload)
+      await invoke('auto_score_add_rule', payload)
     }
     ElMessage.success('已保存')
     showConfigDialog.value = false
@@ -513,7 +520,8 @@ async function handleSaveConfig() {
 
 async function handleToggleConfig(row: AutoEvaluationConfig) {
   try {
-    await api.put(`/api/auto-evaluation-configs/${row.id}/toggle`)
+    // IPC 改造：auto-evaluation-configs/{id}/toggle → auto_score_toggle_rule
+    await invoke('auto_score_toggle_rule', { id: row.id, enabled: !row.isEnabled })
     await fetchConfigs()
   } catch { /* ignore */ }
 }
@@ -521,7 +529,8 @@ async function handleToggleConfig(row: AutoEvaluationConfig) {
 async function handleDeleteConfig(id: string) {
   await ElMessageBox.confirm('确定删除该自动评估配置？', '确认', { type: 'warning' })
   try {
-    await api.delete(`/api/auto-evaluation-configs/${id}`)
+    // IPC 改造：auto-evaluation-configs/{id} → auto_score_delete_rule
+    await invoke('auto_score_delete_rule', { id })
     ElMessage.success('已删除')
     await fetchConfigs()
   } catch { /* ignore */ }

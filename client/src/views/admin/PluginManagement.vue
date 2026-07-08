@@ -56,8 +56,8 @@ import { ref, onMounted } from 'vue'
 import { Box, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { PluginManifest } from '@/types'
-import api from '@/services/api'
-import { invoke } from '@tauri-apps/api/core'
+import { pluginApi } from '@/services/plugin'
+import { invoke } from '@/services/tauri'
 
 const plugins = ref<Array<PluginManifest & { enabled: boolean }>>([])
 const loading = ref(true)
@@ -69,8 +69,9 @@ onMounted(async () => {
 
 async function fetchPlugins() {
   try {
-    const response = await api.get<{ data: Array<PluginManifest & { enabled: boolean }> }>('/api/plugins')
-    plugins.value = response.data.data || []
+    // IPC 改造：通过 pluginApi 走 invoke('plugin_list')，Tauri 端新加了实现
+    const response = await pluginApi.getAll()
+    plugins.value = (response.data.data as Array<PluginManifest & { enabled: boolean }>) || []
   } catch {
     plugins.value = []
   }
@@ -78,7 +79,11 @@ async function fetchPlugins() {
 
 async function handlePluginToggle(plugin: PluginManifest & { enabled: boolean }) {
   try {
-    await api.put(`/api/plugins/${plugin.id}/toggle`, { enabled: plugin.enabled })
+    if (plugin.enabled) {
+      await pluginApi.enable(plugin.id)
+    } else {
+      await pluginApi.disable(plugin.id)
+    }
     ElMessage.success(plugin.enabled ? '已启用插件' : '已禁用插件')
     promptRelaunch('插件状态变更')
   } catch {

@@ -72,7 +72,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Refresh, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry } from '@/types'
-import api from '@/services/api'
+import { invoke } from '@/services/tauri'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { exportToExcel, type ExcelColumn } from '@/utils/excelHelper'
 
@@ -100,6 +100,9 @@ onUnmounted(() => {
 })
 
 function getTimeRangeParams(): { startTime?: string; endTime?: string } {
+  // 暂未在 Rust 后端 leaderboard_query 中实现，
+  // 保留函数作为时间范围 UI 控件的占位，避免误删；
+  // UI 上提示"时间范围筛选待后端补全"。
   const now = new Date()
   let startTime: Date | undefined
 
@@ -129,24 +132,42 @@ function getTimeRangeParams(): { startTime?: string; endTime?: string } {
 }
 
 function handleTimeRangeChange() {
+  // 时间范围切换目前只刷新排行榜，时间范围筛选参数
+  // 需等 Rust 后端 leaderboard_query 支持后才会真正生效
+  // （见 getTimeRangeParams 注释）
+  void getTimeRangeParams
   fetchLeaderboard()
 }
 
 async function fetchLeaderboard() {
   try {
-    const endpoint = mode.value === 'personal' ? '/api/leaderboard/personal' : '/api/leaderboard/group'
-    const params = getTimeRangeParams()
-    const response = await api.get<{ data: LeaderboardEntry[] }>(endpoint, { params })
-    const data = response.data.data
-    // 为每条数据添加 rank
-    entries.value = data.map((item: any, index: number) => ({
-      rank: index + 1,
-      name: item.name,
-      score: item.score ?? item.totalScore ?? 0,
-      isGroup: mode.value === 'group',
-    }))
+    if (mode.value === 'personal') {
+      // IPC 改造：/api/leaderboard/personal → leaderboard_query
+      const data = await invoke<Array<{ student: { name: string; total_score: number } }>>(
+        'leaderboard_query',
+        {}
+      )
+      entries.value = data.map((item, index) => ({
+        rank: index + 1,
+        name: item.student.name,
+        score: item.student.total_score ?? 0,
+        isGroup: false,
+      }))
+    } else {
+      // IPC 改造：/api/leaderboard/group → leaderboard_all_groups
+      const groups = await invoke<Array<{ group_name: string; total_score: number }>>(
+        'leaderboard_all_groups',
+        {}
+      )
+      entries.value = groups.map((g, index) => ({
+        rank: index + 1,
+        name: g.group_name,
+        score: g.total_score,
+        isGroup: true,
+      }))
+    }
   } catch {
-    // silent
+    entries.value = []
   }
 }
 

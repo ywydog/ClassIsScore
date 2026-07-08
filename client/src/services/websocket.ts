@@ -1,5 +1,5 @@
 import type { ScoreUpdateEvent } from '@/types'
-import { isTauri } from './tauri'
+import { isTauri } from '@/utils/platform'
 
 interface WebSocketCallbacks {
   onScoreUpdate?: (data: ScoreUpdateEvent) => void
@@ -107,7 +107,7 @@ function scheduleReconnect(): void {
 
 // 统一导出
 export function connectWebSocket(cbs: WebSocketCallbacks): void {
-  if (isTauri) {
+  if (isTauri()) {
     connectTauri(cbs)
   } else {
     connectWs(cbs)
@@ -115,7 +115,7 @@ export function connectWebSocket(cbs: WebSocketCallbacks): void {
 }
 
 export function disconnectWebSocket(): void {
-  if (isTauri) {
+  if (isTauri()) {
     disconnectTauri()
   } else {
     disconnectWs()

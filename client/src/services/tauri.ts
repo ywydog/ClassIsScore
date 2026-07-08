@@ -1,10 +1,12 @@
 /**
  * Tauri IPC 调用封装层
- * 替代原来的 HTTP API (api.ts)，直接通过 Tauri IPC 调用 Rust 后端命令
+ *
+ * Tauri 环境下：直接走 `@tauri-apps/api/core` 的 `invoke`
+ * 浏览器开发环境：通过 axios 调本地 HTTP 后端，路径从 `ipc-routes.ts` 查表
  */
 
-// 检测是否在 Tauri 环境中运行
-export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+import { isTauri } from '@/utils/platform'
+import { cmdToPath, type IpcRoute } from './ipc-routes'
 
 // 延迟加载的 invoke 函数
 let _invoke: ((cmd: string, args?: Record<string, unknown>) => Promise<unknown>) | null = null
@@ -12,61 +14,45 @@ let _invoke: ((cmd: string, args?: Record<string, unknown>) => Promise<unknown>)
 async function getInvoke() {
   if (_invoke) return _invoke
 
-  if (isTauri) {
+  if (isTauri()) {
     const tauriApi = await import('@tauri-apps/api/core')
     _invoke = tauriApi.invoke
   } else {
-    // 非 Tauri 环境：回退到 HTTP API
+    // 浏览器开发环境：把 IPC 命令翻译成 HTTP 请求
     const { default: api } = await import('./api')
-    _invoke = async (cmd: string, args?: Record<string, unknown>): Promise<unknown> => {
-      const cmdToPath: Record<string, { method: string; path: string }> = {
-        student_list: { method: 'GET', path: '/api/students' },
-        student_get: { method: 'GET', path: '/api/students/{id}' },
-        student_create: { method: 'POST', path: '/api/students' },
-        student_update: { method: 'PUT', path: '/api/students/{id}' },
-        student_delete: { method: 'DELETE', path: '/api/students/{id}' },
-        student_batch_create: { method: 'POST', path: '/api/students/batch' },
-        score_list: { method: 'GET', path: '/api/scores' },
-        score_add: { method: 'POST', path: '/api/scores' },
-        score_batch_add: { method: 'POST', path: '/api/scores/batch' },
-        score_revert: { method: 'POST', path: '/api/scores/{id}/revert' },
-        score_recent: { method: 'GET', path: '/api/scores/recent' },
-        group_list: { method: 'GET', path: '/api/groups' },
-        group_create: { method: 'POST', path: '/api/groups' },
-        group_update: { method: 'PUT', path: '/api/groups/{id}' },
-        group_delete: { method: 'DELETE', path: '/api/groups/{id}' },
-        evaluation_list: { method: 'GET', path: '/api/evaluations' },
-        evaluation_create: { method: 'POST', path: '/api/evaluations' },
-        evaluation_update: { method: 'PUT', path: '/api/evaluations/{id}' },
-        evaluation_delete: { method: 'DELETE', path: '/api/evaluations/{id}' },
-        settings_get_all: { method: 'GET', path: '/api/settings' },
-        settings_get: { method: 'GET', path: '/api/settings/{key}' },
-        settings_set: { method: 'PUT', path: '/api/settings' },
-        auth_login: { method: 'POST', path: '/api/admin/login' },
-        auth_verify: { method: 'POST', path: '/api/admin/verify' },
-      }
 
-      const mapping = cmdToPath[cmd]
+    _invoke = async (cmd: string, args?: Record<string, unknown>): Promise<unknown> => {
+      const mapping: IpcRoute | undefined = cmdToPath[cmd]
       if (!mapping) {
         throw new Error(`未知的 IPC 命令: ${cmd}`)
       }
 
+      // 替换路径占位符
       let path = mapping.path
-      if (args?.id) {
+      if (args?.id !== undefined) {
         path = path.replace('{id}', String(args.id))
       }
-      if (args?.key) {
+      if (args?.key !== undefined) {
         path = path.replace('{key}', String(args.key))
+      }
+
+      // GET 走 query，其余走 body；并把"用于占位符替换"的 id/key 从参数里抠掉
+      const isGet = mapping.method === 'GET'
+      const stripped: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(args ?? {})) {
+        if (k === 'id' || k === 'key') continue
+        stripped[k] = v
       }
 
       const response = await api.request({
         method: mapping.method as 'GET' | 'POST' | 'PUT' | 'DELETE',
         url: path,
-        data: mapping.method !== 'GET' ? args : undefined,
-        params: mapping.method === 'GET' ? args : undefined,
+        data: isGet ? undefined : stripped,
+        params: isGet ? stripped : undefined,
       })
 
-      return (response as any).data?.data
+      // 后端统一返回 { code, data, message }，提取 data 给调用方
+      return (response as { data?: { data?: unknown } }).data?.data
     }
   }
 
@@ -77,3 +63,5 @@ export async function invoke<T>(cmd: string, args?: Record<string, unknown>): Pr
   const fn = await getInvoke()
   return fn(cmd, args) as Promise<T>
 }
+
+export { cmdToPath } from './ipc-routes'

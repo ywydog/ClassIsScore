@@ -342,8 +342,8 @@ import { useStudentStore } from '@/stores/student'
 import { useSettingsStore } from '@/stores/settings'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
 import { groupApi } from '@/services/group'
+import { invoke } from '@/services/tauri'
 import type { EvaluationItem, StudentGroup, StudentScoreStats } from '@/types'
-import api from '@/services/api'
 import { readExcelFile } from '@/utils/excelHelper'
 import type { UploadFile } from 'element-plus'
 import ScoreHistory from '@/components/score/ScoreHistory.vue'
@@ -470,8 +470,9 @@ onMounted(async () => {
 
 async function fetchEvaluationItems() {
   try {
-    const response = await api.get<{ data: EvaluationItem[] }>('/api/evaluations')
-    evaluationItems.value = response.data.data
+    // IPC 改造：/api/evaluations → evaluation_list
+    const items = await invoke<EvaluationItem[]>('evaluation_list', {})
+    evaluationItems.value = items || []
   } catch {
     evaluationItems.value = [
       { id: '1', name: '回答问题', scoreChange: 2, isPositive: true, createdAt: '' },

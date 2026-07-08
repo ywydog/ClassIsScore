@@ -1,4 +1,10 @@
 use crate::db::entities::admin_settings;
+use crate::db::entities::auto_evaluation_config;
+use crate::db::entities::evaluation_item;
+use crate::db::entities::score_record;
+use crate::db::entities::settlement_record;
+use crate::db::entities::student;
+use crate::db::entities::student_group;
 use crate::state::AppState;
 use parking_lot::RwLock;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -216,5 +222,46 @@ pub async fn auth_set_passwords(
     Ok(AuthResult {
         success: true,
         message: "密码设置成功".to_string(),
+    })
+}
+
+/// 清空所有业务数据：学生、积分、小组、评估项、自动评估配置、结算记录。
+/// 保留管理员密码、USB/面部密码、设置项（floating、主题、插件状态等）。
+#[tauri::command]
+pub async fn admin_reset(
+    state: State<'_, Arc<RwLock<AppState>>>,
+) -> Result<AuthResult, String> {
+    let db = get_db(&state)?;
+
+    // 按依赖关系顺序清理：先删 score_records（依赖 student），
+    // 再删 student，再删其余无依赖的表。
+    score_record::Entity::delete_many()
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+    student::Entity::delete_many()
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+    student_group::Entity::delete_many()
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+    evaluation_item::Entity::delete_many()
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+    auto_evaluation_config::Entity::delete_many()
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+    settlement_record::Entity::delete_many()
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(AuthResult {
+        success: true,
+        message: "数据已重置".to_string(),
     })
 }

@@ -67,8 +67,8 @@ import { ref, onMounted } from 'vue'
 import { Brush, Upload, FolderOpened } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ThemeManifest } from '@/types'
-import api from '@/services/api'
-import { invoke } from '@tauri-apps/api/core'
+import { themeApi } from '@/services/theme'
+import { invoke } from '@/services/tauri'
 
 const themes = ref<Array<ThemeManifest & { enabled: boolean }>>([])
 const loading = ref(true)
@@ -80,8 +80,9 @@ onMounted(async () => {
 
 async function fetchThemes() {
   try {
-    const response = await api.get<{ data: Array<ThemeManifest & { enabled: boolean }> }>('/api/themes')
-    themes.value = response.data.data || []
+    // IPC 改造：通过 themeApi 走 invoke('theme_list')，Tauri 端我新加了实现
+    const response = await themeApi.getAll()
+    themes.value = (response.data.data as Array<ThemeManifest & { enabled: boolean }>) || []
   } catch {
     themes.value = []
   }
@@ -89,7 +90,11 @@ async function fetchThemes() {
 
 async function handleThemeToggle(theme: ThemeManifest & { enabled: boolean }) {
   try {
-    await api.put(`/api/themes/${theme.id}/toggle`, { enabled: theme.enabled })
+    if (theme.enabled) {
+      await themeApi.apply(theme.id)
+    } else {
+      await invoke('theme_toggle', { id: theme.id, enabled: false })
+    }
     ElMessage.success(theme.enabled ? '已启用主题' : '已禁用主题')
     promptRelaunch('主题包状态变更')
   } catch {
@@ -100,7 +105,7 @@ async function handleThemeToggle(theme: ThemeManifest & { enabled: boolean }) {
 async function handleDeleteTheme(id: string) {
   await ElMessageBox.confirm('确定删除该主题包？', '确认删除', { type: 'warning' })
   try {
-    await api.delete(`/api/themes/${id}`)
+    await themeApi.uninstall(id)
     ElMessage.success('已删除')
     await fetchThemes()
     promptRelaunch('删除主题包')

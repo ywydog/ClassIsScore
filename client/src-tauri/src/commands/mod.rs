@@ -9,6 +9,8 @@ pub mod auth;
 pub mod auto_score;
 pub mod log;
 pub mod app;
+pub mod theme;
+pub mod plugin;
 
 use crate::state::AppState;
 use parking_lot::RwLock;

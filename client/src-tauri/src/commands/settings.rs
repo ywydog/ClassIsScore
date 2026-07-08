@@ -211,3 +211,13 @@ pub async fn settings_import(
 
     Ok("导入成功".to_string())
 }
+
+/// 读取后端数据目录路径（用于前端展示"数据存在哪里"）。
+#[tauri::command]
+pub async fn settings_data_path(
+    state: State<'_, Arc<RwLock<AppState>>>,
+) -> Result<String, String> {
+    let guard = state.read();
+    let data_dir = guard.get_data_dir();
+    Ok(data_dir.to_string_lossy().to_string())
+}

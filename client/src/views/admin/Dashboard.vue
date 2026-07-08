@@ -181,7 +181,7 @@ import { User, Grid, Timer, Trophy, Rank, Finished, TrendCharts } from '@element
 import { useStudentStore } from '@/stores/student'
 import { useScoreStore } from '@/stores/score'
 import { groupApi } from '@/services/group'
-import api from '@/services/api'
+import { invoke } from '@/services/tauri'
 
 const studentStore = useStudentStore()
 const scoreStore = useScoreStore()
@@ -260,12 +260,13 @@ function formatTime(dateStr: string): string {
 
 async function fetchDashboardData() {
   try {
-    const [studentsRes, groupsRes] = await Promise.all([
-      api.get('/api/students'),
+    // IPC 改造：学生用 student_list，分组用 groupApi（已走 invoke），
+    // 今日计数和趋势走后端新加的 score_today_count / score_trend。
+    const [students, groupsRes] = await Promise.all([
+      invoke<Array<{ score: number }>>('student_list', {}),
       groupApi.getAll(),
     ])
 
-    const students: { score: number }[] = studentsRes.data.data || []
     const groups: unknown[] = groupsRes.data.data || []
 
     stats.value.studentCount = students.length
@@ -286,8 +287,7 @@ async function fetchDashboardData() {
 
   // Fetch today's count
   try {
-    const res = await api.get('/api/scores/today-count')
-    stats.value.todayCount = res.data.data ?? 0
+    stats.value.todayCount = await invoke<number>('score_today_count', {})
   } catch {
     // Fallback: compute from recent records
     const today = new Date().toISOString().slice(0, 10)
@@ -298,8 +298,8 @@ async function fetchDashboardData() {
 
   // Fetch trend data
   try {
-    const res = await api.get('/api/scores/trend', { params: { days: 7 } })
-    trendRaw.value = res.data.data || []
+    const trend = await invoke<Array<{ date: string; count: number }>>('score_trend', { days: 7 })
+    trendRaw.value = trend
   } catch {
     // Fallback: compute client-side from records
     computeTrendFromRecords()

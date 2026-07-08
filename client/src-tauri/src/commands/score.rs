@@ -269,3 +269,72 @@ pub async fn score_stats(
         count: records.len() as i64,
     })
 }
+
+/// 今日积分记录数（未撤销）。给 Dashboard 用。
+#[tauri::command]
+pub async fn score_today_count(
+    state: State<'_, Arc<RwLock<AppState>>>,
+) -> Result<i64, String> {
+    let db = get_db(&state)?;
+    let now = chrono::Local::now();
+    let today_start = now
+        .date_naive()
+        .and_hms_opt(0, 0, 0)
+        .ok_or_else(|| "无法计算今日开始时间".to_string())?;
+
+    let count = score_record::Entity::find()
+        .filter(score_record::Column::Reverted.eq(false))
+        .filter(score_record::Column::CreatedAt.gte(today_start))
+        .count(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(count as i64)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScoreTrendPoint {
+    pub date: String,
+    pub count: i64,
+}
+
+/// 最近 `days` 天每日积分记录数（未撤销）。给 Dashboard 用。
+#[tauri::command]
+pub async fn score_trend(
+    state: State<'_, Arc<RwLock<AppState>>>,
+    days: Option<i64>,
+) -> Result<Vec<ScoreTrendPoint>, String> {
+    let db = get_db(&state)?;
+    let days = days.unwrap_or(7).clamp(1, 90);
+
+    let now = chrono::Local::now();
+    let start_date = now.date_naive() - chrono::Duration::days(days - 1);
+    let start_dt = start_date
+        .and_hms_opt(0, 0, 0)
+        .ok_or_else(|| "无法计算起始时间".to_string())?;
+
+    let records = score_record::Entity::find()
+        .filter(score_record::Column::Reverted.eq(false))
+        .filter(score_record::Column::CreatedAt.gte(start_dt))
+        .all(&db)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 用 HashMap 聚合；空缺的日期补 0
+    let mut buckets: std::collections::BTreeMap<String, i64> = std::collections::BTreeMap::new();
+    for i in 0..days {
+        let d = start_date + chrono::Duration::days(i);
+        buckets.insert(d.format("%Y-%m-%d").to_string(), 0);
+    }
+    for r in &records {
+        let key = r.created_at.date().format("%Y-%m-%d").to_string();
+        if let Some(v) = buckets.get_mut(&key) {
+            *v += 1;
+        }
+    }
+
+    Ok(buckets
+        .into_iter()
+        .map(|(date, count)| ScoreTrendPoint { date, count })
+        .collect())
+}

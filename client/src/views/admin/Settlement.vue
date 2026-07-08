@@ -77,7 +77,7 @@ import { Finished, Clock, Download } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useStudentStore } from '@/stores/student'
 import type { SettlementRecord } from '@/types'
-import api from '@/services/api'
+import { invoke } from '@/services/tauri'
 import { exportToExcel, type ExcelColumn } from '@/utils/excelHelper'
 
 const studentStore = useStudentStore()
@@ -116,8 +116,8 @@ onMounted(async () => {
 
 async function fetchSettlements() {
   try {
-    const response = await api.get<{ data: SettlementRecord[] }>('/api/settlements')
-    settlements.value = response.data.data
+    const records = await invoke<SettlementRecord[]>('settlement_list', {})
+    settlements.value = records
   } catch { /* ignore */ }
 }
 
@@ -128,9 +128,11 @@ async function handleSettle() {
     { type: 'warning', confirmButtonText: '确认结算', cancelButtonText: '取消' }
   )
   try {
-    await api.post('/api/settlements', {
-      name: '积分结算',
-      period: new Date().toISOString().slice(0, 10),
+    await invoke('settlement_create', {
+      input: {
+        name: '积分结算',
+        period: new Date().toISOString().slice(0, 10),
+      },
     })
     ElMessage.success('结算完成')
     await fetchSettlements()
@@ -141,7 +143,7 @@ async function handleSettle() {
 async function handleRevert(id: string) {
   await ElMessageBox.confirm('撤销结算将恢复结算前的积分数据。确定？', '确认撤销', { type: 'warning' })
   try {
-    await api.post(`/api/settlements/${id}/revert`)
+    await invoke('settlement_rollback', { id: Number(id) })
     ElMessage.success('已撤销结算')
     await fetchSettlements()
     await studentStore.fetchStudents()

@@ -230,12 +230,11 @@ import { useSettingsStore } from '@/stores/settings'
 import { DisplayMode } from '@/types'
 import type { Student, StudentGroup, EvaluationItem } from '@/types'
 import { ALL_PET_TYPES } from '@/utils/petSystem'
-import api from '@/services/api'
+import { invoke } from '@/services/tauri'
 import { studentApi } from '@/services/student'
 import { groupApi } from '@/services/group'
 import { exportToExcel, readExcelFile } from '@/utils/excelHelper'
 import * as XLSX from 'xlsx'
-import { invoke } from '@tauri-apps/api/core'
 
 const settingsStore = useSettingsStore()
 const activeTab = ref('general')
@@ -321,24 +320,32 @@ onMounted(async () => {
 
 async function fetchFloatingSettings() {
   try {
-    const response = await api.get<{ data: Record<string, unknown> }>('/api/settings/floating')
-    const data = response.data.data
-    if (data) {
-      if (data['floating.enabled'] !== undefined) floatingSettings.enabled = !!data['floating.enabled']
-      if (data['floating.style']) floatingSettings.style = data['floating.style'] as 'classic' | 'modern'
-      if (data['floating.opacity'] !== undefined) floatingSettings.opacity = Number(data['floating.opacity'])
-      if (data['floating.size'] !== undefined) floatingSettings.size = Number(data['floating.size'])
-      if (data['floating.displayText']) floatingSettings.displayText = String(data['floating.displayText'])
-      if (data['floating.showLabel'] !== undefined) floatingSettings.showLabel = !!data['floating.showLabel']
-      if (data['floating.accentColor']) floatingSettings.accentColor = String(data['floating.accentColor'])
+    // IPC 改造：原 /api/settings/floating 现在走 settings_get_all 拉全表，
+    // 过滤出 floating.* 开头的 key 还原成对象。
+    const settings = await invoke<Array<{ setting_key: string; setting_value: string | null }>>(
+      'settings_get_all',
+      {}
+    )
+    const data: Record<string, string> = {}
+    for (const s of settings) {
+      if (s.setting_value && s.setting_key.startsWith('floating.')) {
+        data[s.setting_key] = s.setting_value
+      }
     }
+    if (data['floating.enabled'] !== undefined) floatingSettings.enabled = data['floating.enabled'] === 'true'
+    if (data['floating.style']) floatingSettings.style = data['floating.style'] as 'classic' | 'modern'
+    if (data['floating.opacity'] !== undefined) floatingSettings.opacity = Number(data['floating.opacity'])
+    if (data['floating.size'] !== undefined) floatingSettings.size = Number(data['floating.size'])
+    if (data['floating.displayText']) floatingSettings.displayText = data['floating.displayText']
+    if (data['floating.showLabel'] !== undefined) floatingSettings.showLabel = data['floating.showLabel'] === 'true'
+    if (data['floating.accentColor']) floatingSettings.accentColor = data['floating.accentColor']
   } catch { /* ignore */ }
 }
 
 async function fetchDataFolderPath() {
   try {
-    const response = await api.get<{ data: { path: string } }>('/api/settings/data-path')
-    dataFolderPath.value = response.data.data?.path || ''
+    // IPC 改造：settings_data_path 命令，返回后端数据目录绝对路径
+    dataFolderPath.value = await invoke<string>('settings_data_path', {})
   } catch { /* ignore */ }
 }
 
@@ -372,15 +379,20 @@ async function handleThemeModeChange(value: 'default' | 'xianxia') {
 
 async function handleFloatingSave() {
   try {
-    await api.put('/api/settings/floating', {
-      'floating.enabled': floatingSettings.enabled,
+    // IPC 改造：原 /api/settings/floating 一次性写多个 key，
+    // 现在用 settings_set 一条条写（后端 settings 表是 KV 存储）
+    const map: Record<string, string> = {
+      'floating.enabled': String(floatingSettings.enabled),
       'floating.style': floatingSettings.style,
-      'floating.opacity': floatingSettings.opacity,
-      'floating.size': floatingSettings.size,
+      'floating.opacity': String(floatingSettings.opacity),
+      'floating.size': String(floatingSettings.size),
       'floating.displayText': floatingSettings.displayText,
-      'floating.showLabel': floatingSettings.showLabel,
+      'floating.showLabel': String(floatingSettings.showLabel),
       'floating.accentColor': floatingSettings.accentColor,
-    })
+    }
+    for (const [key, value] of Object.entries(map)) {
+      await invoke('settings_set', { key, value })
+    }
     ElMessage.success('悬浮窗设置已保存')
     promptRelaunch('悬浮窗设置')
   } catch {
@@ -393,15 +405,15 @@ async function handleFloatingSave() {
 async function handleExportAll() {
   dataLoading.value = true
   try {
-    const [studentsRes, groupsRes, evaluationRes] = await Promise.all([
+    const [studentsRes, groupsRes, evalRes] = await Promise.all([
       studentApi.getAll(),
       groupApi.getAll(),
-      api.get<{ data: EvaluationItem[] }>('/api/evaluation-items').catch(() => ({ data: { data: [] } })),
+      invoke<EvaluationItem[]>('evaluation_list', {}).catch(() => [] as EvaluationItem[]),
     ])
 
     const students: Student[] = studentsRes.data.data || []
     const groups: StudentGroup[] = groupsRes.data.data || []
-    const evaluationItems: EvaluationItem[] = evaluationRes.data.data || []
+    const evaluationItems: EvaluationItem[] = evalRes || []
 
     const wb = XLSX.utils.book_new()
 

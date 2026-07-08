@@ -170,7 +170,7 @@ import { Monitor, Camera } from '@element-plus/icons-vue'
 import { settingsApi } from '@/services/settings'
 import { VerificationMethod } from '@/types'
 import type { AdminSettings } from '@/types'
-import api from '@/services/api'
+import { invoke } from '@/services/tauri'
 
 interface AdminSettingsExtended extends AdminSettings {
   hasPassword?: boolean
@@ -304,7 +304,8 @@ async function handleResetAll() {
     { type: 'error', confirmButtonText: '确认重置', cancelButtonText: '取消' }
   )
   try {
-    await api.post('/api/admin/reset')
+    // IPC 改造：原 /api/admin/reset 改为 invoke('admin_reset')，Tauri 端新加了实现
+    await invoke('admin_reset', {})
     ElMessage.success('数据已重置')
   } catch {
     ElMessage.error('重置失败')
