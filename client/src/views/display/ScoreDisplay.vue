@@ -12,14 +12,29 @@
         </div>
       </div>
 
+      <!-- 搜索框 -->
+      <div class="score-display__search">
+        <el-icon class="score-display__search-icon"><Search /></el-icon>
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="score-display__search-input"
+          :placeholder="t('searchPlaceholder')"
+        />
+        <button v-if="searchQuery" class="score-display__search-clear" :title="t('clearSearch')" @click="searchQuery = ''">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
+
       <div class="score-display__topbar-actions">
         <!-- 多选模式指示器 -->
         <div v-if="multiSelectMode" class="score-display__multi-bar">
           <span class="score-display__multi-count">已选 {{ selectedStudentIds.length }}</span>
-          <button class="score-display__mini-btn" @click="selectAll">全选</button>
-          <button class="score-display__mini-btn" @click="clearSelection">清空</button>
-          <button class="score-display__mini-btn score-display__mini-btn--primary" :disabled="!selectedStudentIds.length" @click="openBatchScore">批量评分</button>
-          <button class="score-display__mini-btn" @click="toggleMultiSelect">退出多选</button>
+          <button class="score-display__mini-btn" @click="selectAllVisible">{{ t('selectAllVisible') }}</button>
+          <button class="score-display__mini-btn" @click="selectAll">{{ t('selectAll') }}</button>
+          <button class="score-display__mini-btn" @click="clearSelection">{{ t('clearSelection') }}</button>
+          <button class="score-display__mini-btn score-display__mini-btn--primary" :disabled="!selectedStudentIds.length" @click="openBatchScore">{{ t('batchScoreAction') }}</button>
+          <button class="score-display__mini-btn" @click="toggleMultiSelect">{{ t('exitMultiSelect') }}</button>
         </div>
         <template v-else>
           <button class="score-display__icon-btn" :title="t('multiSelect')" @click="toggleMultiSelect">
@@ -162,6 +177,10 @@
         <div v-if="!leaderboard.length" class="score-display__empty">
           <p>{{ t('noLeaderboardData') }}</p>
         </div>
+        <div v-else-if="isSearching && !restEntries.length" class="score-display__empty">
+          <p>{{ t('noSearchResults') }} <span class="score-display__empty-query">"{{ searchQuery }}"</span></p>
+          <button class="score-display__empty-clear" @click="searchQuery = ''">{{ t('clearSearch') }}</button>
+        </div>
       </section>
     </main>
 
@@ -264,8 +283,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
-import { Trophy, Check, Close, Setting, ArrowLeft, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
+import { Trophy, Check, Close, Setting, ArrowLeft, ArrowUp, ArrowDown, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { match } from 'pinyin-pro'
 import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent } from '@/types'
 import { leaderboardApi } from '@/services/leaderboard'
 import { evaluationApi } from '@/services/evaluation'
@@ -332,8 +352,32 @@ const displayEntries = computed<DisplayEntry[]>(() => {
   }))
 })
 
-const topThree = computed<DisplayEntry[]>(() => displayEntries.value.slice(0, 3))
-const restEntries = computed<DisplayEntry[]>(() => displayEntries.value.slice(3))
+// ===== 搜索 =====
+const searchQuery = ref('')
+
+// 拼音/首字母/汉字匹配
+function matchSearch(name: string, query: string): boolean {
+  if (!query.trim()) return true
+  const q = query.trim().toLowerCase()
+  // 直接包含汉字
+  if (name.toLowerCase().includes(q)) return true
+  // pinyin-pro match 支持完整拼音/首字母/连续片段；返回匹配位置数组，未匹配返回 null
+  return match(name, q) !== null
+}
+
+const filteredEntries = computed<DisplayEntry[]>(() => {
+  if (!searchQuery.value.trim()) return displayEntries.value
+  return displayEntries.value.filter(e => matchSearch(e.name, searchQuery.value))
+})
+
+const isSearching = computed(() => Boolean(searchQuery.value.trim()))
+
+const topThree = computed<DisplayEntry[]>(() =>
+  isSearching.value ? [] : displayEntries.value.slice(0, 3)
+)
+const restEntries = computed<DisplayEntry[]>(() =>
+  isSearching.value ? filteredEntries.value : filteredEntries.value.slice(3)
+)
 
 // ===== 设置 =====
 const sortBy = ref<'rank' | 'studentNumber'>(
@@ -443,6 +487,14 @@ function isSelected(id: string) {
 
 function selectAll() {
   selectedStudentIds.value = displayEntries.value.map(e => e.id)
+}
+
+// 仅选中当前搜索/可见的项
+function selectAllVisible() {
+  const visibleIds = filteredEntries.value.map(e => e.id)
+  const set = new Set(selectedStudentIds.value)
+  for (const id of visibleIds) set.add(id)
+  selectedStudentIds.value = Array.from(set)
 }
 
 function clearSelection() {
@@ -605,6 +657,13 @@ watch([sortBy, privacy, showPet, showGroup, showTrend], () => {
   persistSettings()
 })
 
+// 搜索条件改变时收起已展开的卡片（避免其被过滤后产生悬挂状态）
+watch(searchQuery, () => {
+  if (expandedStudentId.value && !filteredEntries.value.some(e => e.id === expandedStudentId.value)) {
+    closeQuickScore()
+  }
+})
+
 // ===== 生命周期 =====
 onMounted(async () => {
   updateTime()
@@ -666,12 +725,74 @@ async function fetchEvaluationItems() {
 .score-display__topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   padding: 12px 24px;
   border-bottom: 1px solid var(--cis-border-color-light);
   background: var(--cis-header-bg);
   flex-shrink: 0;
   height: 60px;
+}
+
+.score-display__search {
+  flex: 1;
+  max-width: 360px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.score-display__search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--cis-text-tertiary);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.score-display__search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 32px;
+  border: 1px solid var(--cis-border-color);
+  border-radius: var(--cis-radius-md);
+  background: var(--cis-bg-secondary);
+  color: var(--cis-text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__search-input::placeholder {
+  color: var(--cis-text-placeholder);
+}
+
+.score-display__search-input:focus {
+  outline: none;
+  border-color: var(--cis-primary);
+  background: var(--cis-card-bg);
+  box-shadow: var(--cis-shadow-glow);
+}
+
+.score-display__search-clear {
+  position: absolute;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--cis-bg-secondary);
+  color: var(--cis-text-tertiary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__search-clear:hover {
+  background: var(--cis-text-tertiary);
+  color: var(--cis-card-bg);
 }
 
 .score-display__brand {
@@ -1240,6 +1361,32 @@ async function fetchEvaluationItems() {
   text-align: center;
   padding: 60px 20px;
   color: var(--cis-text-tertiary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-display__empty-query {
+  color: var(--cis-primary);
+  font-weight: 600;
+}
+
+.score-display__empty-clear {
+  border: 1px solid var(--cis-border-color);
+  border-radius: var(--cis-radius-sm);
+  background: var(--cis-card-bg);
+  color: var(--cis-text-secondary);
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__empty-clear:hover {
+  border-color: var(--cis-primary);
+  color: var(--cis-primary);
 }
 
 /* ===== 底部抽屉 ===== */
