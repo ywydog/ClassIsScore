@@ -4,7 +4,7 @@ use crate::db::entities::student_group;
 use crate::state::AppState;
 use chrono::NaiveDateTime;
 use parking_lot::RwLock;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::State;

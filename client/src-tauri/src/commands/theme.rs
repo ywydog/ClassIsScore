@@ -86,12 +86,10 @@ async fn collect_ids(db: &sea_orm::DatabaseConnection) -> Result<Vec<String>, St
 
     let mut ids = Vec::new();
     for row in all {
-        if let Some(key) = row.setting_key {
-            // "theme.<id>.name" → "<id>"
-            if let Some(rest) = key.strip_prefix(PREFIX) {
-                if let Some(id) = rest.strip_suffix(".name") {
-                    ids.push(id.to_string());
-                }
+        // "theme.<id>.name" → "<id>"
+        if let Some(rest) = row.setting_key.strip_prefix(PREFIX) {
+            if let Some(id) = rest.strip_suffix(".name") {
+                ids.push(id.to_string());
             }
         }
     }
