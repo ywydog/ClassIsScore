@@ -166,19 +166,24 @@ pub async fn theme_install(
     author: Option<String>,
 ) -> Result<ThemeInfo, String> {
     let db = get_db(&state)?;
-    write_setting(&db, &setting_key(&id, "name"), name.clone()).await?;
-    write_setting(&db, &setting_key(&id, "description"), description.unwrap_or_default()).await?;
-    write_setting(&db, &setting_key(&id, "version"), version.unwrap_or_else(|| "1.0.0".to_string())).await?;
-    write_setting(&db, &setting_key(&id, "author"), author.unwrap_or_default()).await?;
+    let resolved_name = name;
+    let resolved_description = description.unwrap_or_default();
+    let resolved_version = version.unwrap_or_else(|| "1.0.0".to_string());
+    let resolved_author = author.unwrap_or_default();
+
+    write_setting(&db, &setting_key(&id, "name"), resolved_name.clone()).await?;
+    write_setting(&db, &setting_key(&id, "description"), resolved_description.clone()).await?;
+    write_setting(&db, &setting_key(&id, "version"), resolved_version.clone()).await?;
+    write_setting(&db, &setting_key(&id, "author"), resolved_author.clone()).await?;
     // 新装默认禁用
     write_setting(&db, &setting_key(&id, "enabled"), "false".to_string()).await?;
 
     Ok(ThemeInfo {
         id,
-        name,
-        description: description.unwrap_or_default(),
-        version: version.unwrap_or_else(|| "1.0.0".to_string()),
-        author: author.unwrap_or_default(),
+        name: resolved_name,
+        description: resolved_description,
+        version: resolved_version,
+        author: resolved_author,
         is_enabled: false,
         installed_at: chrono::Local::now().to_rfc3339(),
     })
