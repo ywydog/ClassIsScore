@@ -51,10 +51,21 @@ jobs:
         run: |
           cd client
           npm run tauri:build -- --target universal-apple-darwin
+      - name: Zip macOS .app
+        run: |
+          # .app 是目录，GitHub Release asset 需要文件，所以先压成 zip
+          APP_PATH="client/src-tauri/target/universal-apple-darwin/release/bundle/macos/ClassIsScore.app"
+          if [ -d "$APP_PATH" ]; then
+            ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$(dirname "$APP_PATH")/ClassIsScore-macOS.zip"
+            echo "已生成 $(dirname "$APP_PATH")/ClassIsScore-macOS.zip"
+          else
+            echo "未找到 $APP_PATH"
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: ClassIsScore-macOS
-          path: client/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
+          path: client/src-tauri/target/universal-apple-darwin/release/bundle/macos/ClassIsScore-macOS.zip
           if-no-files-found: warn
 
   build-windows:
@@ -112,10 +123,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ClassIsScore-Linux
+          # 用具体扩展名精确匹配最终 bundle 文件，
+          # 不要用 bundle/{deb,rpm,appimage}/*（upload-artifact 不支持 brace
+          # 展开），也不要只写 deb/*（会带上 Tauri 的中间构建目录如
+          # ClassIsScore.AppDir、ClassIsScore_1.0.5_amd64/）。
           path: |
-            client/src-tauri/target/release/bundle/deb/*
-            client/src-tauri/target/release/bundle/rpm/*
-            client/src-tauri/target/release/bundle/appimage/*
+            client/src-tauri/target/release/bundle/deb/*.deb
+            client/src-tauri/target/release/bundle/rpm/*.rpm
+            client/src-tauri/target/release/bundle/appimage/*.AppImage
           if-no-files-found: warn
 
   build-android:
@@ -194,10 +209,39 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: List downloaded files
+      - name: Prepare release assets
         run: |
-          echo "=== artifacts 目录 ==="
-          ls -laR artifacts
+          set -euo pipefail
+          mkdir -p release
+
+          # upload-artifact 会保留相对路径，所以下载下来后实际结构是：
+          #   artifacts/ClassIsScore-Windows/client/src-tauri/target/release/bundle/msi/ClassIsScore.msi
+          #   artifacts/ClassIsScore-Linux/client/src-tauri/target/release/bundle/{deb,rpm,appimage}/...
+          #   artifacts/ClassIsScore-Android/client/src-tauri/gen/android/app/build/outputs/apk/.../*.apk
+          # 这里只挑出最终交付给用户的 bundle 文件：
+          #   - 单文件 (.msi / .deb / .rpm / .AppImage / .apk / 已 zip 的 .app) → 直接复制
+          #   - 目录（如 .app 漏网之鱼） → 压成 zip
+          # 这样 release/ 目录里就只有扁平化的最终文件，
+          # softprops/action-gh-release@v2 不会再去递归每个内部目录。
+          find artifacts -type f \
+              \( -name "*.msi" -o -name "*.deb" -o -name "*.rpm" \
+              -o -name "*.AppImage" -o -name "*.apk" -o -name "*.zip" \) \
+              -print0 | while IFS= read -r -d '' file; do
+            base=$(basename "$file")
+            cp "$file" "release/$base"
+          done
+
+          # 兜底：如果还遗留了 .app / .AppDir 这类目录（理论上 macOS 已经在
+          # 前面压好了，但保险起见再扫一遍），统一打包成 zip。
+          find artifacts -type d \
+              \( -name "*.app" -o -name "*.AppDir" \) \
+              -print0 | while IFS= read -r -d '' dir; do
+            base=$(basename "$dir")
+            (cd "$(dirname "$dir")" && zip -qr "$OLDPWD/release/${base}.zip" "$base")
+          done
+
+          echo "=== release/ 最终内容 ==="
+          ls -la release/
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -206,5 +250,10 @@ jobs:
           draft: ${{ inputs.release_type == 'draft' }}
           prerelease: ${{ inputs.release_type == 'prerelease' }}
           generate_release_notes: true
+          # 使用 Prepare release assets 步骤整理好的 release/ 目录，
+          # 避免 softprops/action-gh-release@v2 把 .app 目录、
+          # .AppImage 里的 AppDir、Tauri 中间构建目录里的每一个文件
+          # 都当成 release asset 单独上传，导致同名冲突
+          # (Validation Failed: ... "code":"already_exists")。
           files: |
-            artifacts/**/*
+            release/**
