@@ -135,11 +135,14 @@ import { useRouter } from 'vue-router'
 import { Trophy, User, Rank, Monitor, SuccessFilled } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useStudentStore } from '@/stores/student'
+import { useAppStore } from '@/stores/app'
+import { isMobile } from '@/utils/platform'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const settingsStore = useSettingsStore()
 const studentStore = useStudentStore()
+const appStore = useAppStore()
 
 const currentStep = ref(0)
 const studentInput = ref('')
@@ -169,7 +172,17 @@ function goToStep(idx: number) {
 
 async function handleComplete() {
   try {
-    await settingsStore.updateSettings({ theme: setupForm.theme })
+    // 1. 保存设置：主题 + 班级名称（如果用户填了）
+    // 后端 settings 是无 schema 的 key-value 存储，可以接任意键；
+    // 这里 cast 一下让 TS 通过即可。
+    const newSettings: Record<string, string> = { theme: setupForm.theme }
+    const className = setupForm.className.trim()
+    if (className) {
+      newSettings.className = className
+    }
+    await settingsStore.updateSettings(newSettings as unknown as Parameters<typeof settingsStore.updateSettings>[0])
+
+    // 2. 批量添加学生
     if (studentInput.value.trim()) {
       const names = studentInput.value.trim().split('\n').filter(n => n.trim())
       if (names.length > 0) {
@@ -178,8 +191,16 @@ async function handleComplete() {
         ElMessage.success(`已添加 ${names.length} 名学生`)
       }
     }
-    router.replace('/admin/scores')
-  } catch {
+
+    // 3. 标记引导完成（必须先标记再跳转，否则 router.beforeEach
+    //    会检测到 onboardingCompleted !== 'true' 再次把用户弹回这里）
+    await appStore.completeOnboarding()
+
+    // 4. 根据平台选择落地路径：Android 走 /m，移动端之外的桌面端走 /admin
+    const homePath = isMobile() ? '/m/scores' : '/admin/scores'
+    router.replace(homePath)
+  } catch (err) {
+    console.error('[onboarding] handleComplete failed:', err)
     ElMessage.error('设置保存失败，请重试')
   }
 }
