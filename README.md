@@ -235,4 +235,6 @@ npm run tauri:android:build -- --target all --debug
 
 ## 许可证
 
-MIT License
+本项目使用 **GNU General Public License v3.0**（GPL-3.0）开源，完整文本见 [LICENSE](LICENSE) 文件。
+
+简而言之：你可以自由使用、修改、再分发本项目的源码与衍生作品，但**所有衍生作品也必须以 GPL-3.0 开源并保留版权声明**。分发时需随附本许可证与版权声明。
