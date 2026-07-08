@@ -143,20 +143,17 @@ pub async fn score_batch_add(
             ..Default::default()
         };
 
-        let result = record.insert(&txn).await.map_err(|e| {
-            let _ = txn.rollback();
-            e.to_string()
-        })?;
+        // 事务在出错时通过 Drop 自动回滚，无需显式调用 rollback()
+        let result = record
+            .insert(&txn)
+            .await
+            .map_err(|e| e.to_string())?;
 
         // 更新学生总分
-        if let Some(student_model) =
-            student::Entity::find_by_id(*student_id)
-                .one(&txn)
-                .await
-                .map_err(|e| {
-                    let _ = txn.rollback();
-                    e.to_string()
-                })?
+        if let Some(student_model) = student::Entity::find_by_id(*student_id)
+            .one(&txn)
+            .await
+            .map_err(|e| e.to_string())?
         {
             let student_name = student_model.name.clone();
             let mut active: student::ActiveModel = student_model.into();
@@ -164,10 +161,7 @@ pub async fn score_batch_add(
             let new_score = current_score + input.score_change;
             active.total_score = Set(new_score);
             active.updated_at = Set(chrono::Local::now().naive_utc());
-            active.update(&txn).await.map_err(|e| {
-                let _ = txn.rollback();
-                e.to_string()
-            })?;
+            active.update(&txn).await.map_err(|e| e.to_string())?;
 
             results.push((result, student_name, new_score));
         } else {

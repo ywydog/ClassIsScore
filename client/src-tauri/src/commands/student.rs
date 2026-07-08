@@ -188,10 +188,8 @@ pub async fn student_batch_create(
             pet_name: Set(input.pet_name),
             ..Default::default()
         };
-        let result = student.insert(&txn).await.map_err(|e| {
-            let _ = txn.rollback();
-            e.to_string()
-        })?;
+        // 事务在出错时通过 Drop 自动回滚，无需显式调用 rollback()
+        let result = student.insert(&txn).await.map_err(|e| e.to_string())?;
         results.push(result);
     }
 
