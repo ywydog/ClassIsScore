@@ -1,29 +1,29 @@
 :root {
-  /* 主色调 - Teal Warm Academic */
-  --cis-primary: #0d9488;
-  --cis-primary-light: #2dd4bf;
-  --cis-primary-dark: #0f766e;
-  --cis-primary-light-3: #5eead4;
-  --cis-primary-light-5: #99f6e4;
-  --cis-primary-light-7: #ccfbf1;
-  --cis-primary-light-9: #f0fdfa;
-  --cis-primary-dark-2: #0f766e;
+  /* 主色调 - 思源教育绿 */
+  --cis-primary: #0D7C5F;
+  --cis-primary-light: #3FB28F;
+  --cis-primary-dark: #085540;
+  --cis-primary-light-3: #6CC6A4;
+  --cis-primary-light-5: #9DD7BF;
+  --cis-primary-light-7: #CDE9DC;
+  --cis-primary-light-9: #EBF6F1;
+  --cis-primary-dark-2: #085540;
 
   /* 语义色 */
-  --cis-success: #22c55e;
-  --cis-danger: #ef4444;
-  --cis-warning: #f59e0b;
-  --cis-info: #0d9488;
+  --cis-success: #16a34a;
+  --cis-danger: #dc2626;
+  --cis-warning: #d97706;
+  --cis-info: #0D7C5F;
 
-  /* 渐变 */
-  --cis-gradient-primary: linear-gradient(135deg, #0d9488, #2dd4bf);
-  --cis-gradient-warm: linear-gradient(135deg, #f59e0b, #fb923c);
-  --cis-gradient-cool: linear-gradient(135deg, #0d9488, #06b6d4);
-  --cis-gradient-success: linear-gradient(135deg, #22c55e, #4ade80);
+  /* 渐变 - 克制使用，仅作为小区域强调 */
+  --cis-gradient-primary: linear-gradient(180deg, #0D7C5F 0%, #085540 100%);
+  --cis-gradient-warm: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+  --cis-gradient-cool: linear-gradient(180deg, #0D7C5F 0%, #14b8a6 100%);
+  --cis-gradient-success: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
 
-  /* 字体 */
-  --cis-font-family: 'LXGW WenKai', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --cis-font-family-display: 'LXGW WenKai', 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 字体 - 思源黑体 (Source Han Sans / Noto Sans SC) */
+  --cis-font-family: 'Noto Sans SC', 'Source Han Sans SC', 'Source Han Sans CN', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --cis-font-family-display: 'Noto Sans SC', 'Source Han Sans SC', 'Source Han Sans CN', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --cis-font-size-base: 14px;
   --cis-font-size-sm: 12px;
   --cis-font-size-lg: 16px;
@@ -36,32 +36,32 @@
   --cis-spacing-lg: 24px;
   --cis-spacing-xl: 32px;
 
-  /* 圆角 */
+  /* 圆角 - 三档克制 */
   --cis-radius-xs: 2px;
-  --cis-radius-sm: 4px;
-  --cis-radius-md: 8px;
-  --cis-radius-lg: 12px;
-  --cis-radius-xl: 16px;
-  --cis-radius-2xl: 24px;
+  --cis-radius-sm: 6px;
+  --cis-radius-md: 10px;
+  --cis-radius-lg: 14px;
+  --cis-radius-xl: 20px;
+  --cis-radius-2xl: 28px;
   --cis-radius-full: 9999px;
 
-  /* 阴影 */
-  --cis-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
-  --cis-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --cis-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --cis-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --cis-shadow-card-hover: 0 4px 12px rgba(13, 148, 136, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
-  --cis-shadow-glow: 0 0 12px rgba(13, 148, 136, 0.25);
-  --cis-shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+  /* 阴影 - 单层柔和 */
+  --cis-shadow-sm: 0 1px 2px rgba(8, 85, 64, 0.06);
+  --cis-shadow-md: 0 2px 6px rgba(8, 85, 64, 0.08);
+  --cis-shadow-lg: 0 6px 16px rgba(8, 85, 64, 0.10);
+  --cis-shadow-card: 0 1px 2px rgba(8, 85, 64, 0.05);
+  --cis-shadow-card-hover: 0 4px 10px rgba(13, 124, 95, 0.10);
+  --cis-shadow-glow: 0 0 0 3px rgba(13, 124, 95, 0.15);
+  --cis-shadow-dropdown: 0 8px 24px rgba(8, 85, 64, 0.12);
 
   /* 过渡 */
   --cis-transition-fast: 0.15s ease;
-  --cis-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --cis-transition-spring: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cis-transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --cis-transition-spring: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* 边框 */
-  --cis-border-color: #e4e7ed;
-  --cis-border-color-light: #ebeef5;
+  --cis-border-color: #e2e8e4;
+  --cis-border-color-light: #eef2ef;
   --cis-border-radius: var(--cis-radius-md);
 
   /* Z-index */

@@ -23,9 +23,6 @@ onUnmounted(() => {
 </script>
 
 <style>
-/* 加载落霞孤鹜字体 - 开源中文字体，温暖文艺 */
-@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css');
-
 html,
 body,
 #app {

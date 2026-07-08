@@ -1,741 +1,425 @@
 <template>
-  <div
-    class="score-display"
-    :class="{ 'score-display--fullscreen': isFullscreen, 'score-display--settings-open': showSettings }"
-    :style="rootStyle"
-    @mousemove="onMouseMove"
-  >
-    <div class="score-display__bg" :style="bgStyle">
-      <div class="score-display__orb" v-for="i in 5" :key="i" :style="orbStyle(i)"></div>
-    </div>
-    <div class="score-display__content">
-      <div class="score-display__header" :class="{ 'score-display__header--hidden': isFullscreen && !showGearOnFullscreen }">
-        <div class="score-display__brand">
-          <div class="score-display__brand-icon">
-            <el-icon :size="20"><Trophy /></el-icon>
-          </div>
-          <h1 class="score-display__title">{{ t('leaderboardTitle') }}</h1>
+  <div class="score-display" :class="{ 'score-display--multi-select': multiSelectMode }">
+    <!-- 顶栏 -->
+    <header class="score-display__topbar">
+      <div class="score-display__brand">
+        <div class="score-display__brand-icon">
+          <el-icon><Trophy /></el-icon>
         </div>
-        <div class="score-display__time" v-if="displaySettings.showClock">{{ currentTime }}</div>
-        <div class="score-display__toggles">
-          <!-- 多选模式切换 -->
-          <el-button
-            :type="multiSelectMode ? 'primary' : 'default'"
-            size="small"
-            @click="toggleMultiSelect"
-            class="score-display__multi-btn"
-          >
-            <el-icon style="margin-right: 4px"><Check /></el-icon>
-            {{ multiSelectMode ? '退出多选' : '多选' }}
-          </el-button>
-          <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard">
-            <el-radio-button value="personal">{{ t('student') }}</el-radio-button>
-            <el-radio-button value="group">{{ t('group') }}</el-radio-button>
-          </el-radio-group>
-          <!-- 设置齿轮按钮 -->
-          <button class="score-display__settings-btn" @click="showSettings = !showSettings" title="显示设置">
-            <el-icon :size="18"><Setting /></el-icon>
+        <div>
+          <h1 class="score-display__title">{{ t('leaderboard') }}</h1>
+          <p class="score-display__subtitle">{{ currentDate }} · {{ currentTime }}</p>
+        </div>
+      </div>
+
+      <div class="score-display__topbar-actions">
+        <!-- 多选模式指示器 -->
+        <div v-if="multiSelectMode" class="score-display__multi-bar">
+          <span class="score-display__multi-count">已选 {{ selectedStudentIds.length }}</span>
+          <button class="score-display__mini-btn" @click="selectAll">全选</button>
+          <button class="score-display__mini-btn" @click="clearSelection">清空</button>
+          <button class="score-display__mini-btn score-display__mini-btn--primary" :disabled="!selectedStudentIds.length" @click="openBatchScore">批量评分</button>
+          <button class="score-display__mini-btn" @click="toggleMultiSelect">退出多选</button>
+        </div>
+        <template v-else>
+          <button class="score-display__icon-btn" :title="t('multiSelect')" @click="toggleMultiSelect">
+            <el-icon><Check /></el-icon>
           </button>
-          <!-- 退出按钮 -->
-          <button class="score-display__close-btn" @click="closeDisplay" title="关闭大屏">
-            <el-icon :size="18"><Close /></el-icon>
+          <button class="score-display__icon-btn" :title="t('settings')" @click="openSettings">
+            <el-icon><Setting /></el-icon>
           </button>
-        </div>
+          <button class="score-display__icon-btn score-display__icon-btn--close" title="关闭" @click="closeDisplay">
+            <el-icon><Close /></el-icon>
+          </button>
+        </template>
       </div>
+    </header>
 
-      <!-- 多选工具栏 -->
-      <div v-if="multiSelectMode" class="score-display__multi-toolbar">
-        <el-button size="small" @click="selectAll">全选</el-button>
-        <el-button size="small" @click="clearSelection">清除</el-button>
-        <span class="score-display__multi-count">已选 {{ selectedStudentIds.length }} 人</span>
-        <el-button
-          type="primary"
-          size="small"
-          :disabled="selectedStudentIds.length === 0"
-          @click="showBatchScorePanel = true"
-        >
-          {{ t('batchScoreAction') }}
-        </el-button>
-        <el-button
-          v-if="isXianxia"
-          type="warning"
-          size="small"
-          :disabled="selectedStudentIds.length === 0 || students.length < 2"
-          @click="openBattleDialog"
-        >
-          ⚔️ 道友切磋
-        </el-button>
-      </div>
-
-      <div class="score-display__body">
-        <!-- 主体区域：卡片/圆形/宠物 -->
-        <div class="score-display__main">
-          <!-- 卡片模式 -->
-          <div v-if="effectiveDisplayMode === 'Card'" class="score-display__grid score-display__grid--card">
-            <div
-              v-for="student in students"
-              :key="student.id"
-              class="score-display__selectable-wrapper"
-              :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
-              @click="handleStudentClick(student)"
-            >
-              <div v-if="multiSelectMode" class="score-display__select-check">
-                <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
-              </div>
-              <StudentCardDisplay :student="student" />
-              <div v-if="isXianxia" class="score-display__cultivation-info">
-                <span class="score-display__cultivation-level">{{ getCultivationLevel(calculateCultivation(student.score, calculateLevel(student.petExp))).name }}</span>
-                <span class="score-display__cultivation-score">修为 {{ formatCultivationNumber(calculateCultivation(student.score, calculateLevel(student.petExp))) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 圆形模式 -->
-          <div v-else-if="effectiveDisplayMode === 'Circle'" class="score-display__grid score-display__grid--circle">
-            <div
-              v-for="student in students"
-              :key="student.id"
-              class="score-display__selectable-wrapper score-display__selectable-wrapper--circle"
-              :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
-              @click="handleStudentClick(student)"
-            >
-              <div v-if="multiSelectMode" class="score-display__select-check">
-                <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
-              </div>
-              <StudentCircleDisplay :student="student" />
-            </div>
-          </div>
-
-          <!-- 宠物模式 -->
-          <div v-else-if="effectiveDisplayMode === 'Pet'" class="score-display__grid score-display__grid--pet">
-            <div
-              v-for="student in students"
-              :key="student.id"
-              class="score-display__selectable-wrapper score-display__selectable-wrapper--pet"
-              :class="{ 'score-display__selectable-wrapper--selected': isSelected(student.id) }"
-              @click="handleStudentClick(student)"
-              @contextmenu.prevent="onPetRightClick(student)"
-            >
-              <div v-if="multiSelectMode" class="score-display__select-check">
-                <el-icon v-if="isSelected(student.id)" :size="18"><Check /></el-icon>
-              </div>
-              <PetDisplay :student="student" />
-            </div>
-          </div>
-        </div>
-
-        <!-- 侧边栏：排行榜 -->
-        <div class="score-display__sidebar">
-          <div class="score-display__sidebar-header">
-            <h3 class="score-display__sidebar-title">{{ t('leaderboardTitle') }}</h3>
-            <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard">
-              <el-radio-button value="personal">{{ t('student') }}</el-radio-button>
-              <el-radio-button value="group">{{ t('group') }}</el-radio-button>
-            </el-radio-group>
-          </div>
-
-          <!-- 领奖台 -->
-          <div v-if="limitedTopThree.length > 0" class="score-display__podium">
-            <div
-              class="score-display__podium-item score-display__podium--2"
-              :class="{ 'score-display__podium-item--animated': mounted }"
-              style="--podium-delay: 0.2s"
-              v-if="limitedTopThree.length >= 2"
-            >
-              <div class="score-display__podium-avatar">
-                <el-avatar :size="48">{{ limitedTopThree[1].name.charAt(0) }}</el-avatar>
-                <div class="score-display__medal score-display__medal--silver" v-if="displaySettings.showRank">2</div>
-              </div>
-              <div class="score-display__podium-name">{{ limitedTopThree[1].name }}</div>
-              <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[1].score }}</div>
-            </div>
-            <div
-              class="score-display__podium-item score-display__podium--1"
-              :class="{ 'score-display__podium-item--animated': mounted }"
-              style="--podium-delay: 0.4s"
-              v-if="limitedTopThree.length >= 1"
-            >
-              <div class="score-display__podium-crown">👑</div>
-              <div class="score-display__podium-avatar">
-                <el-avatar :size="64">{{ limitedTopThree[0].name.charAt(0) }}</el-avatar>
-                <div class="score-display__medal score-display__medal--gold" v-if="displaySettings.showRank">1</div>
-              </div>
-              <div class="score-display__podium-name">{{ limitedTopThree[0].name }}</div>
-              <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[0].score }}</div>
-            </div>
-            <div
-              class="score-display__podium-item score-display__podium--3"
-              :class="{ 'score-display__podium-item--animated': mounted }"
-              style="--podium-delay: 0s"
-              v-if="limitedTopThree.length >= 3"
-            >
-              <div class="score-display__podium-avatar">
-                <el-avatar :size="40">{{ limitedTopThree[2].name.charAt(0) }}</el-avatar>
-                <div class="score-display__medal score-display__medal--bronze" v-if="displaySettings.showRank">3</div>
-              </div>
-              <div class="score-display__podium-name">{{ limitedTopThree[2].name }}</div>
-              <div class="score-display__podium-score" v-if="displaySettings.showScore">{{ limitedTopThree[2].score }}</div>
-            </div>
-          </div>
-
-          <!-- 列表 -->
-          <div class="score-display__sidebar-list" v-if="limitedRestEntries.length > 0">
-            <div
-              v-for="(entry, idx) in limitedRestEntries"
-              :key="entry.rank"
-              class="score-display__item"
-              :class="{ 'score-display__item--animated': mounted }"
-              :style="{ '--item-delay': `${idx * 50}ms` }"
-            >
-              <span class="score-display__rank" v-if="displaySettings.showRank">{{ entry.rank }}</span>
-              <span class="score-display__name">{{ entry.name }}</span>
-              <span class="score-display__score" v-if="displaySettings.showScore">{{ entry.score }}</span>
-            </div>
-          </div>
-          <div v-else class="score-display__sidebar-empty">暂无排行数据</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 周期积分面板（右下角） -->
-    <div class="score-display__period-panel">
-      <div class="score-display__period-panel__header">
-        <span class="score-display__period-panel__title">{{ t('scoreStats') }}</span>
-        <div class="score-display__period-panel__toggles">
-          <button
-            v-for="p in periodOptions"
-            :key="p.key"
-            :class="['score-display__period-panel__toggle', { 'score-display__period-panel__toggle--active': activePeriod === p.key }]"
-            @click="activePeriod = p.key"
-          >{{ p.label }}</button>
-        </div>
-      </div>
-      <div class="score-display__period-panel__body">
+    <!-- 主体 -->
+    <main class="score-display__main">
+      <!-- 领奖台 -->
+      <section v-if="topThree.length >= 3" class="score-display__podium">
         <div
-          v-for="stat in topPeriodStats"
-          :key="stat.studentId"
-          class="score-display__period-panel__row"
+          v-for="(entry, idx) in [topThree[1], topThree[0], topThree[2]]"
+          :key="entry.id"
+          class="score-display__podium-item"
+          :class="`score-display__podium-item--${idx}`"
+          :style="{ animationDelay: `${idx * 80}ms` }"
         >
-          <span class="score-display__period-panel__name">{{ stat.studentName }}</span>
-          <span class="score-display__period-panel__detail">
-            <span class="score-display__period-panel__plus">+{{ stat.plus }}</span>
-            <span class="score-display__period-panel__slash">/</span>
-            <span class="score-display__period-panel__minus">{{ stat.minus }}</span>
-          </span>
-          <span class="score-display__period-panel__net" :class="stat.net > 0 ? 'score-display__period-panel__net--pos' : stat.net < 0 ? 'score-display__period-panel__net--neg' : ''">
-            {{ formatNet(stat.net) }}
-          </span>
-        </div>
-        <div v-if="topPeriodStats.length === 0" class="score-display__period-panel__empty">
-          暂无数据
-        </div>
-      </div>
-    </div>
-
-    <!-- 显示设置面板 -->
-    <DisplaySettingsPanel
-      v-model:visible="showSettings"
-      :settings="displaySettings"
-      :display-mode="displayMode"
-      :is-fullscreen="isFullscreen"
-      @save-settings="saveSettings"
-      @update:display-mode="onDisplayModeChange"
-      @toggle-fullscreen="toggleFullscreen"
-      @update:refresh-interval="onRefreshIntervalChange"
-    />
-
-    <!-- 快速评分底部栏 -->
-    <transition name="quick-score-slide">
-      <div v-if="quickScoreStudent && !multiSelectMode" class="quick-score-bar">
-        <div class="quick-score-bar__inner">
-          <div class="quick-score-bar__student">
-            <span class="quick-score-bar__student-name">{{ quickScoreStudent.name }}</span>
-            <span class="quick-score-bar__student-score">当前 {{ quickScoreStudent.score }} {{ t('scoreUnit') }}</span>
+          <div class="score-display__podium-medal">
+            <el-icon v-if="idx === 1"><Trophy /></el-icon>
+            <span v-else>{{ idx === 0 ? '🥈' : '🥉' }}</span>
           </div>
-          <div class="quick-score-bar__actions">
-            <!-- 评价项预设 -->
-            <div v-if="evaluationItems.length > 0" class="quick-score-bar__eval-presets">
-              <div v-if="positiveEvalItems.length > 0" class="quick-score-bar__eval-group">
-                <button
-                  v-for="item in positiveEvalItems.slice(0, 6)"
-                  :key="item.id"
-                  class="quick-score-bar__btn quick-score-bar__btn--eval-pos"
-                  @click="applyQuickPreset(item)"
-                  :title="item.name + ' +' + item.scoreChange"
-                >
-                  {{ item.name }}
-                </button>
+          <div class="score-display__podium-avatar" :style="{ background: avatarColor(entry.id) }">
+            <span>{{ nameInitial(entry.name) }}</span>
+          </div>
+          <div class="score-display__podium-name">{{ entry.name }}</div>
+          <div class="score-display__podium-score">{{ entry.score }}</div>
+        </div>
+      </section>
+
+      <!-- 卡片网格 -->
+      <section class="score-display__grid-wrap">
+        <transition-group name="card" tag="div" class="score-display__grid">
+          <div
+            v-for="entry in restEntries"
+            :key="entry.id"
+            class="score-display__card"
+            :class="{
+              'score-display__card--selected': isSelected(entry.id),
+              'score-display__card--expanded': expandedStudentId === entry.id,
+            }"
+            :style="{ animationDelay: `${Math.min(entry.rank, 30) * 30}ms` }"
+            @click="onCardClick(entry)"
+          >
+            <!-- 卡片默认视图 -->
+            <template v-if="expandedStudentId !== entry.id">
+              <div class="score-display__card-rank">#{{ entry.rank }}</div>
+              <div class="score-display__card-avatar" :style="{ background: avatarColor(entry.id) }">
+                <span>{{ nameInitial(entry.name) }}</span>
               </div>
-              <div v-if="negativeEvalItems.length > 0" class="quick-score-bar__eval-group">
-                <button
-                  v-for="item in negativeEvalItems.slice(0, 4)"
-                  :key="item.id"
-                  class="quick-score-bar__btn quick-score-bar__btn--eval-neg"
-                  @click="applyQuickPreset(item)"
-                  :title="item.name + ' ' + item.scoreChange"
+              <div class="score-display__card-name">{{ entry.name }}</div>
+              <div class="score-display__card-score">{{ entry.score }}</div>
+              <transition name="score-pop">
+                <div
+                  v-for="anim in activeScoreAnimations(entry.id)"
+                  :key="anim.id"
+                  class="score-display__score-anim"
+                  :class="anim.change > 0 ? 'is-plus' : 'is-minus'"
                 >
-                  {{ item.name }}
-                </button>
+                  {{ anim.change > 0 ? '+' : '' }}{{ anim.change }}
+                </div>
+              </transition>
+            </template>
+
+            <!-- 卡片展开视图：快速评分 -->
+            <template v-else>
+              <div class="score-display__card-expanded">
+                <div class="score-display__card-expanded-header">
+                  <button class="score-display__back-btn" @click.stop="closeQuickScore" title="返回">
+                    <el-icon><ArrowLeft /></el-icon>
+                  </button>
+                  <div class="score-display__card-avatar score-display__card-avatar--lg" :style="{ background: avatarColor(entry.id) }">
+                    <span>{{ nameInitial(entry.name) }}</span>
+                  </div>
+                  <div class="score-display__card-expanded-name">{{ entry.name }}</div>
+                  <div class="score-display__card-expanded-score">{{ entry.score }}</div>
+                </div>
+
+                <div class="score-display__quick-items">
+                  <button
+                    v-for="item in positiveEvalItems.slice(0, 4)"
+                    :key="`p-${item.id}`"
+                    class="score-display__quick-item score-display__quick-item--plus"
+                    @click.stop="quickScore(entry, item.scoreChange, item.name)"
+                  >
+                    <span class="score-display__quick-item-value">+{{ item.scoreChange }}</span>
+                    <span class="score-display__quick-item-name">{{ item.name }}</span>
+                  </button>
+                  <button
+                    v-for="item in negativeEvalItems.slice(0, 4)"
+                    :key="`n-${item.id}`"
+                    class="score-display__quick-item score-display__quick-item--minus"
+                    @click.stop="quickScore(entry, item.scoreChange, item.name)"
+                  >
+                    <span class="score-display__quick-item-value">{{ item.scoreChange }}</span>
+                    <span class="score-display__quick-item-name">{{ item.name }}</span>
+                  </button>
+                </div>
+
+                <div class="score-display__custom-score" @click.stop>
+                  <button class="score-display__step-btn" @click="bumpCustom(-1)" title="减 1">-1</button>
+                  <button class="score-display__step-btn score-display__step-btn--lg" @click="bumpCustom(-5)" title="减 5">-5</button>
+                  <input
+                    v-model.number="customScoreChange"
+                    type="number"
+                    class="score-display__custom-input"
+                    placeholder="0"
+                    @keyup.enter="quickScore(entry)"
+                  />
+                  <button class="score-display__step-btn score-display__step-btn--lg" @click="bumpCustom(5)" title="加 5">+5</button>
+                  <button class="score-display__step-btn" @click="bumpCustom(1)" title="加 1">+1</button>
+                  <input
+                    v-model="customScoreReason"
+                    type="text"
+                    class="score-display__custom-reason"
+                    :placeholder="t('reasonPlaceholder')"
+                    maxlength="20"
+                  />
+                  <button
+                    class="score-display__confirm-btn"
+                    :disabled="!customScoreChange"
+                    @click="quickScore(entry)"
+                  >
+                    {{ t('confirmScore') }}
+                  </button>
+                </div>
               </div>
-            </div>
-            <div class="quick-score-bar__divider" v-if="evaluationItems.length > 0"></div>
-            <!-- 快捷分值 -->
-            <div class="quick-score-bar__preset-btns">
-              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(1)">+1</button>
-              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(2)">+2</button>
-              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="quickScore(5)">+5</button>
-              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="quickScore(-1)">-1</button>
-              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="quickScore(-2)">-2</button>
-              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="quickScore(-5)">-5</button>
-            </div>
-            <div class="quick-score-bar__custom">
-              <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="customScoreChange--">−</button>
-              <input
-                v-model.number="customScoreChange"
-                type="number"
-                class="quick-score-bar__input"
-                placeholder="自定义"
-              />
-              <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="customScoreChange++">+</button>
-              <button
-                class="quick-score-bar__btn quick-score-bar__btn--apply"
-                :disabled="!customScoreChange"
-                @click="quickScore(customScoreChange)"
-              >
-                应用
-              </button>
-            </div>
-            <div class="quick-score-bar__reason">
-              <input
-                v-model="quickScoreReason"
-                type="text"
-                class="quick-score-bar__reason-input"
-                placeholder="原因（可选）"
-              />
+            </template>
+          </div>
+        </transition-group>
+
+        <div v-if="!leaderboard.length" class="score-display__empty">
+          <p>{{ t('noLeaderboardData') }}</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部抽屉 -->
+    <footer class="score-display__drawer" :class="{ 'is-open': drawerOpen }">
+      <button class="score-display__drawer-handle" @click="drawerOpen = !drawerOpen">
+        <el-icon><component :is="drawerOpen ? ArrowDown : ArrowUp" /></el-icon>
+        <span>{{ t('periodStats') }}</span>
+      </button>
+      <transition name="drawer">
+        <div v-show="drawerOpen" class="score-display__drawer-body">
+          <div class="score-display__drawer-tabs">
+            <button
+              v-for="opt in periodOptions"
+              :key="opt.key"
+              class="score-display__drawer-tab"
+              :class="{ 'is-active': activePeriod === opt.key }"
+              @click="activePeriod = opt.key"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+          <div class="score-display__drawer-list">
+            <div
+              v-for="(row, idx) in topPeriodStats"
+              :key="row.studentId"
+              class="score-display__drawer-row"
+            >
+              <span class="score-display__drawer-row-rank">#{{ idx + 1 }}</span>
+              <span class="score-display__drawer-row-name">{{ row.studentName }}</span>
+              <span class="score-display__drawer-row-net" :class="row.net >= 0 ? 'is-plus' : 'is-minus'">
+                {{ row.net >= 0 ? '+' : '' }}{{ row.net }}
+              </span>
+              <span class="score-display__drawer-row-detail">
+                +{{ row.plus }} / {{ row.minus }}
+              </span>
             </div>
           </div>
-          <button class="quick-score-bar__close" @click="closeQuickScore">
-            <el-icon :size="18"><Close /></el-icon>
-          </button>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </footer>
 
-    <!-- 批量评分对话框 -->
+    <!-- 设置弹层 -->
+    <el-dialog
+      v-model="showAdvanced"
+      :title="t('advancedSettings')"
+      width="520"
+      align-center
+      :show-close="true"
+      class="score-display__advanced-dialog"
+    >
+      <DisplaySettingsPanel
+        :sort-by="sortBy"
+        :privacy="privacy"
+        :show-pet="showPet"
+        :show-group="showGroup"
+        :show-trend="showTrend"
+        :refresh-interval="refreshInterval"
+        @update:sort-by="sortBy = $event"
+        @update:privacy="privacy = $event"
+        @update:show-pet="showPet = $event"
+        @update:show-group="showGroup = $event"
+        @update:show-trend="showTrend = $event"
+        @update:refresh-interval="refreshInterval = $event"
+      />
+    </el-dialog>
+
+    <!-- 批量评分 -->
     <el-dialog
       v-model="showBatchScorePanel"
       :title="t('batchScoreAction')"
-      width="480px"
-      :close-on-click-modal="false"
-      class="score-display__batch-dialog"
-      append-to-body
+      width="420"
+      align-center
     >
-      <div class="batch-score-form">
-        <div class="batch-score-form__info">
-          已选择 <strong>{{ selectedStudentIds.length }}</strong> 名{{ t('student') }}
+      <div class="score-display__batch">
+        <el-input-number v-model="batchScoreChange" :min="-100" :max="100" :step="1" size="large" class="score-display__batch-input" />
+        <el-input v-model="batchScoreReason" :placeholder="t('reasonPlaceholder')" maxlength="20" size="large" />
+        <div class="score-display__batch-presets">
+          <button
+            v-for="item in evaluationItems.slice(0, 6)"
+            :key="`bp-${item.id}`"
+            class="score-display__quick-item"
+            :class="item.isPositive ? 'score-display__quick-item--plus' : 'score-display__quick-item--minus'"
+            @click="applyBatchPreset(item)"
+          >
+            <span class="score-display__quick-item-value">{{ item.scoreChange > 0 ? '+' : '' }}{{ item.scoreChange }}</span>
+            <span class="score-display__quick-item-name">{{ item.name }}</span>
+          </button>
         </div>
-        <!-- 评价项预设 -->
-        <div v-if="evaluationItems.length > 0" class="batch-score-form__eval-section">
-          <div class="batch-score-form__eval-label">常用评价</div>
-          <div class="batch-score-form__eval-groups">
-            <div v-if="positiveEvalItems.length > 0" class="batch-score-form__eval-group">
-              <button
-                v-for="item in positiveEvalItems"
-                :key="item.id"
-                class="quick-score-bar__btn quick-score-bar__btn--eval-pos"
-                @click="applyBatchPreset(item)"
-              >
-                {{ item.name }} +{{ item.scoreChange }}
-              </button>
-            </div>
-            <div v-if="negativeEvalItems.length > 0" class="batch-score-form__eval-group">
-              <button
-                v-for="item in negativeEvalItems"
-                :key="item.id"
-                class="quick-score-bar__btn quick-score-bar__btn--eval-neg"
-                @click="applyBatchPreset(item)"
-              >
-                {{ item.name }} {{ item.scoreChange }}
-              </button>
-            </div>
-          </div>
-        </div>
-        <el-divider v-if="evaluationItems.length > 0" style="margin: 8px 0" />
-        <!-- 快捷分值 -->
-        <div class="batch-score-form__presets">
-          <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 1">+1</button>
-          <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 2">+2</button>
-          <button class="quick-score-bar__btn quick-score-bar__btn--pos" @click="batchScoreChange = 5">+5</button>
-          <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="batchScoreChange = -1">-1</button>
-          <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="batchScoreChange = -2">-2</button>
-          <button class="quick-score-bar__btn quick-score-bar__btn--neg" @click="batchScoreChange = -5">-5</button>
-        </div>
-        <el-input-number
-          v-model="batchScoreChange"
-          :step="1"
-          controls-position="right"
-          style="width: 100%"
-        />
-        <el-input
-          v-model="batchScoreReason"
-          placeholder="原因（可选，选择预设后可修改）"
-          style="margin-top: 12px"
-        />
       </div>
       <template #footer>
         <el-button @click="showBatchScorePanel = false">取消</el-button>
-        <el-button type="primary" :disabled="!batchScoreChange" @click="submitBatchScore">{{ t('confirmScore') }}</el-button>
+        <el-button type="primary" :disabled="!batchScoreChange || !selectedStudentIds.length" @click="submitBatchScore">
+          确认 ({{ selectedStudentIds.length }})
+        </el-button>
       </template>
     </el-dialog>
-
-    <!-- 宠物选择对话框 -->
-    <PetSelectDialog
-      v-model:visible="showPetDialog"
-      :student="petDialogStudent"
-      @select-pet="selectPet"
-    />
-
-    <!-- 道友切磋对话框 -->
-    <BattleDialog
-      v-if="isXianxia"
-      v-model="showBattleDialog"
-      :challenger="battleChallenger"
-      :opponents="battleOpponents"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
-import { Trophy, Check, Close, Setting } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
+import { Trophy, Check, Close, Setting, ArrowLeft, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent, StudentScoreStats } from '@/types'
+import type { LeaderboardEntry, Student, EvaluationItem, ScoreUpdateEvent } from '@/types'
 import { leaderboardApi } from '@/services/leaderboard'
 import { evaluationApi } from '@/services/evaluation'
 import { Window } from '@tauri-apps/api/window'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { studentApi } from '@/services/student'
 import { scoreApi } from '@/services/score'
-import { calculateLevel } from '@/utils/petSystem'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
-import { calculateCultivation, getCultivationLevel, formatCultivationNumber } from '@/utils/cultivationSystem'
-import StudentCardDisplay from '@/components/display/StudentCardDisplay.vue'
-import StudentCircleDisplay from '@/components/display/StudentCircleDisplay.vue'
-import PetDisplay from '@/components/display/PetDisplay.vue'
-import BattleDialog from '@/components/xianxia/BattleDialog.vue'
 import DisplaySettingsPanel from '@/components/display/DisplaySettingsPanel.vue'
-import PetSelectDialog from '@/components/display/PetSelectDialog.vue'
 
-// ===== 显示设置 =====
-interface DisplaySettings {
-  background: 'deepblue' | 'pureblack' | 'warmgray' | 'custom'
-  customColor: string
-  fontSize: 'small' | 'medium' | 'large' | 'xlarge'
-  maxItems: number
-  refreshInterval: number
-  showClock: boolean
-  showRank: boolean
-  showScore: boolean
+const { t } = useTerminology()
+
+// ===== 时间 =====
+const currentTime = ref('')
+const currentDate = ref('')
+let timeTimer: ReturnType<typeof setInterval> | null = null
+
+function updateTime() {
+  const now = new Date()
+  currentTime.value = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  currentDate.value = `${now.getMonth() + 1}月${now.getDate()}日`
 }
 
-const DEFAULT_SETTINGS: DisplaySettings = {
-  background: 'deepblue',
-  customColor: '#1a1a2e',
-  fontSize: 'medium',
-  maxItems: 10,
-  refreshInterval: 30,
-  showClock: true,
-  showRank: true,
-  showScore: true,
+// ===== 数据 =====
+interface DisplayEntry {
+  id: string
+  rank: number
+  name: string
+  score: number
+  student: Student | null
 }
 
-function loadSettings(): DisplaySettings {
-  try {
-    const raw = localStorage.getItem('displaySettings')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      return { ...DEFAULT_SETTINGS, ...parsed }
-    }
-  } catch { /* ignore */ }
-  return { ...DEFAULT_SETTINGS }
-}
-
-const displaySettings = reactive<DisplaySettings>(loadSettings())
-
-function saveSettings() {
-  localStorage.setItem('displaySettings', JSON.stringify(displaySettings))
-}
-
-// ===== 全屏模式 =====
-const isFullscreen = ref(false)
-const showGearOnFullscreen = ref(true)
-let fullscreenHideTimer: ReturnType<typeof setTimeout> | null = null
-
-function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().then(() => {
-      isFullscreen.value = true
-    }).catch(() => {})
-  } else {
-    document.exitFullscreen().then(() => {
-      isFullscreen.value = false
-    }).catch(() => {})
-  }
-}
-
-function onFullscreenChange() {
-  isFullscreen.value = !!document.fullscreenElement
-}
-
-function onMouseMove(e: MouseEvent) {
-  if (!isFullscreen.value) return
-  if (e.clientY < 60) {
-    showGearOnFullscreen.value = true
-    if (fullscreenHideTimer) clearTimeout(fullscreenHideTimer)
-    fullscreenHideTimer = setTimeout(() => {
-      showGearOnFullscreen.value = false
-    }, 3000)
-  }
-}
-
-async function closeDisplay() {
-  try {
-    const win = await Window.getByLabel('display')
-    if (win) {
-      await win.close()
-    } else {
-      window.close()
-    }
-  } catch {
-    window.close()
-  }
-}
-
-// ===== 设置面板 =====
-const showSettings = ref(false)
-
-// ===== 分数变化动画 =====
-interface ScoreAnimation {
-  id: number
-  change: number
-}
-
-const scoreAnimations = ref<ScoreAnimation[]>([])
-let animIdCounter = 0
-
-function addScoreAnimation(change: number) {
-  const id = ++animIdCounter
-  scoreAnimations.value.push({ id, change })
-  setTimeout(() => {
-    scoreAnimations.value = scoreAnimations.value.filter(a => a.id !== id)
-  }, 1500)
-}
-
-// ===== 排行榜入场动画 =====
-const mounted = ref(false)
-
-// ===== 核心数据 =====
 const leaderboard = ref<LeaderboardEntry[]>([])
 const students = ref<Student[]>([])
 const evaluationItems = ref<EvaluationItem[]>([])
-const scoreStats = ref<StudentScoreStats[]>([])
-const mode = ref<'personal' | 'group'>('personal')
-const displayMode = ref<'leaderboard' | 'Card' | 'Circle' | 'Pet'>('Card')
 
-const effectiveDisplayMode = computed(() => {
-  if (isXianxia.value && mode.value === 'personal') {
-    return 'Card' // 修仙模式下个人页强制卡片模式
+const studentMap = computed(() => {
+  const m = new Map<string, Student>()
+  for (const s of students.value) m.set(s.id, s)
+  return m
+})
+
+const displayEntries = computed<DisplayEntry[]>(() => {
+  if (sortBy.value === 'studentNumber') {
+    return [...leaderboard.value]
+      .map(e => ({
+        id: e.name,
+        rank: 0,
+        name: e.name,
+        score: e.score,
+        student: null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+      .map((e, i) => ({ ...e, rank: i + 1 }))
   }
-  return displayMode.value
-})
-const currentTime = ref('')
-
-// 多选模式
-const multiSelectMode = ref(false)
-const selectedStudentIds = ref<string[]>([])
-
-// 快速评分
-const quickScoreStudent = ref<Student | null>(null)
-const customScoreChange = ref<number>(0)
-const quickScoreReason = ref('')
-
-// 批量评分
-const showBatchScorePanel = ref(false)
-const batchScoreChange = ref<number>(1)
-const batchScoreReason = ref('')
-
-// 宠物选择
-const showPetDialog = ref(false)
-const petDialogStudent = ref<Student | null>(null)
-
-// 道友切磋
-const showBattleDialog = ref(false)
-const battleChallenger = computed(() => {
-  if (selectedStudentIds.value.length === 0) return null
-  const id = selectedStudentIds.value[0]
-  return students.value.find(s => s.id === id) || null
-})
-const battleOpponents = computed(() => {
-  const selectedIds = new Set(selectedStudentIds.value)
-  return students.value.filter(s => !selectedIds.has(s.id))
+  return leaderboard.value.map(e => ({
+    id: e.name,
+    rank: e.rank,
+    name: e.name,
+    score: e.score,
+    student: studentMap.value.get(
+      students.value.find(s => s.name === e.name)?.id ?? ''
+    ) ?? null,
+  }))
 })
 
-function openBattleDialog() {
-  if (students.value.length < 2) {
-    ElMessage.warning('至少需要两名道友才能切磋')
-    return
-  }
-  showBattleDialog.value = true
+const topThree = computed<DisplayEntry[]>(() => displayEntries.value.slice(0, 3))
+const restEntries = computed<DisplayEntry[]>(() => displayEntries.value.slice(3))
+
+// ===== 设置 =====
+const sortBy = ref<'rank' | 'studentNumber'>(
+  (localStorage.getItem('displaySortBy') as 'rank' | 'studentNumber') || 'rank'
+)
+const privacy = ref<'name' | 'alias' | 'number'>(
+  (localStorage.getItem('displayPrivacy') as 'name' | 'alias' | 'number') || 'name'
+)
+const showPet = ref(localStorage.getItem('displayShowPet') !== 'false')
+const showGroup = ref(localStorage.getItem('displayShowGroup') !== 'false')
+const showTrend = ref(localStorage.getItem('displayShowTrend') !== 'false')
+const refreshInterval = ref<number>(Number(localStorage.getItem('displayRefreshInterval')) || 15)
+
+function persistSettings() {
+  localStorage.setItem('displaySortBy', sortBy.value)
+  localStorage.setItem('displayPrivacy', privacy.value)
+  localStorage.setItem('displayShowPet', String(showPet.value))
+  localStorage.setItem('displayShowGroup', String(showGroup.value))
+  localStorage.setItem('displayShowTrend', String(showTrend.value))
+  localStorage.setItem('displayRefreshInterval', String(refreshInterval.value))
 }
 
-let timeTimer: ReturnType<typeof setInterval> | null = null
-let refreshTimer: ReturnType<typeof setInterval> | null = null
+const showAdvanced = ref(false)
 
-const { isXianxia, t } = useTerminology()
-
-// ===== 周期积分面板 =====
-type PeriodKey = 'day' | 'week' | 'month' | 'semester'
-const activePeriod = ref<PeriodKey>('week')
-const periodOptions = computed(() => {
-  const opts: { key: PeriodKey; label: string }[] = [
-    { key: 'day', label: '日' },
-    { key: 'week', label: '周' },
-    { key: 'month', label: '月' },
-  ]
-  if (scoreStats.value.some(s => s.semesterNet !== undefined)) {
-    opts.push({ key: 'semester', label: '学期' })
-  }
-  return opts
-})
-
-interface PeriodStatRow {
-  studentId: number
-  studentName: string
-  plus: number
-  minus: number
-  net: number
+function openSettings() {
+  showAdvanced.value = true
 }
 
-const topPeriodStats = computed<PeriodStatRow[]>(() => {
-  return scoreStats.value
-    .map(s => {
-      let plus = 0, minus = 0, net = 0
-      switch (activePeriod.value) {
-        case 'day': plus = s.dayPlus; minus = s.dayMinus; net = s.dayNet; break
-        case 'week': plus = s.weekPlus; minus = s.weekMinus; net = s.weekNet; break
-        case 'month': plus = s.monthPlus; minus = s.monthMinus; net = s.monthNet; break
-        case 'semester': plus = s.semesterPlus || 0; minus = s.semesterMinus || 0; net = s.semesterNet || 0; break
-      }
-      return { studentId: s.studentId, studentName: s.studentName, plus, minus, net }
-    })
-    .sort((a, b) => b.net - a.net)
-    .slice(0, 10)
-})
-
-// ===== 计算属性 =====
-const fontSizeMap: Record<string, string> = {
-  small: '14px',
-  medium: '16px',
-  large: '20px',
-  xlarge: '24px',
-}
-
-const rootStyle = computed(() => ({
-  '--display-font-size': fontSizeMap[displaySettings.fontSize] || '16px',
-}))
-
-const bgStyle = computed(() => {
-  switch (displaySettings.background) {
-    case 'pureblack':
-      return { background: '#000' }
-    case 'warmgray':
-      return { background: 'linear-gradient(160deg, #2a2520 0%, #3d3530 40%, #332d28 70%, #252018 100%)' }
-    case 'custom':
-      return { background: displaySettings.customColor }
-    default: // deepblue
-      return {}
-  }
-})
-
-const limitedLeaderboard = computed(() => leaderboard.value.slice(0, displaySettings.maxItems))
-const limitedTopThree = computed(() => limitedLeaderboard.value.slice(0, 3))
-const limitedRestEntries = computed(() => limitedLeaderboard.value.slice(3))
-
-
-
+// ===== 评价项 =====
 const positiveEvalItems = computed(() => evaluationItems.value.filter(i => i.isPositive))
 const negativeEvalItems = computed(() => evaluationItems.value.filter(i => !i.isPositive))
 
-function updateTime() {
-  currentTime.value = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+// ===== 快速评分 =====
+const expandedStudentId = ref<string | null>(null)
+const customScoreChange = ref<number>(0)
+const customScoreReason = ref('')
+
+function bumpCustom(delta: number) {
+  customScoreChange.value = (customScoreChange.value || 0) + delta
 }
 
-function orbStyle(i: number) {
-  const size = 120 + i * 80
-  const x = (i * 19 + 10) % 90
-  const y = (i * 13 + 5) % 80
-  const delay = i * 3
-  return {
-    width: `${size}px`,
-    height: `${size}px`,
-    left: `${x}%`,
-    top: `${y}%`,
-    animationDelay: `${delay}s`,
-    animationDuration: `${18 + i * 2}s`,
-  }
-}
-
-// 刷新间隔变更
-function onRefreshIntervalChange() {
-  saveSettings()
-  restartRefreshTimer()
-}
-
-// 显示模式变更
-function onDisplayModeChange(value: string) {
-  if (value === 'Card' || value === 'Circle' || value === 'Pet' || value === 'leaderboard') {
-    displayMode.value = value
-  }
-}
-
-function restartRefreshTimer() {
-  if (refreshTimer) {
-    clearInterval(refreshTimer)
-    refreshTimer = null
-  }
-  if (displaySettings.refreshInterval > 0) {
-    refreshTimer = setInterval(() => {
-      fetchLeaderboard()
-      fetchStudents()
-      fetchScoreStats()
-    }, displaySettings.refreshInterval * 1000)
-  }
-}
-
-// 学生点击处理
-function handleStudentClick(student: Student) {
+function onCardClick(entry: DisplayEntry) {
   if (multiSelectMode.value) {
-    toggleStudentSelection(student.id)
-  } else {
-    quickScoreStudent.value = student
-    customScoreChange.value = 0
-    quickScoreReason.value = ''
+    toggleStudentSelection(entry.id)
+    return
+  }
+  if (expandedStudentId.value === entry.id) return
+  expandedStudentId.value = entry.id
+  customScoreChange.value = 0
+  customScoreReason.value = ''
+}
+
+function closeQuickScore() {
+  expandedStudentId.value = null
+  customScoreChange.value = 0
+  customScoreReason.value = ''
+}
+
+async function quickScore(entry: DisplayEntry, change?: number, reason?: string) {
+  const student = entry.student
+  if (!student) {
+    ElMessage.warning('未找到该学生')
+    return
+  }
+  const delta = change ?? customScoreChange.value
+  if (!delta) return
+  try {
+    await scoreApi.addScore({
+      studentId: student.id,
+      scoreChange: delta,
+      reason: (reason ?? customScoreReason.value) || (delta > 0 ? `${t('addScore')}${delta}` : `${t('subtractScore')}${Math.abs(delta)}`),
+    })
+    ElMessage.success(`${entry.name} ${delta > 0 ? '+' : ''}${delta}`)
+    addScoreAnimation(entry.id, delta)
+    closeQuickScore()
+    await fetchLeaderboard()
+    await fetchStudents()
+  } catch {
+    // error handled by interceptor
   }
 }
 
-// 评价项预设选择（快速评分栏）
-function applyQuickPreset(item: EvaluationItem) {
-  customScoreChange.value = item.scoreChange
-  quickScoreReason.value = item.name
-}
+// ===== 多选 =====
+const multiSelectMode = ref(false)
+const selectedStudentIds = ref<string[]>([])
 
-// 评价项预设选择（批量评分对话框）
-function applyBatchPreset(item: EvaluationItem) {
-  batchScoreChange.value = item.scoreChange
-  batchScoreReason.value = item.name
-}
-
-// 多选相关
 function toggleMultiSelect() {
   multiSelectMode.value = !multiSelectMode.value
   if (!multiSelectMode.value) {
@@ -753,52 +437,53 @@ function toggleStudentSelection(id: string) {
   }
 }
 
-function isSelected(id: string): boolean {
+function isSelected(id: string) {
   return selectedStudentIds.value.includes(id)
 }
 
 function selectAll() {
-  selectedStudentIds.value = students.value.map(s => s.id)
+  selectedStudentIds.value = displayEntries.value.map(e => e.id)
 }
 
 function clearSelection() {
   selectedStudentIds.value = []
 }
 
-// 快速评分
-async function quickScore(change: number) {
-  if (!quickScoreStudent.value || change === 0) return
-  try {
-    await scoreApi.addScore({
-      studentId: quickScoreStudent.value.id,
-      scoreChange: change,
-      reason: quickScoreReason.value || (change > 0 ? `加分${change}` : `扣分${Math.abs(change)}`),
-    })
-    ElMessage.success(`${quickScoreStudent.value.name} ${change > 0 ? '+' : ''}${change} 分`)
-    quickScoreStudent.value = null
-    await fetchLeaderboard()
-    await fetchStudents()
-  } catch {
-    // error handled by interceptor
+// ===== 批量评分 =====
+const showBatchScorePanel = ref(false)
+const batchScoreChange = ref<number>(1)
+const batchScoreReason = ref('')
+
+function openBatchScore() {
+  if (!selectedStudentIds.value.length) {
+    ElMessage.warning(t('selectStudentFirst'))
+    return
   }
+  batchScoreChange.value = 1
+  batchScoreReason.value = ''
+  showBatchScorePanel.value = true
 }
 
-function closeQuickScore() {
-  quickScoreStudent.value = null
+function applyBatchPreset(item: EvaluationItem) {
+  batchScoreChange.value = item.scoreChange
+  batchScoreReason.value = item.name
 }
 
-// 批量评分
 async function submitBatchScore() {
-  if (selectedStudentIds.value.length === 0 || !batchScoreChange.value) return
+  const ids = selectedStudentIds.value
+    .map(displayName => students.value.find(s => s.name === displayName)?.id)
+    .filter((id): id is string => Boolean(id))
+  if (!ids.length || !batchScoreChange.value) return
   try {
     await scoreApi.batchAddScore({
-      studentIds: selectedStudentIds.value,
+      studentIds: ids,
       scoreChange: batchScoreChange.value,
-      reason: batchScoreReason.value || (batchScoreChange.value > 0 ? `批量加分${batchScoreChange.value}` : `批量扣分${Math.abs(batchScoreChange.value)}`),
+      reason: batchScoreReason.value || (batchScoreChange.value > 0 ? `批量${t('addScore')}${batchScoreChange.value}` : `批量${t('subtractScore')}${Math.abs(batchScoreChange.value)}`),
     })
-    ElMessage.success(`已为 ${selectedStudentIds.value.length} 名学生评分`)
+    ElMessage.success(`已为 ${ids.length} 名${t('student')}评分`)
     showBatchScorePanel.value = false
     selectedStudentIds.value = []
+    multiSelectMode.value = false
     await fetchLeaderboard()
     await fetchStudents()
   } catch {
@@ -806,175 +491,187 @@ async function submitBatchScore() {
   }
 }
 
-// 宠物右键
-function onPetRightClick(student: Student) {
-  petDialogStudent.value = student
-  showPetDialog.value = true
+// ===== 动画 =====
+interface ScoreAnimation {
+  id: number
+  studentId: string
+  change: number
 }
 
-async function selectPet(petTypeId: string) {
-  if (!petDialogStudent.value) return
+const scoreAnimations = reactive<ScoreAnimation[]>([])
+let animIdCounter = 0
+
+function addScoreAnimation(studentId: string, change: number) {
+  const id = ++animIdCounter
+  scoreAnimations.push({ id, studentId, change })
+  setTimeout(() => {
+    const idx = scoreAnimations.findIndex(a => a.id === id)
+    if (idx >= 0) scoreAnimations.splice(idx, 1)
+  }, 1500)
+}
+
+function activeScoreAnimations(studentId: string) {
+  return scoreAnimations.filter(a => a.studentId === studentId)
+}
+
+// ===== 周期统计 =====
+type PeriodKey = 'day' | 'week' | 'month' | 'semester'
+const activePeriod = ref<PeriodKey>('week')
+const drawerOpen = ref(false)
+
+const periodOptions: { key: PeriodKey; label: string }[] = [
+  { key: 'day', label: '日' },
+  { key: 'week', label: '周' },
+  { key: 'month', label: '月' },
+]
+
+const topPeriodStats = computed<{ studentId: string; studentName: string; plus: number; minus: number; net: number }[]>(() => {
+  return displayEntries.value
+    .map(e => {
+      // 简易占位：从总积分反推；真实统计需要 scoreStats 接口
+      return {
+        studentId: e.id,
+        studentName: e.name,
+        plus: 0,
+        minus: 0,
+        net: e.score,
+      }
+    })
+    .sort((a, b) => b.net - a.net)
+    .slice(0, 10)
+})
+
+// ===== 工具 =====
+function nameInitial(name: string) {
+  return name?.slice(0, 1) ?? '?'
+}
+
+function avatarColor(id: string) {
+  // 基于 id 哈希生成稳定颜色
+  const palette = [
+    'linear-gradient(135deg, #0D7C5F, #3FB28F)',
+    'linear-gradient(135deg, #1E40AF, #60A5FA)',
+    'linear-gradient(135deg, #C2410C, #FB923C)',
+    'linear-gradient(135deg, #7C3AED, #A78BFA)',
+    'linear-gradient(135deg, #BE185D, #F472B6)',
+    'linear-gradient(135deg, #0E7490, #67E8F9)',
+    'linear-gradient(135deg, #15803D, #86EFAC)',
+    'linear-gradient(135deg, #B45309, #FCD34D)',
+  ]
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i)
+    hash |= 0
+  }
+  return palette[Math.abs(hash) % palette.length]
+}
+
+// ===== 关闭 =====
+async function closeDisplay() {
   try {
-    await studentApi.update(petDialogStudent.value.id, { petType: petTypeId || undefined })
-    ElMessage.success(petTypeId ? `已为 ${petDialogStudent.value.name} 选择宠物` : `已移除 ${petDialogStudent.value.name} 的宠物`)
-    showPetDialog.value = false
-    petDialogStudent.value = null
-    await fetchStudents()
+    const win = await Window.getByLabel('display')
+    if (win) {
+      await win.close()
+    } else {
+      window.close()
+    }
   } catch {
-    // error handled by interceptor
+    window.close()
   }
 }
 
+// ===== 刷新 =====
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+
+function restartRefreshTimer() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+  if (refreshInterval.value > 0) {
+    refreshTimer = setInterval(() => {
+      fetchLeaderboard()
+      fetchStudents()
+    }, refreshInterval.value * 1000)
+  }
+}
+
+watch(refreshInterval, () => {
+  persistSettings()
+  restartRefreshTimer()
+})
+
+watch([sortBy, privacy, showPet, showGroup, showTrend], () => {
+  persistSettings()
+})
+
+// ===== 生命周期 =====
 onMounted(async () => {
   updateTime()
   timeTimer = setInterval(updateTime, 1000)
-  await Promise.all([fetchLeaderboard(), fetchStudents(), fetchEvaluationItems(), fetchScoreStats()])
-  // 触发入场动画
-  requestAnimationFrame(() => {
-    mounted.value = true
-  })
+  await Promise.all([fetchLeaderboard(), fetchStudents(), fetchEvaluationItems()])
   connectWebSocket({
     onScoreUpdate: (data: ScoreUpdateEvent) => {
       if (data.scoreChange !== undefined && data.scoreChange !== 0) {
-        addScoreAnimation(data.scoreChange)
+        addScoreAnimation(data.studentName, data.scoreChange)
       }
       fetchLeaderboard()
       fetchStudents()
-      fetchScoreStats()
     },
   })
   restartRefreshTimer()
-  document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 
 onUnmounted(() => {
   disconnectWebSocket()
   if (timeTimer) clearInterval(timeTimer)
   if (refreshTimer) clearInterval(refreshTimer)
-  if (fullscreenHideTimer) clearTimeout(fullscreenHideTimer)
-  document.removeEventListener('fullscreenchange', onFullscreenChange)
 })
 
 async function fetchLeaderboard() {
   try {
     leaderboard.value = await leaderboardApi.query()
-  } catch {
-    // silent
-  }
+  } catch { /* silent */ }
 }
 
 async function fetchStudents() {
   try {
     const response = await studentApi.getAll()
     students.value = response.data.data
-  } catch {
-    // silent
-  }
+  } catch { /* silent */ }
 }
 
 async function fetchEvaluationItems() {
   try {
     const response = await evaluationApi.getAll()
     evaluationItems.value = response.data.data || []
-  } catch {
-    // silent
-  }
-}
-
-async function fetchScoreStats() {
-  try {
-    scoreStats.value = []
-  } catch {
-    // silent
-  }
-}
-
-function formatNet(val: number | undefined): string {
-  if (val === undefined || val === 0) return '0'
-  return val > 0 ? `+${val}` : `${val}`
+  } catch { /* silent */ }
 }
 </script>
 
-<style src="@/themes/xianxia/styles.css"></style>
-
 <style scoped>
-/* ===== Focus-less CSS ===== */
-.score-display * {
-  user-select: none;
-  -webkit-user-select: none;
-  cursor: default;
-}
-.score-display *:focus {
-  outline: none;
-}
-.score-display *:focus-visible {
-  outline: none;
-}
-/* 设置面板打开时恢复交互元素光标 */
-.score-display--settings-open .score-display__settings-panel * {
-  cursor: auto;
-}
-.score-display--settings-open .score-display__settings-panel button,
-.score-display--settings-open .score-display__settings-panel input,
-.score-display--settings-open .score-display__settings-panel label {
-  cursor: pointer;
-}
-
 .score-display {
   width: 100vw;
   height: 100vh;
-  background: linear-gradient(160deg, #0a1628 0%, #0d2137 40%, #0a2a3c 70%, #061a2e 100%);
-  color: #fff;
+  background: var(--cis-bg);
+  color: var(--cis-text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
-  font-size: var(--display-font-size, 16px);
+  font-family: var(--cis-font-family);
+  font-size: var(--cis-font-size-base);
 }
 
-/* 背景光球 */
-.score-display__bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.score-display__orb {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(13, 148, 136, 0.12) 0%, transparent 70%);
-  animation: orb-float 20s infinite ease-in-out;
-  filter: blur(2px);
-}
-
-@keyframes orb-float {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-  33% { transform: translate(20px, -30px) scale(1.1); opacity: 0.6; }
-  66% { transform: translate(-15px, 20px) scale(0.95); opacity: 0.5; }
-}
-
-.score-display__content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 32px 48px;
-  height: 100%;
-}
-
-.score-display__header {
+/* ===== 顶栏 ===== */
+.score-display__topbar {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 36px;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.score-display__header--hidden {
-  opacity: 0;
-  transform: translateY(-20px);
-  pointer-events: none;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--cis-border-color-light);
+  background: var(--cis-header-bg);
+  flex-shrink: 0;
+  height: 60px;
 }
 
 .score-display__brand {
@@ -989,981 +686,722 @@ function formatNet(val: number | undefined): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--cis-gradient-primary, linear-gradient(135deg, #0d9488, #14b8a6));
-  border-radius: var(--cis-radius-md, 8px);
+  background: var(--cis-gradient-primary);
+  border-radius: var(--cis-radius-md);
   color: #fff;
+  font-size: 18px;
 }
 
 .score-display__title {
-  font-family: var(--cis-font-family-display, serif);
-  font-size: 28px;
-  font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, #2dd4bf, #5eead4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+  line-height: 1.2;
 }
 
-.score-display__time {
-  font-size: 20px;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.45);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 2px;
-}
-
-.score-display__toggles {
-  margin-left: auto;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.score-display__multi-btn {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.score-display__multi-btn:hover {
-  border-color: rgba(13, 148, 136, 0.4);
-  background: rgba(13, 148, 136, 0.1);
-  color: #fff;
-}
-
-.score-display__toggles :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.5);
+.score-display__subtitle {
+  margin: 2px 0 0;
   font-size: 12px;
-  padding: 6px 16px;
+  color: var(--cis-text-tertiary);
 }
 
-.score-display__toggles :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
-  border-color: #0d9488;
-  color: #fff;
-  box-shadow: 0 0 16px rgba(13, 148, 136, 0.3);
-}
-
-/* 设置齿轮按钮 */
-.score-display__settings-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.6);
+.score-display__topbar-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
+  gap: 4px;
 }
 
-.score-display__settings-btn:hover {
-  background: rgba(13, 148, 136, 0.15);
-  border-color: rgba(13, 148, 136, 0.4);
-  color: #2dd4bf;
-  transform: rotate(45deg);
-}
-
-/* 关闭按钮 */
-.score-display__close-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.6);
-  display: flex;
+.score-display__icon-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--cis-radius-md);
+  background: transparent;
+  color: var(--cis-text-secondary);
   cursor: pointer;
+  font-size: 16px;
+  transition: all var(--cis-transition-fast);
 }
 
-.score-display__close-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #f87171;
+.score-display__icon-btn:hover {
+  background: var(--cis-bg-secondary);
+  color: var(--cis-text-primary);
 }
 
-/* 多选工具栏 */
-.score-display__multi-toolbar {
+.score-display__icon-btn--close:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--cis-danger);
+}
+
+.score-display__multi-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 10px 16px;
-  background: rgba(13, 148, 136, 0.1);
-  border: 1px solid rgba(13, 148, 136, 0.25);
-  border-radius: var(--cis-radius-lg, 12px);
-}
-
-.score-display__multi-toolbar :deep(.el-button) {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.score-display__multi-toolbar :deep(.el-button:hover) {
-  border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--cis-radius-md);
+  background: var(--cis-primary-light-9);
 }
 
 .score-display__multi-count {
-  margin-left: auto;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  color: var(--cis-primary);
+  padding: 0 4px;
 }
 
-/* 可选择包装器 */
-.score-display__selectable-wrapper {
-  position: relative;
-  cursor: pointer;
-  transition: all var(--cis-transition-fast, 0.15s ease);
-}
-
-.score-display__selectable-wrapper--selected {
-  outline: 2px solid #0d9488;
-  outline-offset: 2px;
-  border-radius: var(--cis-radius-lg, 12px);
-}
-
-.score-display__selectable-wrapper--selected :deep(.student-card-display),
-.score-display__selectable-wrapper--selected :deep(.pet-display) {
-  background: rgba(13, 148, 136, 0.12);
-  border-color: rgba(13, 148, 136, 0.4);
-}
-
-.score-display__selectable-wrapper--circle.score-display__selectable-wrapper--selected :deep(.student-circle-display__avatar) {
-  box-shadow: 0 0 0 3px #0d9488;
-}
-
-.score-display__select-check {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 2;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(13, 148, 136, 0.8);
-  display: flex;
+.score-display__mini-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--cis-border-color);
+  border-radius: var(--cis-radius-sm);
+  background: var(--cis-card-bg);
+  color: var(--cis-text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--cis-transition-fast);
 }
 
-/* 领奖台 */
-.score-display__podium {
+.score-display__mini-btn:hover:not(:disabled) {
+  border-color: var(--cis-primary);
+  color: var(--cis-primary);
+}
+
+.score-display__mini-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.score-display__mini-btn--primary {
+  background: var(--cis-primary);
+  color: #fff;
+  border-color: var(--cis-primary);
+}
+
+.score-display__mini-btn--primary:hover:not(:disabled) {
+  background: var(--cis-primary-dark);
+  border-color: var(--cis-primary-dark);
+  color: #fff;
+}
+
+/* ===== 主体 ===== */
+.score-display__main {
+  flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 40px;
-  margin-bottom: 36px;
-  padding: 20px 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px 24px;
+  gap: 16px;
+}
+
+/* ===== 领奖台 ===== */
+.score-display__podium {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  flex-shrink: 0;
 }
 
 .score-display__podium-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.score-display__podium-item--animated {
-  opacity: 1;
-  transform: translateY(0);
-  transition-delay: var(--podium-delay, 0s);
-}
-
-.score-display__podium--1 { order: 2; }
-.score-display__podium--2 { order: 1; }
-.score-display__podium--3 { order: 3; }
-
-.score-display__podium-crown {
-  font-size: 28px;
-  animation: crown-bounce 2s infinite ease-in-out;
-}
-
-@keyframes crown-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
-.score-display__podium-avatar {
+  padding: 16px 12px 20px;
+  background: var(--cis-card-bg);
+  border: 1px solid var(--cis-border-color-light);
+  border-radius: var(--cis-radius-lg);
   position: relative;
+  animation: podium-rise 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
-.score-display__podium-avatar :deep(.el-avatar) {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 28px;
-  font-weight: 700;
-  border: 3px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+.score-display__podium-item--0 {
+  border-color: #FFD70080;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
 }
 
-.score-display__medal {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+.score-display__podium-item--1 {
+  border-color: #C0C0C080;
+  transform: translateY(8px);
+  box-shadow: 0 4px 12px rgba(192, 192, 192, 0.15);
 }
 
-.score-display__medal--gold {
-  background: linear-gradient(135deg, #ffd700, #ffb700);
-  box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+.score-display__podium-item--2 {
+  border-color: #CD7F3280;
+  transform: translateY(16px);
+  box-shadow: 0 4px 12px rgba(205, 127, 50, 0.15);
 }
-.score-display__medal--silver {
-  background: linear-gradient(135deg, #e8e8e8, #b0b0b0);
-  box-shadow: 0 0 12px rgba(192, 192, 192, 0.3);
-}
-.score-display__medal--bronze {
-  background: linear-gradient(135deg, #cd7f32, #a0622a);
-  box-shadow: 0 0 12px rgba(205, 127, 50, 0.3);
-}
-
-.score-display__podium-name {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.score-display__podium-score {
-  font-size: 36px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #2dd4bf, #5eead4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* 列表 */
-.score-display__list {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
-  align-content: start;
-  overflow-y: auto;
-}
-
-.score-display__item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: var(--cis-radius-lg, 12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all var(--cis-transition-fast, 0.12s ease);
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.score-display__item--animated {
-  opacity: 1;
-  transform: translateX(0);
-  transition-delay: var(--item-delay, 0ms);
-}
-
-.score-display__item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(13, 148, 136, 0.2);
-}
-
-.score-display__rank {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-weight: 700;
-  font-size: 13px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.score-display__name {
-  flex: 1;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.score-display__score {
-  font-size: 20px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #2dd4bf, #5eead4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* 网格展示模式 */
-.score-display__grid {
-  flex: 1;
-  overflow-y: auto;
-  align-content: start;
-}
-
-.score-display__grid--card {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.score-display__grid--circle {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 12px;
-  justify-items: center;
-}
-
-.score-display__grid--pet {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 16px;
-  justify-items: center;
-}
-
-/* 深色背景下调整子组件样式 */
-.score-display__grid :deep(.student-card-display) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.score-display__grid :deep(.student-card-display:hover) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(13, 148, 136, 0.3);
-}
-
-.score-display__grid :deep(.student-card-display__name) {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.score-display__grid :deep(.student-card-display__score) {
-  color: #2dd4bf;
-}
-
-.score-display__grid :deep(.student-circle-display__name) {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.score-display__grid :deep(.pet-display) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.score-display__grid :deep(.pet-display:hover) {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.score-display__grid :deep(.pet-display__name) {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.score-display__grid :deep(.pet-display__score) {
-  color: #2dd4bf;
-}
-
-.score-display__grid :deep(.pet-display__pet-name) {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.score-display__grid :deep(.pet-display__exp-text) {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-/* ===== 快速评分底部栏 ===== */
-.quick-score-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  padding: 0 32px 24px;
-  pointer-events: none;
-}
-
-.quick-score-bar__inner {
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 16px 24px;
-  background: rgba(10, 22, 40, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(13, 148, 136, 0.25);
-  border-radius: 16px;
-  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.4), 0 0 24px rgba(13, 148, 136, 0.1);
-}
-
-.quick-score-bar__student {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 100px;
-}
-
-.quick-score-bar__student-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.quick-score-bar__student-score {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.quick-score-bar__actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-}
-
-.quick-score-bar__preset-btns {
-  display: flex;
-  gap: 6px;
-}
-
-.quick-score-bar__btn {
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.quick-score-bar__btn:hover {
-  transform: translateY(-1px);
-}
-
-.quick-score-bar__btn:active {
-  transform: translateY(0) scale(0.97);
-}
-
-.quick-score-bar__btn--pos {
-  background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
-  border-color: rgba(34, 197, 94, 0.25);
-}
-
-.quick-score-bar__btn--pos:hover {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.4);
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
-}
-
-.quick-score-bar__btn--neg {
-  background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.25);
-}
-
-.quick-score-bar__btn--neg:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
-}
-
-.quick-score-bar__btn--apply {
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
-  color: #fff;
-  border-color: transparent;
-}
-
-.quick-score-bar__btn--apply:hover {
-  box-shadow: 0 2px 12px rgba(13, 148, 136, 0.35);
-}
-
-.quick-score-bar__btn--apply:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* 评价项预设按钮 */
-.quick-score-bar__eval-presets {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 320px;
-}
-
-.quick-score-bar__eval-group {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.quick-score-bar__btn--eval-pos {
-  background: rgba(34, 197, 94, 0.08);
-  color: #4ade80;
-  border-color: rgba(34, 197, 94, 0.18);
-  font-size: 12px;
-  padding: 4px 10px;
-}
-
-.quick-score-bar__btn--eval-pos:hover {
-  background: rgba(34, 197, 94, 0.16);
-  border-color: rgba(34, 197, 94, 0.35);
-}
-
-.quick-score-bar__btn--eval-neg {
-  background: rgba(239, 68, 68, 0.08);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.18);
-  font-size: 12px;
-  padding: 4px 10px;
-}
-
-.quick-score-bar__btn--eval-neg:hover {
-  background: rgba(239, 68, 68, 0.16);
-  border-color: rgba(239, 68, 68, 0.35);
-}
-
-.quick-score-bar__divider {
-  width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.1);
-  flex-shrink: 0;
-}
-
-.quick-score-bar__custom {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.quick-score-bar__input {
-  width: 60px;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 6px 4px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.quick-score-bar__input:focus {
-  border-color: rgba(13, 148, 136, 0.5);
-}
-
-.quick-score-bar__input::-webkit-inner-spin-button,
-.quick-score-bar__input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.quick-score-bar__input[type='number'] {
-  -moz-appearance: textfield;
-}
-
-.quick-score-bar__reason {
-  flex: 1;
-  min-width: 120px;
-}
-
-.quick-score-bar__reason-input {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  color: #fff;
-  font-size: 13px;
-  padding: 6px 12px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.quick-score-bar__reason-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.quick-score-bar__reason-input:focus {
-  border-color: rgba(13, 148, 136, 0.5);
-}
-
-.quick-score-bar__close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.quick-score-bar__close:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-/* 底部栏动画 */
-.quick-score-slide-enter-active,
-.quick-score-slide-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-}
-
-.quick-score-slide-enter-from,
-.quick-score-slide-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-/* ===== 批量评分对话框 ===== */
-.batch-score-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.batch-score-form__info {
-  font-size: 14px;
-  color: var(--cis-text-secondary);
-}
 
-.batch-score-form__presets {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+@keyframes podium-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.batch-score-form__eval-section {
+.score-display__podium-medal {
+  font-size: 24px;
+  color: #FFD700;
   margin-bottom: 4px;
 }
 
-.batch-score-form__eval-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.score-display__podium-item--0 .score-display__podium-medal {
+  color: #FFD700;
 }
 
-.batch-score-form__eval-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.score-display__podium-item--1 .score-display__podium-medal {
+  font-size: 20px;
+  color: #C0C0C0;
 }
 
-.batch-score-form__eval-group {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+.score-display__podium-item--2 .score-display__podium-medal {
+  font-size: 20px;
+  color: #CD7F32;
 }
 
-
-
-/* 对话框深色主题适配 */
-.score-display :deep(.el-dialog) {
-  background: #0d2137;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.score-display :deep(.el-dialog__title) {
-  color: #fff;
-}
-
-.score-display :deep(.el-dialog__headerbtn .el-dialog__close) {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.score-display :deep(.el-dialog__body) {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.score-display :deep(.el-input-number .el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-}
-
-.score-display :deep(.el-input-number .el-input__inner) {
-  color: #fff;
-}
-
-.score-display :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-}
-
-.score-display :deep(.el-input__inner) {
-  color: #fff;
-}
-
-.score-display :deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-/* ===== 排行榜入场动画关键帧 ===== */
-@keyframes slide-up-fade {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-right-fade {
-  from {
-    transform: translateX(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* ===== 分数变化浮动动画 ===== */
-.score-display__float-container {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 200;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  gap: 4px;
-  pointer-events: none;
-}
-
-.score-display__float-anim {
-  font-size: 24px;
-  font-weight: 700;
-  animation: score-rise 1.5s ease-out forwards;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  white-space: nowrap;
-}
-
-.score-display__float-anim--pos {
-  color: #4ade80;
-}
-
-.score-display__float-anim--neg {
-  color: #f87171;
-}
-
-@keyframes score-rise {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-40px);
-    opacity: 0;
-  }
-}
-
-.score-float-enter-active {
-  animation: score-rise 1.5s ease-out forwards;
-}
-
-.score-float-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.score-float-leave-to {
-  opacity: 0;
-}
-
-/* ===== 周期积分面板（右下角） ===== */
-.score-display__period-panel {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 120;
-  width: 260px;
-  background: rgba(10, 22, 40, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(13, 148, 136, 0.2);
-  border-radius: 14px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(13, 148, 136, 0.08);
-  overflow: hidden;
-}
-
-.score-display__period-panel__header {
+.score-display__podium-avatar,
+.score-display__card-avatar {
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.score-display__period-panel__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.score-display__period-panel__toggles {
-  display: flex;
-  gap: 3px;
-}
-
-.score-display__period-panel__toggle {
-  padding: 3px 10px;
-  border-radius: 6px;
-  border: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.score-display__period-panel__toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.score-display__period-panel__toggle--active {
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  justify-content: center;
+  border-radius: 50%;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+  font-size: 18px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
-.score-display__period-panel__body {
-  padding: 8px 0;
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.score-display__period-panel__body::-webkit-scrollbar {
-  width: 3px;
-}
-
-.score-display__period-panel__body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-}
-
-.score-display__period-panel__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 14px;
-  transition: background 0.12s;
-}
-
-.score-display__period-panel__row:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.score-display__period-panel__name {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+.score-display__podium-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+  margin-top: 8px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.score-display__period-panel__detail {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 11px;
-}
-
-.score-display__period-panel__plus {
-  color: #4ade80;
-  font-weight: 600;
-}
-
-.score-display__period-panel__slash {
-  color: rgba(255, 255, 255, 0.25);
-}
-
-.score-display__period-panel__minus {
-  color: #f87171;
-  font-weight: 600;
-}
-
-.score-display__period-panel__net {
-  font-size: 14px;
+.score-display__podium-score {
+  font-size: 28px;
   font-weight: 700;
-  min-width: 36px;
-  text-align: right;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--cis-primary);
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  line-height: 1;
 }
 
-.score-display__period-panel__net--pos {
-  color: #4ade80;
+/* ===== 卡片网格 ===== */
+.score-display__grid-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.score-display__period-panel__net--neg {
-  color: #f87171;
+.score-display__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding-bottom: 8px;
 }
 
-.score-display__period-panel__empty {
-  padding: 16px;
-  text-align: center;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.3);
-}
-
-
-
-/* ===== 修仙模式：境界信息 ===== */
-.score-display__cultivation-info {
+.score-display__card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  padding: 16px 8px;
+  background: var(--cis-card-bg);
+  border: 1px solid var(--cis-border-color-light);
+  border-radius: var(--cis-radius-md);
+  cursor: pointer;
+  transition: all var(--cis-transition-fast);
+  animation: card-enter 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  user-select: none;
+  overflow: hidden;
+  min-height: 140px;
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.score-display__card:hover:not(.score-display__card--expanded) {
+  border-color: var(--cis-primary);
+  box-shadow: var(--cis-shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.score-display__card--selected {
+  border-color: var(--cis-primary);
+  background: var(--cis-primary-light-9);
+}
+
+.score-display__card--expanded {
+  grid-column: span 2;
+  grid-row: span 2;
+  background: var(--cis-card-bg);
+  border-color: var(--cis-primary);
+  box-shadow: var(--cis-shadow-card-hover);
+  cursor: default;
+  padding: 0;
+  min-height: 320px;
+}
+
+.score-display__card-rank {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cis-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-display__card-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cis-text-primary);
+  margin-top: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.score-display__card-score {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cis-primary);
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  line-height: 1;
+}
+
+.score-display__score-anim {
+  position: absolute;
+  top: 20%;
+  right: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  pointer-events: none;
+  animation: score-pop 1.4s ease-out forwards;
+}
+
+.score-display__score-anim.is-plus {
+  color: var(--cis-success);
+}
+
+.score-display__score-anim.is-minus {
+  color: var(--cis-danger);
+}
+
+@keyframes score-pop {
+  0% { opacity: 0; transform: translateY(0); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-30px); }
+}
+
+/* ===== 卡片展开（快速评分） ===== */
+.score-display__card-expanded {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px;
+}
+
+.score-display__card-expanded-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--cis-border-color-light);
+}
+
+.score-display__back-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--cis-radius-sm);
+  background: var(--cis-bg-secondary);
+  color: var(--cis-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__back-btn:hover {
+  background: var(--cis-primary-light-9);
+  color: var(--cis-primary);
+}
+
+.score-display__card-avatar--lg {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+}
+
+.score-display__card-expanded-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+  margin-top: 8px;
+}
+
+.score-display__card-expanded-score {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--cis-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
   margin-top: 4px;
 }
 
-.score-display__cultivation-level {
-  font-size: 11px;
-  font-weight: 600;
-  color: #C9A84C;
+.score-display__quick-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 12px 0;
 }
 
-.score-display__cultivation-score {
-  font-size: 10px;
-  color: rgba(201, 168, 76, 0.6);
+.score-display__quick-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid;
+  border-radius: var(--cis-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all var(--cis-transition-fast);
+  min-height: 36px;
+  text-align: left;
+}
+
+.score-display__quick-item--plus {
+  border-color: rgba(22, 163, 74, 0.3);
+  color: var(--cis-success);
+  background: rgba(22, 163, 74, 0.05);
+}
+
+.score-display__quick-item--plus:hover {
+  border-color: var(--cis-success);
+  background: rgba(22, 163, 74, 0.1);
+}
+
+.score-display__quick-item--minus {
+  border-color: rgba(220, 38, 38, 0.3);
+  color: var(--cis-danger);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.score-display__quick-item--minus:hover {
+  border-color: var(--cis-danger);
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.score-display__quick-item-value {
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-display__quick-item-name {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.score-display__custom-score {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.score-display__step-btn {
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--cis-border-color);
+  border-radius: var(--cis-radius-sm);
+  background: var(--cis-card-bg);
+  color: var(--cis-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__step-btn:hover {
+  border-color: var(--cis-primary);
+  color: var(--cis-primary);
+}
+
+.score-display__step-btn--lg {
+  min-width: 44px;
+}
+
+.score-display__custom-input {
+  width: 64px;
+  height: 36px;
+  border: 1px solid var(--cis-border-color);
+  border-radius: var(--cis-radius-sm);
+  background: var(--cis-card-bg);
+  color: var(--cis-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-display__custom-input:focus {
+  outline: none;
+  border-color: var(--cis-primary);
+  box-shadow: var(--cis-shadow-glow);
+}
+
+.score-display__custom-reason {
+  flex: 1;
+  min-width: 100px;
+  height: 36px;
+  border: 1px solid var(--cis-border-color);
+  border-radius: var(--cis-radius-sm);
+  background: var(--cis-card-bg);
+  color: var(--cis-text-primary);
+  font-size: 13px;
+  padding: 0 10px;
+  font-family: inherit;
+}
+
+.score-display__custom-reason:focus {
+  outline: none;
+  border-color: var(--cis-primary);
+  box-shadow: var(--cis-shadow-glow);
+}
+
+.score-display__confirm-btn {
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--cis-radius-sm);
+  background: var(--cis-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__confirm-btn:hover:not(:disabled) {
+  background: var(--cis-primary-dark);
+}
+
+.score-display__confirm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== 空状态 ===== */
+.score-display__empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--cis-text-tertiary);
+}
+
+/* ===== 底部抽屉 ===== */
+.score-display__drawer {
+  border-top: 1px solid var(--cis-border-color-light);
+  background: var(--cis-header-bg);
+  flex-shrink: 0;
+}
+
+.score-display__drawer-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--cis-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__drawer-handle:hover {
+  background: var(--cis-bg-secondary);
+  color: var(--cis-text-primary);
+}
+
+.score-display__drawer-body {
+  border-top: 1px solid var(--cis-border-color-light);
+  padding: 12px 24px 16px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.score-display__drawer-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.score-display__drawer-tab {
+  padding: 4px 12px;
+  border: none;
+  border-radius: var(--cis-radius-sm);
+  background: transparent;
+  color: var(--cis-text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--cis-transition-fast);
+}
+
+.score-display__drawer-tab.is-active {
+  background: var(--cis-primary);
+  color: #fff;
+}
+
+.score-display__drawer-tab:hover:not(.is-active) {
+  background: var(--cis-bg-secondary);
+  color: var(--cis-text-primary);
+}
+
+.score-display__drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.score-display__drawer-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 80px 100px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--cis-radius-sm);
+  font-size: 13px;
+  transition: background var(--cis-transition-fast);
+}
+
+.score-display__drawer-row:hover {
+  background: var(--cis-bg-secondary);
+}
+
+.score-display__drawer-row-rank {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cis-text-tertiary);
+}
+
+.score-display__drawer-row-name {
+  color: var(--cis-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score-display__drawer-row-net {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.score-display__drawer-row-net.is-plus { color: var(--cis-success); }
+.score-display__drawer-row-net.is-minus { color: var(--cis-danger); }
+
+.score-display__drawer-row-detail {
+  font-size: 11px;
+  color: var(--cis-text-tertiary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 抽屉动画 ===== */
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.drawer-enter-to,
+.drawer-leave-from {
+  max-height: 280px;
+  opacity: 1;
+}
+
+/* ===== 批量评分 ===== */
+.score-display__batch {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.score-display__batch-input {
+  width: 100%;
+}
+
+.score-display__batch-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* ===== 多选模式高亮 ===== */
+.score-display--multi-select .score-display__card {
+  cursor: pointer;
+}
+
+.score-display--multi-select .score-display__card--selected {
+  background: var(--cis-primary-light-9);
+  border-color: var(--cis-primary);
+  border-width: 2px;
 }
 </style>
+
+<style src="@/themes/xianxia/styles.css"></style>

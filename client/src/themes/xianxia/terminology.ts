@@ -60,6 +60,27 @@ export const TERMINOLOGY_MAP: Record<string, TermEntry> = {
   selectPet: { default: '选择宠物', xianxia: '选择仙宠' },
   removePet: { default: '移除宠物', xianxia: '移除仙宠' },
 
+  // 大屏展示设置
+  displaySettings: { default: '展示设置', xianxia: '仙界设置' },
+  displaySettingsHint: { default: '调整排行榜的展示效果', xianxia: '调整仙榜的展示效果' },
+  sortBy: { default: '排序方式', xianxia: '排序方式' },
+  sortByRank: { default: '按排名', xianxia: '按榜位' },
+  sortByNumber: { default: '按学号', xianxia: '按道号' },
+  privacyMode: { default: '隐私模式', xianxia: '隐私模式' },
+  showRealName: { default: '真名', xianxia: '道名' },
+  showAlias: { default: '昵称', xianxia: '别名' },
+  showNumber: { default: '学号', xianxia: '道号' },
+  displayItems: { default: '显示项', xianxia: '显示项' },
+  showPet: { default: '显示宠物', xianxia: '显示仙宠' },
+  showGroup: { default: '显示小组', xianxia: '显示宗门' },
+  showTrend: { default: '显示趋势', xianxia: '显示变化' },
+  refreshInterval: { default: '刷新间隔', xianxia: '刷新间隔' },
+  advancedSettings: { default: '更多设置', xianxia: '更多设置' },
+  multiSelect: { default: '多选', xianxia: '点选' },
+  periodStats: { default: '周期统计', xianxia: '周期统计' },
+  reasonPlaceholder: { default: '备注（可选）', xianxia: '备注（可选）' },
+  noLeaderboardData: { default: '暂无排行榜数据', xianxia: '仙榜尚空' },
+
   // 提示消息
   selectStudentFirst: { default: '请先选择学生', xianxia: '请先选择道友' },
   selectStudentAndReason: { default: '请选择学生并填写原因', xianxia: '请选择道友并填写原因' },
