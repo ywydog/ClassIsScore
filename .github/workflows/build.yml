@@ -97,7 +97,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ClassIsScore-Linux
-          path: client/src-tauri/target/release/bundle/{deb,rpm,appimage}/*
+          path: |
+            client/src-tauri/target/release/bundle/deb/*
+            client/src-tauri/target/release/bundle/rpm/*
+            client/src-tauri/target/release/bundle/appimage/*
           if-no-files-found: warn
 
   build-android:
@@ -156,5 +159,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ClassIsScore-Android
-          path: client/src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
+          # Tauri 2.x 的 `android build --target aarch64 --debug` 实际产物在
+          # apk/universal/debug/ 下面（不是 apk/debug/），用 ** 兜底匹配。
+          path: client/src-tauri/gen/android/app/build/outputs/apk/**/debug/*.apk
           if-no-files-found: warn
