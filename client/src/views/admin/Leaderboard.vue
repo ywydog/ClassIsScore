@@ -1,97 +1,179 @@
 <template>
   <div class="leaderboard">
-    <h2 id="leaderboard-title" class="leaderboard__header">排行榜</h2>
-    <div class="leaderboard__toolbar">
-      <el-radio-group v-model="mode" size="small" @change="fetchLeaderboard" aria-label="排行榜类型">
-        <el-radio-button value="personal">个人</el-radio-button>
-        <el-radio-button value="group">小组</el-radio-button>
-      </el-radio-group>
-      <el-radio-group v-model="timeRange" size="small" @change="handleTimeRangeChange" aria-label="时间范围">
-        <el-radio-button value="today">今日</el-radio-button>
-        <el-radio-button value="week">本周</el-radio-button>
-        <el-radio-button value="month">本月</el-radio-button>
-        <el-radio-button value="all">全部</el-radio-button>
-      </el-radio-group>
-      <el-button size="small" text :icon="Refresh" aria-label="刷新排行榜" @click="fetchLeaderboard" />
-      <el-button size="small" type="primary" :icon="Download" @click="handleExport">
-        导出
-      </el-button>
+    <!-- 顶部标题区 -->
+    <header class="leaderboard__head">
+      <div class="leaderboard__head-left">
+        <span class="cis-eyebrow">Leaderboard</span>
+        <h1 class="cis-display leaderboard__title">排行榜</h1>
+        <p class="leaderboard__sub">
+          <span class="cis-mono">{{ entries.length }}</span> 名 ·
+          更新于 <span class="cis-mono">{{ updatedAt }}</span>
+        </p>
+      </div>
+      <div class="leaderboard__head-actions">
+        <button class="leaderboard__icon-btn" :aria-label="'刷新排行榜'" @click="fetchLeaderboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-15.5 6.3L3 16" />
+            <path d="M3 21v-5h5" />
+          </svg>
+        </button>
+        <button class="leaderboard__icon-btn" :aria-label="'导出排行榜'" @click="handleExport">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tabs：模式 + 时间范围 -->
+    <div class="leaderboard__tabs" role="tablist" aria-label="排行榜筛选">
+      <div class="leaderboard__tab-group">
+        <button
+          v-for="opt in modeOptions"
+          :key="opt.value"
+          type="button"
+          role="tab"
+          class="leaderboard__tab"
+          :class="{ 'is-active': mode === opt.value }"
+          :aria-selected="mode === opt.value"
+          @click="onModeChange(opt.value)"
+        >
+          <span class="leaderboard__tab-eyebrow cis-mono">{{ opt.eyebrow }}</span>
+          <span class="leaderboard__tab-label">{{ opt.label }}</span>
+        </button>
+      </div>
+      <div class="leaderboard__tab-sep" aria-hidden="true"></div>
+      <div class="leaderboard__tab-group">
+        <button
+          v-for="opt in timeOptions"
+          :key="opt.value"
+          type="button"
+          role="tab"
+          class="leaderboard__tab leaderboard__tab--time"
+          :class="{ 'is-active': timeRange === opt.value }"
+          :aria-selected="timeRange === opt.value"
+          @click="onTimeRangeChange(opt.value)"
+        >
+          <span class="leaderboard__tab-eyebrow cis-mono">{{ opt.eyebrow }}</span>
+          <span class="leaderboard__tab-label">{{ opt.label }}</span>
+        </button>
+      </div>
     </div>
 
-    <!-- 前三名展示 -->
-    <el-skeleton v-if="loading" :loading="loading" :rows="5" animated />
+    <!-- 内容 -->
+    <el-skeleton v-if="loading" :rows="5" animated />
     <template v-else>
-    <div v-if="topThree.length > 0" class="leaderboard__podium" role="list" aria-label="前三名">
-      <div class="leaderboard__podium-item leaderboard__podium--2" v-if="topThree.length >= 2" role="listitem">
-        <div class="leaderboard__podium-avatar">
-          <el-avatar :size="48" :aria-label="`第二名 ${topThree[1].name}`">{{ topThree[1].name.charAt(0) }}</el-avatar>
-          <span class="leaderboard__medal leaderboard__medal--silver" aria-hidden="true">2</span>
+      <!-- 前三名：领奖台 -->
+      <div v-if="topThree.length > 0" class="leaderboard__podium" role="list" aria-label="前三名">
+        <div
+          v-for="entry in topThree"
+          :key="entry.rank"
+          class="leaderboard__podium-cell"
+          :class="`leaderboard__podium-cell--${entry.rank}`"
+          role="listitem"
+        >
+          <span class="cis-eyebrow">No. {{ entry.rank }}</span>
+          <div class="leaderboard__podium-avatar" :aria-label="`第 ${entry.rank} 名 ${entry.name}`">
+            <span class="leaderboard__podium-initial">{{ nameInitial(entry.name) }}</span>
+          </div>
+          <span class="leaderboard__podium-name">{{ entry.name }}</span>
+          <span class="leaderboard__podium-score cis-num" :class="entry.score >= 0 ? 'is-plus' : 'is-minus'">
+            {{ formatScore(entry.score) }}
+          </span>
         </div>
-        <span class="leaderboard__podium-name">{{ topThree[1].name }}</span>
-        <span class="leaderboard__podium-score" style="font-variant-numeric: tabular-nums">{{ topThree[1].score }}</span>
       </div>
-      <div class="leaderboard__podium-item leaderboard__podium--1" v-if="topThree.length >= 1" role="listitem">
-        <div class="leaderboard__podium-avatar">
-          <el-avatar :size="56" :aria-label="`第一名 ${topThree[0].name}`">{{ topThree[0].name.charAt(0) }}</el-avatar>
-          <span class="leaderboard__medal leaderboard__medal--gold" aria-hidden="true">1</span>
-        </div>
-        <span class="leaderboard__podium-name">{{ topThree[0].name }}</span>
-        <span class="leaderboard__podium-score" style="font-variant-numeric: tabular-nums">{{ topThree[0].score }}</span>
-      </div>
-      <div class="leaderboard__podium-item leaderboard__podium--3" v-if="topThree.length >= 3" role="listitem">
-        <div class="leaderboard__podium-avatar">
-          <el-avatar :size="44" :aria-label="`第三名 ${topThree[2].name}`">{{ topThree[2].name.charAt(0) }}</el-avatar>
-          <span class="leaderboard__medal leaderboard__medal--bronze" aria-hidden="true">3</span>
-        </div>
-        <span class="leaderboard__podium-name">{{ topThree[2].name }}</span>
-        <span class="leaderboard__podium-score" style="font-variant-numeric: tabular-nums">{{ topThree[2].score }}</span>
-      </div>
-    </div>
 
-    <!-- 其余排名 -->
-    <ol class="leaderboard__list" aria-label="其余排名">
-      <li
-        v-for="entry in restEntries"
-        :key="entry.rank"
-        class="leaderboard__item"
-      >
-        <span class="leaderboard__rank" style="font-variant-numeric: tabular-nums" :aria-label="`第 ${entry.rank} 名`">{{ entry.rank }}</span>
-        <span class="leaderboard__name">{{ entry.name }}</span>
-        <span class="leaderboard__score" style="font-variant-numeric: tabular-nums">{{ entry.score }}</span>
-      </li>
-      <li v-if="entries.length === 0">
-        <el-empty description="暂无排行数据" />
-      </li>
-    </ol>
+      <!-- 列表 -->
+      <ol v-if="restEntries.length > 0" class="leaderboard__list" aria-label="其余排名">
+        <li
+          v-for="entry in restEntries"
+          :key="entry.rank"
+          class="leaderboard__row"
+        >
+          <span class="leaderboard__row-rank" :aria-label="`第 ${entry.rank} 名`">
+            <span class="leaderboard__row-rank-num cis-mono">{{ entry.rank }}</span>
+          </span>
+          <span class="leaderboard__row-name">{{ entry.name }}</span>
+          <span
+            class="leaderboard__row-score cis-num"
+            :class="entry.score >= 0 ? 'is-plus' : 'is-minus'"
+          >
+            {{ formatScore(entry.score) }}
+          </span>
+        </li>
+      </ol>
+      <div v-else-if="entries.length === 0" class="leaderboard__empty">
+        <span class="cis-eyebrow">Empty</span>
+        <p class="leaderboard__empty-text">该时段暂无数据</p>
+      </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Refresh, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { LeaderboardEntry } from '@/types'
 import { invoke } from '@/services/tauri'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 import { exportToExcel, type ExcelColumn } from '@/utils/excelHelper'
 
-const mode = ref<'personal' | 'group'>('personal')
-const timeRange = ref<'today' | 'week' | 'month' | 'all'>('all')
+type Mode = 'personal' | 'group'
+type TimeRange = 'today' | 'week' | 'month' | 'all'
+
+const mode = ref<Mode>('personal')
+const timeRange = ref<TimeRange>('all')
 const entries = ref<LeaderboardEntry[]>([])
 const loading = ref(true)
+const updatedAt = ref('--:--')
+
 const topThree = computed(() => entries.value.slice(0, 3))
 const restEntries = computed(() => entries.value.slice(3))
 
+const modeOptions: { value: Mode; label: string; eyebrow: string }[] = [
+  { value: 'personal', label: '个人', eyebrow: '01' },
+  { value: 'group', label: '小组', eyebrow: '02' },
+]
+
+const timeOptions: { value: TimeRange; label: string; eyebrow: string }[] = [
+  { value: 'today', label: '今日', eyebrow: 'Day' },
+  { value: 'week', label: '本周', eyebrow: 'Week' },
+  { value: 'month', label: '本月', eyebrow: 'Month' },
+  { value: 'all', label: '全部', eyebrow: 'All' },
+]
+
 let refreshTimer: ReturnType<typeof setInterval> | null = null
+
+function nameInitial(name: string) {
+  return name?.slice(0, 1) ?? '?'
+}
+
+function formatScore(val: number) {
+  if (val === 0) return '0'
+  return val > 0 ? `+${val}` : `${val}`
+}
+
+function setUpdatedAt() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  updatedAt.value = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
 
 onMounted(async () => {
   await fetchLeaderboard()
+  setUpdatedAt()
   loading.value = false
   connectWebSocket({
     onScoreUpdate: () => fetchLeaderboard(),
   })
-  refreshTimer = setInterval(fetchLeaderboard, 30000)
+  refreshTimer = setInterval(() => {
+    fetchLeaderboard()
+    setUpdatedAt()
+  }, 30000)
 })
 
 onUnmounted(() => {
@@ -128,10 +210,6 @@ function getTimeRangeParams(): { startTime?: string; endTime?: string } {
   }
 }
 
-function handleTimeRangeChange() {
-  fetchLeaderboard()
-}
-
 async function fetchLeaderboard() {
   try {
     const { startTime, endTime } = getTimeRangeParams()
@@ -165,9 +243,20 @@ async function fetchLeaderboard() {
         isGroup: true,
       }))
     }
+    setUpdatedAt()
   } catch {
     entries.value = []
   }
+}
+
+function onModeChange(value: Mode) {
+  mode.value = value
+  fetchLeaderboard()
+}
+
+function onTimeRangeChange(value: TimeRange) {
+  timeRange.value = value
+  fetchLeaderboard()
 }
 
 const dateFilenameFormatter = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -200,167 +289,360 @@ function handleExport() {
 </script>
 
 <style scoped>
-.leaderboard__header {
-  margin: 0 0 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--cis-border-color-light);
-  font-family: var(--cis-font-family-display);
-  font-size: 22px;
-  color: var(--cis-text-primary);
-  padding-left: 12px;
-  border-left: 3px solid var(--cis-primary);
-  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  scroll-margin-top: 80px;
+.leaderboard {
+  max-width: 920px;
 }
 
-.leaderboard__toolbar {
+/* ===== 顶部标题 ===== */
+.leaderboard__head {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-/* 领奖台 */
-.leaderboard__podium {
-  display: flex;
-  justify-content: center;
   align-items: flex-end;
+  justify-content: space-between;
   gap: 16px;
-  margin-bottom: 32px;
-  padding: 24px 0;
+  margin-bottom: 20px;
 }
 
-.leaderboard__podium-item {
+.leaderboard__head-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.leaderboard__title {
+  font-size: 28px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.leaderboard__sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--cis-text-tertiary);
+  letter-spacing: 0.1px;
+}
+
+.leaderboard__head-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.leaderboard__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-btn);
+  background: var(--cis-surface-1);
+  color: var(--cis-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--cis-transition-fast), color var(--cis-transition-fast);
+}
+
+.leaderboard__icon-btn:hover {
+  border-color: var(--cis-primary);
+  color: var(--cis-primary);
+}
+
+/* ===== Tabs：Linear 风 underline ===== */
+.leaderboard__tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  border-bottom: 1px solid var(--cis-border);
+  margin-bottom: 24px;
+}
+
+.leaderboard__tab-group {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.leaderboard__tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 14px 10px;
+  background: transparent;
+  border: none;
+  color: var(--cis-text-tertiary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color var(--cis-transition-fast);
+  text-align: left;
+}
+
+.leaderboard__tab:hover:not(.is-active) {
+  color: var(--cis-text-primary);
+}
+
+.leaderboard__tab.is-active {
+  color: var(--cis-primary);
+}
+
+/* 底部 2px underline：active 时显示 */
+.leaderboard__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--cis-transition-fast);
+}
+
+.leaderboard__tab.is-active::after {
+  background: var(--cis-primary);
+}
+
+.leaderboard__tab-eyebrow {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.leaderboard__tab-label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.leaderboard__tab-sep {
+  width: 1px;
+  background: var(--cis-border-light);
+  align-self: stretch;
+  margin: 6px 0;
+}
+
+/* ===== 领奖台 ===== */
+.leaderboard__podium {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 0;
+  align-items: end;
+  margin-bottom: 32px;
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-card);
+  background: var(--cis-surface-1);
+  padding: 24px 16px 20px;
+}
+
+.leaderboard__podium-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  padding: 0 12px;
+  position: relative;
 }
 
-.leaderboard__podium--1 {
+.leaderboard__podium-cell--1 {
   order: 2;
 }
 
-.leaderboard__podium--2 {
+.leaderboard__podium-cell--2 {
   order: 1;
 }
 
-.leaderboard__podium--3 {
+.leaderboard__podium-cell--3 {
   order: 3;
 }
 
 .leaderboard__podium-avatar {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cis-border);
+  background: var(--cis-surface-2);
+  border-radius: 9999px;
   position: relative;
 }
 
-.leaderboard__medal {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
+.leaderboard__podium-cell--1 .leaderboard__podium-avatar {
+  width: 80px;
+  height: 80px;
+  background: var(--cis-primary);
+  border-color: var(--cis-primary);
+}
+
+.leaderboard__podium-cell--1 .leaderboard__podium-initial {
   color: #fff;
 }
 
-.leaderboard__medal--gold {
-  background: linear-gradient(135deg, #ffd700, #ffb800);
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+.leaderboard__podium-cell--2 .leaderboard__podium-avatar {
+  background: var(--cis-primary-tint);
+  border-color: var(--cis-primary-tint-2);
 }
 
-.leaderboard__medal--silver {
-  background: linear-gradient(135deg, #c0c0c0, #a8a8a8);
-  box-shadow: 0 2px 8px rgba(192, 192, 192, 0.4);
+.leaderboard__podium-cell--3 .leaderboard__podium-avatar {
+  background: var(--cis-surface-2);
+  border-color: var(--cis-border);
 }
 
-.leaderboard__medal--bronze {
-  background: linear-gradient(135deg, #cd7f32, #b8722e);
-  box-shadow: 0 2px 8px rgba(205, 127, 50, 0.4);
+.leaderboard__podium-initial {
+  font-family: var(--cis-font-serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+  line-height: 1;
 }
 
 .leaderboard__podium-name {
-  font-weight: 600;
   font-size: 14px;
+  font-weight: 500;
   color: var(--cis-text-primary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .leaderboard__podium-score {
+  font-size: 22px;
   font-weight: 700;
-  font-size: 18px;
-  background: var(--cis-gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: var(--cis-font-mono);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-/* 列表 */
+.leaderboard__podium-cell--1 .leaderboard__podium-score {
+  font-size: 28px;
+}
+
+/* ===== 列表 ===== */
 .leaderboard__list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-card);
+  background: var(--cis-surface-1);
+  overflow: hidden;
 }
 
-.leaderboard__item {
+.leaderboard__row {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 16px;
-  background-color: var(--cis-card-bg);
-  border-radius: var(--cis-radius-lg);
-  border: 1px solid var(--cis-border-color-light);
-  box-shadow: var(--cis-shadow-card);
-  transition: box-shadow var(--cis-transition-fast), transform var(--cis-transition-fast);
+  padding: 0 20px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--cis-border-light);
+  transition: background-color var(--cis-transition-fast);
 }
 
-.leaderboard__item:hover {
-  box-shadow: var(--cis-shadow-card-hover);
-  transform: translateY(-1px);
+.leaderboard__row:last-child {
+  border-bottom: none;
 }
 
-.leaderboard__rank {
-  width: 32px;
-  height: 32px;
+.leaderboard__row:hover {
+  background: var(--cis-primary-tint);
+}
+
+/* 左侧 4px 排名条 */
+.leaderboard__row::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: var(--cis-text-tertiary);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.leaderboard__row-rank {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: var(--cis-radius-full);
-  font-weight: 700;
+  min-width: 48px;
+}
+
+.leaderboard__row-rank-num {
   font-size: 14px;
-  background-color: var(--cis-bg-secondary);
-  color: var(--cis-text-secondary);
+  font-weight: 600;
+  color: var(--cis-text-tertiary);
 }
 
-.leaderboard__name {
+.leaderboard__row-name {
   flex: 1;
-  font-weight: 500;
+  font-size: 14px;
   color: var(--cis-text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.leaderboard__score {
-  font-weight: 700;
+.leaderboard__row-score {
   font-size: 16px;
-  background: var(--cis-gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 700;
+  min-width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 分数正负染色（青绿 / 砖红） */
+.leaderboard__podium-score.is-plus,
+.leaderboard__row-score.is-plus {
+  color: #15803D; /* 苔绿 */
+}
+
+.leaderboard__podium-score.is-minus,
+.leaderboard__row-score.is-minus {
+  color: #991B1B; /* 砖红 */
+}
+
+/* ===== Empty ===== */
+.leaderboard__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 64px 16px;
+  border: 1px dashed var(--cis-border-strong);
+  border-radius: var(--cis-radius-card);
+  background: var(--cis-surface-1);
+  text-align: center;
+}
+
+.leaderboard__empty-text {
+  margin: 0;
+  color: var(--cis-text-tertiary);
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .leaderboard__tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .leaderboard__tab-sep {
+    display: none;
+  }
+  .leaderboard__podium {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .leaderboard__podium-cell { order: unset !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
+  .leaderboard__row,
+  .leaderboard__tab::after,
+  .leaderboard__icon-btn {
+    transition: none;
   }
 }
 </style>

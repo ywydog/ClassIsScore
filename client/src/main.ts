@@ -3,6 +3,9 @@ import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+// 主题样式
+import './themes/element-overrides.css'
+
 import App from './App.vue'
 import router from './router'
 import './themes/variables.css'

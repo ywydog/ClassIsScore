@@ -1,14 +1,14 @@
 <template>
   <el-container class="admin-layout">
     <el-aside
-      :width="isCollapsed ? '64px' : '240px'"
+      :width="isCollapsed ? '64px' : '232px'"
       class="admin-layout__aside"
       aria-label="主导航"
     >
       <AppSidebar :collapsed="isCollapsed" @toggle="toggleCollapse" />
     </el-aside>
     <el-container class="admin-layout__main">
-      <el-header class="admin-layout__header" height="52px">
+      <el-header class="admin-layout__header" height="56px">
         <AppHeader @toggle-sidebar="toggleCollapse" />
       </el-header>
       <el-main class="admin-layout__content">
@@ -18,7 +18,7 @@
           </transition>
         </router-view>
       </el-main>
-      <el-footer class="admin-layout__footer" height="28px">
+      <el-footer class="admin-layout__footer" height="26px">
         <div class="admin-layout__footer-left">
           <span
             class="admin-layout__status-dot"
@@ -27,9 +27,11 @@
             role="status"
           ></span>
           <span class="admin-layout__status-text" aria-live="polite">{{ isConnected ? '已连接' : '未连接' }}</span>
+          <span class="admin-layout__footer-sep" aria-hidden="true">·</span>
+          <span class="admin-layout__status-time cis-num">{{ nowText }}</span>
         </div>
         <div class="admin-layout__footer-right">
-          <span translate="no">ClassIsScore v1.0.0</span>
+          <span translate="no" class="cis-mono">ClassIsScore · v1.0.0</span>
         </div>
       </el-footer>
     </el-container>
@@ -38,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import StatusToast from '@/components/common/StatusToast.vue'
@@ -46,6 +48,15 @@ import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 
 const isCollapsed = ref(false)
 const isConnected = ref(false)
+const nowText = ref('')
+
+let timeTimer: ReturnType<typeof setInterval> | null = null
+
+function updateTime() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  nowText.value = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
@@ -61,6 +72,9 @@ onMounted(() => {
     }
   } catch { /* ignore */ }
 
+  updateTime()
+  timeTimer = setInterval(updateTime, 30000)
+
   connectWebSocket({
     onConnect: () => { isConnected.value = true },
     onDisconnect: () => { isConnected.value = false },
@@ -70,6 +84,10 @@ onMounted(() => {
 onUnmounted(() => {
   disconnectWebSocket()
 })
+
+onBeforeUnmount(() => {
+  if (timeTimer) clearInterval(timeTimer)
+})
 </script>
 
 <style scoped>
@@ -77,13 +95,12 @@ onUnmounted(() => {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  background: var(--cis-canvas);
 }
 
 .admin-layout__aside {
   background: var(--cis-sidebar-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid var(--cis-border-color-light);
+  border-right: 1px solid var(--cis-border);
   transition: width var(--cis-transition-normal);
   overflow: hidden;
 }
@@ -98,17 +115,15 @@ onUnmounted(() => {
   -webkit-app-region: drag;
   display: flex;
   align-items: center;
-  background: var(--cis-header-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--cis-border-color-light);
+  background: var(--cis-surface-1);
+  border-bottom: 1px solid var(--cis-border);
   padding: 0 20px;
 }
 
 .admin-layout__content {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--cis-bg);
+  background-color: var(--cis-canvas);
   padding: 24px;
 }
 
@@ -117,10 +132,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  background: var(--cis-header-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-top: 1px solid var(--cis-border-color-light);
+  background: var(--cis-surface-1);
+  border-top: 1px solid var(--cis-border);
   font-size: 11px;
   color: var(--cis-text-tertiary);
   -webkit-app-region: drag;
@@ -136,44 +149,51 @@ onUnmounted(() => {
 .admin-layout__status-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  transition: background-color var(--cis-transition-fast), box-shadow var(--cis-transition-fast);
+  border-radius: 9999px;
+  background-color: var(--cis-border-strong);
+  transition: background-color var(--cis-transition-fast);
 }
 
 .admin-layout__status-dot.connected {
   background-color: var(--cis-success);
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
 }
 
 .admin-layout__status-dot.disconnected {
-  background-color: var(--cis-danger);
+  background-color: var(--cis-text-tertiary);
 }
 
 .admin-layout__status-text {
   color: var(--cis-text-tertiary);
 }
 
+.admin-layout__footer-sep {
+  color: var(--cis-border-strong);
+}
+
+.admin-layout__status-time {
+  color: var(--cis-text-tertiary);
+  font-size: 11px;
+}
+
 .admin-layout__footer-right {
   -webkit-app-region: no-drag;
+  color: var(--cis-text-tertiary);
+  font-size: 11px;
+  letter-spacing: 0.2px;
 }
 
-/* 页面切换动画 */
+/* 页面切换动画：克制的 fade，不要 translateY（避免 12px 滑动感） */
 .page-fade-enter-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.18s ease;
 }
-
 .page-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.12s ease;
 }
-
 .page-fade-enter-from {
   opacity: 0;
-  transform: translateY(6px);
 }
-
 .page-fade-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
 }
 
 @media (prefers-reduced-motion: reduce) {

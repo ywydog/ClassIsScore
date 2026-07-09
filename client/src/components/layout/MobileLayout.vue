@@ -55,14 +55,14 @@
       <div class="mobile-layout__drawer-content">
         <div class="mobile-layout__drawer-header">
           <div class="mobile-layout__drawer-logo" aria-hidden="true">
-            <el-icon :size="28"><Trophy /></el-icon>
+            <span class="mobile-layout__drawer-logo-text">C</span>
           </div>
           <div class="mobile-layout__drawer-title" translate="no">ClassIsScore</div>
         </div>
         <el-scrollbar class="mobile-layout__drawer-scroll">
           <ul class="mobile-layout__drawer-list" role="list">
             <li v-for="group in drawerMenu" :key="group.title" class="mobile-layout__drawer-group">
-              <h2 class="mobile-layout__drawer-group-title" :id="`drawer-group-${group.title}`">
+              <h2 class="cis-eyebrow mobile-layout__drawer-group-title" :id="`drawer-group-${group.title}`">
                 {{ group.title }}
               </h2>
               <ul role="list">
@@ -83,7 +83,7 @@
           </ul>
         </el-scrollbar>
         <div class="mobile-layout__drawer-footer">
-          <span translate="no">ClassIsScore v1.0.0</span>
+          <span translate="no" class="cis-mono">ClassIsScore · v1.0.0</span>
         </div>
       </div>
     </el-drawer>
@@ -143,7 +143,7 @@ const bottomNav = [
 
 const drawerMenu = [
   {
-    title: '核心功能',
+    title: 'Core',
     items: [
       { path: '/m/dashboard', label: '总览', icon: HomeFilled },
       { path: '/m/scores', label: '积分管理', icon: Trophy },
@@ -153,14 +153,14 @@ const drawerMenu = [
     ],
   },
   {
-    title: '高级功能',
+    title: 'Advanced',
     items: [
       { path: '/m/evaluation', label: '自动评估', icon: Timer },
       { path: '/m/settlement', label: '结算', icon: Finished },
     ],
   },
   {
-    title: '系统',
+    title: 'System',
     items: [
       { path: '/m/settings', label: '设置', icon: Setting },
       { path: '/m/plugins', label: '插件管理', icon: Box },
@@ -187,7 +187,7 @@ function openDisplay() {
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--cis-bg);
+  background: var(--cis-canvas);
   padding-top: var(--cis-safe-top, 0);
   padding-bottom: var(--cis-safe-bottom, 0);
 }
@@ -200,10 +200,8 @@ function openDisplay() {
   align-items: center;
   height: 48px;
   padding: 0 8px;
-  background: var(--cis-bg-elevated);
-  border-bottom: 1px solid var(--cis-border-color-light);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--cis-surface-1);
+  border-bottom: 1px solid var(--cis-border);
 }
 
 .mobile-layout__menu-btn,
@@ -214,7 +212,7 @@ function openDisplay() {
   width: 44px;
   height: 44px;
   border: none;
-  border-radius: var(--cis-radius-md);
+  border-radius: var(--cis-radius-btn);
   background: transparent;
   color: var(--cis-text-secondary);
   cursor: pointer;
@@ -224,16 +222,16 @@ function openDisplay() {
 
 .mobile-layout__menu-btn:hover,
 .mobile-layout__display-btn:hover {
-  background: var(--cis-primary-light-9);
+  background: var(--cis-primary-tint);
   color: var(--cis-primary);
 }
 
 .mobile-layout__title {
   flex: 1;
-  font-family: var(--cis-font-family-display);
+  font-family: var(--cis-font-serif);
   font-size: 16px;
   font-weight: 600;
-  color: var(--cis-text-primary);
+  color: var(--cis-text-display);
   margin: 0;
   padding: 0 8px;
   white-space: nowrap;
@@ -258,10 +256,8 @@ function openDisplay() {
   justify-content: space-around;
   height: calc(56px + var(--cis-safe-bottom, 0));
   padding-bottom: var(--cis-safe-bottom, 0);
-  background: var(--cis-bg-elevated);
-  border-top: 1px solid var(--cis-border-color-light);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--cis-surface-1);
+  border-top: 1px solid var(--cis-border);
 }
 
 .mobile-layout__nav-item {
@@ -276,14 +272,23 @@ function openDisplay() {
   transition: color var(--cis-transition-fast);
   min-height: 48px;
   -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-layout__nav-item:active {
-  transform: scale(0.96);
+  position: relative;
 }
 
 .mobile-layout__nav-item--active {
   color: var(--cis-primary);
+}
+
+/* 底部 nav 激活态：顶部 2px primary underline（Linear 风） */
+.mobile-layout__nav-item--active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--cis-primary);
+  border-radius: 0 0 1px 1px;
 }
 
 .mobile-layout__nav-label {
@@ -295,7 +300,7 @@ function openDisplay() {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--cis-bg-elevated);
+  background: var(--cis-surface-1);
   padding-top: var(--cis-safe-top, 0);
 }
 
@@ -304,25 +309,33 @@ function openDisplay() {
   align-items: center;
   gap: 10px;
   padding: 20px 16px;
-  border-bottom: 1px solid var(--cis-border-color-light);
+  border-bottom: 1px solid var(--cis-border);
 }
 
 .mobile-layout__drawer-logo {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--cis-radius-md);
-  background: linear-gradient(180deg, var(--cis-primary), var(--cis-primary-dark));
+  border-radius: var(--cis-radius-btn);
+  background: var(--cis-primary);
   color: #fff;
+  font-family: var(--cis-font-serif);
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.mobile-layout__drawer-logo-text {
+  line-height: 1;
 }
 
 .mobile-layout__drawer-title {
-  font-family: var(--cis-font-family-display);
+  font-family: var(--cis-font-serif);
   font-size: 16px;
   font-weight: 600;
-  color: var(--cis-text-primary);
+  color: var(--cis-text-display);
 }
 
 .mobile-layout__drawer-scroll {
@@ -337,11 +350,11 @@ function openDisplay() {
 
 .mobile-layout__drawer-group-title {
   font-size: 11px;
-  font-weight: 500;
-  color: var(--cis-text-placeholder);
+  font-weight: 600;
+  color: var(--cis-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 12px 16px 6px;
+  letter-spacing: 0.4px;
+  margin: 16px 16px 6px;
 }
 
 .mobile-layout__drawer-item {
@@ -354,42 +367,35 @@ function openDisplay() {
   text-decoration: none;
   transition: background-color var(--cis-transition-fast), color var(--cis-transition-fast);
   -webkit-tap-highlight-color: transparent;
-}
-
-.mobile-layout__drawer-item:active {
-  background: var(--cis-primary-light-9);
+  position: relative;
 }
 
 .mobile-layout__drawer-item--active {
   color: var(--cis-primary);
-  background: var(--cis-primary-light-9);
+  background: var(--cis-primary-tint);
   font-weight: 500;
+  box-shadow: inset 2px 0 0 var(--cis-primary);
 }
 
 .mobile-layout__drawer-footer {
   padding: 12px 16px;
-  font-size: 12px;
-  color: var(--cis-text-placeholder);
-  border-top: 1px solid var(--cis-border-color-light);
+  font-size: 11px;
+  color: var(--cis-text-tertiary);
+  border-top: 1px solid var(--cis-border);
   text-align: center;
 }
 
 .page-fade-enter-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.18s ease;
 }
-
 .page-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.12s ease;
 }
-
 .page-fade-enter-from {
   opacity: 0;
-  transform: translateY(6px);
 }
-
 .page-fade-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -400,9 +406,6 @@ function openDisplay() {
   .page-fade-enter-active,
   .page-fade-leave-active {
     transition: none;
-  }
-  .mobile-layout__nav-item:active {
-    transform: none;
   }
   .page-fade-enter-from,
   .page-fade-leave-to {

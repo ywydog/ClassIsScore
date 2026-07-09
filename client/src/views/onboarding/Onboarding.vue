@@ -1,9 +1,11 @@
 <template>
   <div class="onboarding">
-    <div class="onboarding__bg" aria-hidden="true">
-      <div class="onboarding__orb" v-for="i in 6" :key="i" :style="orbStyle(i)"></div>
-    </div>
-    <div class="onboarding__content">
+    <div class="onboarding__panel">
+      <div class="onboarding__brand">
+        <div class="onboarding__brand-mark" aria-hidden="true">C</div>
+        <span class="onboarding__brand-name">ClassIsScore</span>
+      </div>
+
       <div
         class="onboarding__steps"
         role="progressbar"
@@ -13,126 +15,162 @@
         :aria-label="`引导步骤 ${currentStep + 1} / 4`"
       >
         <button
-          v-for="i in 4"
-          :key="i"
+          v-for="step in steps"
+          :key="step.idx"
           type="button"
-          class="onboarding__step-dot"
-          :class="{ active: currentStep === i - 1, done: currentStep > i - 1 }"
-          :aria-label="`跳转到步骤 ${i}`"
-          :aria-current="currentStep === i - 1 ? 'step' : undefined"
-          @click="goToStep(i - 1)"
-        ></button>
-      </div>
-
-      <!-- 步骤1: 欢迎 -->
-      <div v-if="currentStep === 0" class="onboarding__step" role="region" aria-live="polite">
-        <div class="onboarding__icon-wrapper">
-          <div class="onboarding__icon" aria-hidden="true">
-            <el-icon :size="48"><Trophy /></el-icon>
-          </div>
-        </div>
-        <h1 class="onboarding__title">欢迎使用 <span translate="no">ClassIsScore</span></h1>
-        <p class="onboarding__description">
-          面向课堂场景的积分管理工具<br />
-          让课堂互动更有趣、更高效
-        </p>
-        <ul class="onboarding__features">
-          <li class="onboarding__feature">
-            <div class="onboarding__feature-icon" style="background: linear-gradient(135deg, #0d9488, #14b8a6)" aria-hidden="true">
-              <el-icon :size="18"><User /></el-icon>
-            </div>
-            <span>学生管理</span>
-          </li>
-          <li class="onboarding__feature">
-            <div class="onboarding__feature-icon" style="background: linear-gradient(135deg, #6366f1, #818cf8)" aria-hidden="true">
-              <el-icon :size="18"><Trophy /></el-icon>
-            </div>
-            <span>积分系统</span>
-          </li>
-          <li class="onboarding__feature">
-            <div class="onboarding__feature-icon" style="background: linear-gradient(135deg, #f59e0b, #f97316)" aria-hidden="true">
-              <el-icon :size="18"><Rank /></el-icon>
-            </div>
-            <span>实时排行</span>
-          </li>
-          <li class="onboarding__feature">
-            <div class="onboarding__feature-icon" style="background: linear-gradient(135deg, #22c55e, #10b981)" aria-hidden="true">
-              <el-icon :size="18"><Monitor /></el-icon>
-            </div>
-            <span>大屏展示</span>
-          </li>
-        </ul>
-        <el-button type="primary" size="large" @click="currentStep = 1" round class="onboarding__start-btn">
-          开始设置
-        </el-button>
-      </div>
-
-      <!-- 步骤2: 基本设置 -->
-      <div v-else-if="currentStep === 1" class="onboarding__step" role="region" aria-live="polite">
-        <h2 class="onboarding__subtitle" id="onboarding-settings-title">基本设置</h2>
-        <div class="onboarding__form-card">
-          <el-form :model="setupForm" label-width="80px">
-            <el-form-item label="班级名称">
-              <el-input v-model="setupForm.className" placeholder="如：高一(3)班…" aria-label="班级名称" autocomplete="off" />
-            </el-form-item>
-            <el-form-item label="主题">
-              <el-radio-group v-model="setupForm.theme" aria-label="主题">
-                <el-radio-button value="light">浅色</el-radio-button>
-                <el-radio-button value="dark">深色</el-radio-button>
-                <el-radio-button value="system">跟随系统</el-radio-button>
-              </el-radio-group>
-            </el-form-item>
-          </el-form>
-        </div>
-        <div class="onboarding__actions">
-          <el-button @click="currentStep = 0" round>上一步</el-button>
-          <el-button type="primary" @click="currentStep = 2" round>下一步</el-button>
-        </div>
-      </div>
-
-      <!-- 步骤3: 添加学生 -->
-      <div v-else-if="currentStep === 2" class="onboarding__step" role="region" aria-live="polite">
-        <h2 class="onboarding__subtitle" id="onboarding-students-title">添加学生</h2>
-        <p class="onboarding__hint">每行输入一个学生姓名，也可以稍后在管理页面添加</p>
-        <div class="onboarding__form-card">
-          <el-input
-            v-model="studentInput"
-            type="textarea"
-            :rows="6"
-            placeholder="张三&#10;李四&#10;王五…"
-            aria-label="学生名单"
-            autocomplete="off"
-          />
-        </div>
-        <div class="onboarding__actions">
-          <el-button @click="currentStep = 1" round>上一步</el-button>
-          <el-button type="primary" @click="currentStep = 3" round>下一步</el-button>
-        </div>
-      </div>
-
-      <!-- 步骤4: 完成 -->
-      <div v-else-if="currentStep === 3" class="onboarding__step" role="region" aria-live="polite">
-        <div class="onboarding__icon-wrapper">
-          <div class="onboarding__icon onboarding__icon--success" aria-hidden="true">
-            <el-icon :size="48"><SuccessFilled /></el-icon>
-          </div>
-        </div>
-        <h2 class="onboarding__subtitle">设置完成!</h2>
-        <p class="onboarding__description">
-          你已准备好使用 <span translate="no">ClassIsScore</span> 管理课堂积分
-        </p>
-        <el-button type="primary" size="large" @click="handleComplete" round class="onboarding__start-btn">
-          进入应用
-        </el-button>
+          class="onboarding__step"
+          :class="{ 'is-active': currentStep === step.idx, 'is-done': currentStep > step.idx }"
+          :aria-label="`跳转到步骤 ${step.idx + 1}`"
+          :aria-current="currentStep === step.idx ? 'step' : undefined"
+          @click="goToStep(step.idx)"
+        >
+          <span class="cis-eyebrow onboarding__step-num">{{ String(step.idx + 1).padStart(2, '0') }}</span>
+          <span class="onboarding__step-label">{{ step.label }}</span>
+        </button>
       </div>
     </div>
+
+    <main class="onboarding__content">
+      <!-- 步骤1: 欢迎 -->
+      <section v-if="currentStep === 0" class="onboarding__step-pane" role="region" aria-live="polite">
+        <span class="cis-eyebrow onboarding__eyebrow">Welcome</span>
+        <h1 class="cis-display onboarding__title">
+          欢迎使用 <span translate="no">ClassIsScore</span>
+        </h1>
+        <p class="onboarding__description">
+          面向课堂场景的积分管理工具。<br />
+          让课堂互动更有趣、更高效。
+        </p>
+        <ol class="onboarding__features" role="list">
+          <li class="onboarding__feature">
+            <span class="cis-eyebrow onboarding__feature-num">01</span>
+            <div class="onboarding__feature-body">
+              <span class="onboarding__feature-name">学生管理</span>
+              <span class="onboarding__feature-desc">导入名单，分组标签，学号排序</span>
+            </div>
+          </li>
+          <li class="onboarding__feature">
+            <span class="cis-eyebrow onboarding__feature-num">02</span>
+            <div class="onboarding__feature-body">
+              <span class="onboarding__feature-name">积分系统</span>
+              <span class="onboarding__feature-desc">加减分明，理由可追溯</span>
+            </div>
+          </li>
+          <li class="onboarding__feature">
+            <span class="cis-eyebrow onboarding__feature-num">03</span>
+            <div class="onboarding__feature-body">
+              <span class="onboarding__feature-name">实时排行</span>
+              <span class="onboarding__feature-desc">日 / 周 / 月，多档时间窗</span>
+            </div>
+          </li>
+          <li class="onboarding__feature">
+            <span class="cis-eyebrow onboarding__feature-num">04</span>
+            <div class="onboarding__feature-body">
+              <span class="onboarding__feature-name">大屏展示</span>
+              <span class="onboarding__feature-desc">投影 / 浮动条，独立窗口</span>
+            </div>
+          </li>
+        </ol>
+        <div class="onboarding__actions">
+          <button type="button" class="onboarding__btn onboarding__btn--primary" @click="currentStep = 1">
+            开始设置
+            <span class="onboarding__btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 步骤2: 基本设置 -->
+      <section v-else-if="currentStep === 1" class="onboarding__step-pane" role="region" aria-live="polite">
+        <span class="cis-eyebrow onboarding__eyebrow">Step 02</span>
+        <h2 class="cis-display onboarding__title">基本设置</h2>
+        <p class="onboarding__description">这些信息会显示在排行榜与大屏顶部。</p>
+        <div class="onboarding__form">
+          <label class="onboarding__field">
+            <span class="cis-eyebrow onboarding__field-label">班级名称</span>
+            <el-input
+              v-model="setupForm.className"
+              placeholder="如：高一(3)班…"
+              aria-label="班级名称"
+              autocomplete="off"
+              size="large"
+            />
+          </label>
+          <div class="onboarding__field">
+            <span class="cis-eyebrow onboarding__field-label">主题</span>
+            <div class="onboarding__theme-tabs" role="radiogroup" aria-label="主题">
+              <button
+                v-for="opt in themeOptions"
+                :key="opt.value"
+                type="button"
+                class="onboarding__theme-tab"
+                :class="{ 'is-active': setupForm.theme === opt.value }"
+                :aria-checked="setupForm.theme === opt.value"
+                role="radio"
+                @click="setupForm.theme = opt.value"
+              >
+                <span class="onboarding__theme-eyebrow cis-mono">{{ opt.eyebrow }}</span>
+                <span class="onboarding__theme-label">{{ opt.label }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="onboarding__actions">
+          <button type="button" class="onboarding__btn" @click="currentStep = 0">上一步</button>
+          <button type="button" class="onboarding__btn onboarding__btn--primary" @click="currentStep = 2">
+            下一步
+            <span class="onboarding__btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 步骤3: 添加学生 -->
+      <section v-else-if="currentStep === 2" class="onboarding__step-pane" role="region" aria-live="polite">
+        <span class="cis-eyebrow onboarding__eyebrow">Step 03</span>
+        <h2 class="cis-display onboarding__title">添加学生</h2>
+        <p class="onboarding__description">每行输入一个学生姓名，也可以稍后在管理页面添加。</p>
+        <div class="onboarding__form">
+          <label class="onboarding__field">
+            <span class="cis-eyebrow onboarding__field-label">学生名单</span>
+            <el-input
+              v-model="studentInput"
+              type="textarea"
+              :rows="8"
+              placeholder="张三&#10;李四&#10;王五…"
+              aria-label="学生名单"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+        <div class="onboarding__actions">
+          <button type="button" class="onboarding__btn" @click="currentStep = 1">上一步</button>
+          <button type="button" class="onboarding__btn onboarding__btn--primary" @click="currentStep = 3">
+            下一步
+            <span class="onboarding__btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 步骤4: 完成 -->
+      <section v-else-if="currentStep === 3" class="onboarding__step-pane" role="region" aria-live="polite">
+        <span class="cis-eyebrow onboarding__eyebrow">Step 04</span>
+        <h2 class="cis-display onboarding__title">设置完成</h2>
+        <p class="onboarding__description">
+          你已准备好使用 <span translate="no">ClassIsScore</span> 管理课堂积分。
+        </p>
+        <div class="onboarding__actions">
+          <button type="button" class="onboarding__btn onboarding__btn--accent" @click="handleComplete">
+            进入应用
+            <span class="onboarding__btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { Trophy, User, Rank, Monitor, SuccessFilled } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useStudentStore } from '@/stores/student'
 import { useAppStore } from '@/stores/app'
@@ -147,24 +185,23 @@ const appStore = useAppStore()
 const currentStep = ref(0)
 const studentInput = ref('')
 
+const steps = [
+  { idx: 0, label: '欢迎' },
+  { idx: 1, label: '基本设置' },
+  { idx: 2, label: '添加学生' },
+  { idx: 3, label: '完成' },
+]
+
+const themeOptions: { value: 'light' | 'dark' | 'system'; label: string; eyebrow: string }[] = [
+  { value: 'light', label: '浅色', eyebrow: 'L' },
+  { value: 'dark', label: '深色', eyebrow: 'D' },
+  { value: 'system', label: '跟随系统', eyebrow: 'A' },
+]
+
 const setupForm = reactive({
   className: '',
   theme: 'light' as 'light' | 'dark' | 'system',
 })
-
-function orbStyle(i: number) {
-  const size = 100 + i * 60
-  const x = (i * 17 + 5) % 85
-  const y = (i * 23 + 10) % 80
-  return {
-    width: `${size}px`,
-    height: `${size}px`,
-    left: `${x}%`,
-    top: `${y}%`,
-    animationDelay: `${i * 2}s`,
-    animationDuration: `${16 + i * 3}s`,
-  }
-}
 
 function goToStep(idx: number) {
   currentStep.value = Math.max(0, Math.min(3, idx))
@@ -173,8 +210,6 @@ function goToStep(idx: number) {
 async function handleComplete() {
   try {
     // 1. 保存设置：主题 + 班级名称（如果用户填了）
-    // 后端 settings 是无 schema 的 key-value 存储，可以接任意键；
-    // 这里 cast 一下让 TS 通过即可。
     const newSettings: Record<string, string> = { theme: setupForm.theme }
     const className = setupForm.className.trim()
     if (className) {
@@ -192,11 +227,10 @@ async function handleComplete() {
       }
     }
 
-    // 3. 标记引导完成（必须先标记再跳转，否则 router.beforeEach
-    //    会检测到 onboardingCompleted !== 'true' 再次把用户弹回这里）
+    // 3. 标记引导完成
     await appStore.completeOnboarding()
 
-    // 4. 根据平台选择落地路径：Android 走 /m，移动端之外的桌面端走 /admin
+    // 4. 根据平台选择落地路径
     const homePath = isMobile() ? '/m/scores' : '/admin/scores'
     router.replace(homePath)
   } catch (err) {
@@ -209,213 +243,384 @@ async function handleComplete() {
 <style scoped>
 .onboarding {
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  background: var(--cis-canvas);
+}
+
+@media (max-width: 900px) {
+  .onboarding {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== 左侧：深 navy 横幅 ===== */
+.onboarding__panel {
+  background: var(--cis-surface-inverse);
+  color: #fff;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: relative;
+  min-height: 100vh;
+}
+
+.onboarding__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.onboarding__brand-mark {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, #0a1628 0%, #0d2137 40%, #0a2a3c 70%, #061a2e 100%);
-  position: relative;
-  overflow: hidden;
+  background: var(--cis-primary);
+  color: #fff;
+  border-radius: var(--cis-radius-btn);
+  font-family: var(--cis-font-serif);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1;
 }
 
-.onboarding__bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
+.onboarding__brand-name {
+  font-family: var(--cis-font-serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.3px;
 }
 
-.onboarding__orb {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, transparent 70%);
-  animation: orb-drift 18s infinite ease-in-out;
-}
-
-@keyframes orb-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
-  50% { transform: translate(15px, -20px) scale(1.05); opacity: 0.5; }
-}
-
-.onboarding__content {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  max-width: 480px;
-  width: 100%;
-  padding: 40px;
-}
-
+/* 步骤列表：Linear 风 underline 列表 */
 .onboarding__steps {
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 40px;
-}
-
-.onboarding__step-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: background-color var(--cis-transition-normal, 0.25s ease), width var(--cis-transition-normal, 0.25s ease), border-radius var(--cis-transition-normal, 0.25s ease), box-shadow var(--cis-transition-normal, 0.25s ease);
-}
-
-.onboarding__step-dot:focus-visible {
-  outline: 2px solid #2dd4bf;
-  outline-offset: 2px;
-}
-
-.onboarding__step-dot.active {
-  background: #2dd4bf;
-  width: 28px;
-  border-radius: 4px;
-  box-shadow: 0 0 12px rgba(45, 212, 191, 0.3);
-}
-
-.onboarding__step-dot.done {
-  background: #22c55e;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 8px;
 }
 
 .onboarding__step {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  animation: step-in 0.4s ease;
+  gap: 16px;
+  padding: 16px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--cis-transition-fast);
+}
+
+.onboarding__step:last-child {
+  border-bottom: none;
+}
+
+.onboarding__step:hover:not(.is-active) {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.onboarding__step.is-active {
+  color: #fff;
+}
+
+.onboarding__step.is-done {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.onboarding__step-num {
+  color: currentColor;
+  opacity: 0.6;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  min-width: 20px;
+}
+
+.onboarding__step.is-active .onboarding__step-num {
+  color: var(--cis-primary-hover);
+  opacity: 1;
+}
+
+.onboarding__step-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+/* 左侧底部 1px 文字 */
+.onboarding__panel::after {
+  content: 'ClassIsScore · v1.0.0';
+  position: absolute;
+  bottom: 24px;
+  left: 40px;
+  font-family: var(--cis-font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 900px) {
+  .onboarding__panel {
+    min-height: auto;
+    padding: 24px 20px;
+  }
+  .onboarding__steps {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 16px;
+  }
+  .onboarding__step {
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0 16px 0 0;
+    flex-shrink: 0;
+  }
+  .onboarding__step:last-child {
+    border-right: none;
+  }
+  .onboarding__panel::after {
+    display: none;
+  }
+}
+
+/* ===== 右侧：内容区 ===== */
+.onboarding__content {
+  padding: 64px 56px;
+  max-width: 720px;
+  width: 100%;
+  align-self: center;
+  justify-self: center;
+}
+
+@media (max-width: 900px) {
+  .onboarding__content {
+    padding: 32px 20px;
+  }
+}
+
+.onboarding__step-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: step-in 0.25s ease;
 }
 
 @keyframes step-in {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.onboarding__icon-wrapper {
-  margin-bottom: 24px;
-}
-
-.onboarding__icon {
-  width: 80px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
-  border-radius: 20px;
-  color: #fff;
-  box-shadow: 0 8px 32px rgba(13, 148, 136, 0.3);
-}
-
-.onboarding__icon--success {
-  background: linear-gradient(135deg, #22c55e, #10b981);
-  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.3);
+.onboarding__eyebrow {
+  color: var(--cis-primary);
 }
 
 .onboarding__title {
-  font-family: var(--cis-font-family-display, serif);
-  font-size: 30px;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 12px;
-  background: linear-gradient(135deg, #2dd4bf, #5eead4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.onboarding__subtitle {
-  font-size: 22px;
+  font-size: 36px;
+  margin: 4px 0 0;
   font-weight: 600;
-  color: #fff;
-  margin: 0 0 16px;
+  letter-spacing: -0.5px;
+  color: var(--cis-text-display);
 }
 
 .onboarding__description {
+  margin: 8px 0 0;
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.55);
-  margin: 0 0 28px;
   line-height: 1.7;
+  color: var(--cis-text-secondary);
 }
 
-.onboarding__hint {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
-  margin: 0 0 16px;
-}
-
+/* ===== Features 列表 ===== */
 .onboarding__features {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 28px;
   list-style: none;
-  margin-inline: 0;
+  margin: 24px 0 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--cis-border);
 }
 
 .onboarding__feature {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 13px;
-  font-weight: 500;
-  list-style: none;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--cis-border);
 }
 
-.onboarding__feature-icon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  color: #fff;
+.onboarding__feature-num {
   flex-shrink: 0;
+  padding-top: 2px;
+  min-width: 24px;
+  color: var(--cis-text-tertiary);
 }
 
-.onboarding__form-card {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 24px;
-  border-radius: 14px;
-  margin-bottom: 20px;
-  width: 100%;
+.onboarding__feature-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.onboarding__feature-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+}
+
+.onboarding__feature-desc {
+  font-size: 12px;
+  color: var(--cis-text-tertiary);
+  line-height: 1.5;
+}
+
+/* ===== Form 字段 ===== */
+.onboarding__form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.onboarding__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboarding__field-label {
+  color: var(--cis-text-tertiary);
+}
+
+.onboarding__theme-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-btn);
+  overflow: hidden;
+  background: var(--cis-surface-1);
+  width: fit-content;
+}
+
+.onboarding__theme-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 18px 10px;
+  background: transparent;
+  border: none;
+  color: var(--cis-text-tertiary);
+  font-family: inherit;
+  cursor: pointer;
+  border-right: 1px solid var(--cis-border);
+  transition: background-color var(--cis-transition-fast), color var(--cis-transition-fast);
   text-align: left;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
+.onboarding__theme-tab:last-child {
+  border-right: none;
+}
+
+.onboarding__theme-tab:hover:not(.is-active) {
+  background: var(--cis-surface-2);
+  color: var(--cis-text-primary);
+}
+
+.onboarding__theme-tab.is-active {
+  background: var(--cis-primary-tint);
+  color: var(--cis-primary);
+}
+
+.onboarding__theme-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.onboarding__theme-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ===== 行动按钮 ===== */
 .onboarding__actions {
   display: flex;
-  justify-content: center;
+  align-items: center;
   gap: 12px;
+  margin-top: 32px;
 }
 
-.onboarding__start-btn {
-  padding: 12px 40px;
-  font-size: 15px;
+.onboarding__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--cis-border-strong);
+  border-radius: var(--cis-radius-btn);
+  background: var(--cis-surface-1);
+  color: var(--cis-text-primary);
+  font-size: 14px;
   font-weight: 600;
-  background: linear-gradient(135deg, #0d9488, #14b8a6) !important;
-  border-color: #0d9488 !important;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--cis-transition-fast), color var(--cis-transition-fast), background-color var(--cis-transition-fast);
 }
 
-.onboarding__start-btn:hover {
-  background: linear-gradient(135deg, #14b8a6, #2dd4bf) !important;
-  border-color: #14b8a6 !important;
+.onboarding__btn:hover:not(:disabled) {
+  border-color: var(--cis-primary);
+  color: var(--cis-primary);
 }
 
-.onboarding__subtitle {
-  scroll-margin-top: 80px;
+.onboarding__btn--primary {
+  background: var(--cis-primary);
+  border-color: var(--cis-primary);
+  color: #fff;
+}
+
+.onboarding__btn--primary:hover:not(:disabled) {
+  background: var(--cis-primary-hover);
+  border-color: var(--cis-primary-hover);
+  color: #fff;
+}
+
+.onboarding__btn--accent {
+  background: var(--cis-accent);
+  border-color: var(--cis-accent);
+  color: #fff;
+}
+
+.onboarding__btn--accent:hover:not(:disabled) {
+  background: var(--cis-accent-hover);
+  border-color: var(--cis-accent-hover);
+  color: #fff;
+}
+
+.onboarding__btn-arrow {
+  font-size: 14px;
+  transition: transform var(--cis-transition-fast);
+  display: inline-block;
+}
+
+.onboarding__btn:hover:not(:disabled) .onboarding__btn-arrow {
+  transform: translateX(2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
+  .onboarding__step-pane,
+  .onboarding__btn,
+  .onboarding__btn-arrow {
+    animation: none;
+    transition: none;
   }
 }
 </style>

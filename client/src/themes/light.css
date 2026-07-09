@@ -1,39 +1,59 @@
+/**
+ * 浅色主题 — 月白 + 釉蓝 + 朱砂
+ * 反 AI：禁用渐变、阴影克制、surface 阶梯代替阴影
+ */
 [data-theme='light'] {
   color-scheme: light;
-  --cis-bg: #f5f7f5;
-  --cis-bg-secondary: #ecf0ed;
-  --cis-card-bg: #ffffff;
-  --cis-header-bg: #ffffff;
-  --cis-sidebar-bg: #ffffff;
 
-  --cis-text-primary: #1a2422;
-  --cis-text-secondary: #4a5b58;
-  --cis-text-tertiary: #8a9a96;
-  --cis-text-placeholder: #b8c5c1;
+  /* 画布月白（不是纯白） */
+  --cis-canvas: #F8FAFC;
+  --cis-surface-1: #FFFFFF;
+  --cis-surface-2: #F1F5F9;
+  --cis-surface-3: #E2E8F0;
 
-  --cis-border-color: #dde4e0;
-  --cis-border-color-light: #e8ede9;
+  /* 文字 */
+  --cis-text-display: #0F172A;
+  --cis-text-primary: #1C1917;
+  --cis-text-secondary: #475569;
+  --cis-text-tertiary: #94A3B8;
+  --cis-text-placeholder: #CBD5E1;
 
-  --cis-primary: #0D7C5F;
-  --cis-primary-light: #3FB28F;
-  --cis-primary-dark: #085540;
-  --cis-primary-light-3: #6CC6A4;
-  --cis-primary-light-5: #9DD7BF;
-  --cis-primary-light-7: #CDE9DC;
-  --cis-primary-light-9: #EBF6F1;
-  --cis-primary-dark-2: #085540;
+  /* Hairline */
+  --cis-border: #E2E8F0;
+  --cis-border-light: #F1F5F9;
+  --cis-border-strong: #CBD5E1;
 
-  --cis-success: #16a34a;
-  --cis-danger: #dc2626;
-  --cis-warning: #d97706;
+  /* 主色保持 */
+  --cis-primary: #1E40AF;
+  --cis-primary-hover: #2563EB;
+  --cis-primary-press: #1E3A8A;
+  --cis-primary-tint: #EFF6FF;
+  --cis-primary-tint-2: #DBEAFE;
 
-  --cis-gradient-primary: linear-gradient(180deg, #0D7C5F 0%, #085540 100%);
-  --cis-gradient-warm: linear-gradient(180deg, #d97706 0%, #b45309 100%);
-  --cis-gradient-cool: linear-gradient(180deg, #0D7C5F 0%, #14b8a6 100%);
-  --cis-gradient-success: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+  /* 朱砂 */
+  --cis-accent: #B91C1C;
+  --cis-accent-hover: #DC2626;
+  --cis-accent-press: #991B1B;
+  --cis-accent-tint: #FEF2F2;
 
-  --cis-shadow-card: 0 1px 2px rgba(8, 85, 64, 0.05);
-  --cis-shadow-card-hover: 0 4px 10px rgba(13, 124, 95, 0.12);
-  --cis-shadow-glow: 0 0 0 3px rgba(13, 124, 95, 0.15);
-  --cis-shadow-dropdown: 0 8px 24px rgba(8, 85, 64, 0.12);
+  /* 语义色 */
+  --cis-success: #15803D;
+  --cis-success-tint: #DCFCE7;
+  --cis-warning: #B45309;
+  --cis-warning-tint: #FEF3C7;
+  --cis-danger: #B91C1C;
+  --cis-danger-tint: #FEF2F2;
+
+  /* 阴影（Linear 风：克制） */
+  --cis-shadow-card: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --cis-shadow-pop: 4px 4px 0 rgba(15, 23, 42, 0.08);
+  --cis-shadow-dropdown: 0 8px 24px rgba(15, 23, 42, 0.10);
+  --cis-shadow-glow: 0 0 0 3px rgba(30, 64, 175, 0.18);
+
+  /* 兼容别名 */
+  --cis-bg: var(--cis-canvas);
+  --cis-bg-secondary: var(--cis-surface-2);
+  --cis-card-bg: var(--cis-surface-1);
+  --cis-header-bg: var(--cis-surface-1);
+  --cis-sidebar-bg: var(--cis-surface-1);
 }

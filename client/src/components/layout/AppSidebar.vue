@@ -2,7 +2,7 @@
   <div class="app-sidebar">
     <div class="app-sidebar__logo">
       <div class="app-sidebar__logo-icon" aria-hidden="true">
-        <el-icon :size="22"><Trophy /></el-icon>
+        <el-icon :size="20"><Trophy /></el-icon>
       </div>
       <transition name="fade">
         <span v-if="!collapsed" class="app-sidebar__logo-text" translate="no">ClassIsScore</span>
@@ -80,7 +80,7 @@
       </el-menu>
     </el-scrollbar>
     <div v-if="!collapsed" class="app-sidebar__version" aria-hidden="true">
-      v1.0.0-web
+      v1.0.0
     </div>
     <button
       type="button"
@@ -123,40 +123,36 @@ const activeMenu = computed(() => route.path)
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--cis-canvas);
 }
 
+/* Logo 区：纯实心蓝盒 + 米白衬线字（无渐变） */
 .app-sidebar__logo {
   height: 52px;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
   padding: 0 16px;
-  border-bottom: 1px solid var(--cis-border-color-light);
+  border-bottom: 1px solid var(--cis-border);
   flex-shrink: 0;
 }
-
 .app-sidebar__logo-icon {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--cis-gradient-primary);
-  border-radius: var(--cis-radius-md);
+  background: var(--cis-primary);
+  border-radius: var(--cis-radius-btn);
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
 }
-
 .app-sidebar__logo-text {
-  font-family: var(--cis-font-family-display);
+  font-family: var(--cis-font-serif);
   font-size: 17px;
   font-weight: 700;
-  background: var(--cis-gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--cis-text-display);
+  letter-spacing: -0.3px;
   white-space: nowrap;
 }
 
@@ -164,12 +160,10 @@ const activeMenu = computed(() => route.path)
   flex: 1;
   overflow: hidden;
 }
-
 .app-sidebar__menu {
   border-right: none;
   padding: 4px 8px;
 }
-
 .menu-group-label {
   font-size: 10px;
   font-weight: 600;
@@ -178,43 +172,45 @@ const activeMenu = computed(() => route.path)
   letter-spacing: 1px;
 }
 
+/* 菜单项：Linear 风（左侧 2px 竖线） */
 .app-sidebar__menu :deep(.el-menu-item-group__title) {
   padding-top: 20px;
   padding-bottom: 4px;
   padding-left: 12px !important;
 }
-
 .app-sidebar__menu :deep(.el-menu-item) {
-  margin: 2px 0;
-  border-radius: var(--cis-radius-md);
-  height: 40px;
-  line-height: 40px;
-  transition: all var(--cis-transition-fast);
+  margin: 1px 0;
+  border-radius: var(--cis-radius-btn);
+  height: 36px;
+  line-height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color var(--cis-transition-fast), color var(--cis-transition-fast);
 }
-
 .app-sidebar__menu :deep(.el-menu-item:hover) {
-  background-color: var(--cis-primary-light-9) !important;
+  background-color: var(--cis-surface-2) !important;
+  color: var(--cis-text-primary) !important;
 }
-
 .app-sidebar__menu :deep(.el-menu-item.is-active) {
-  background: var(--cis-gradient-primary) !important;
-  color: #fff !important;
+  background-color: var(--cis-primary-tint) !important;
+  color: var(--cis-primary-press) !important;
   font-weight: 600;
-  box-shadow: var(--cis-shadow-glow);
+  box-shadow: inset 2px 0 0 var(--cis-primary);
 }
-
 .app-sidebar__menu :deep(.el-menu-item.is-active .el-icon) {
-  color: #fff !important;
+  color: var(--cis-primary) !important;
 }
 
 .app-sidebar__version {
   padding: 8px 16px;
+  font-family: var(--cis-font-mono);
   font-size: 10px;
   color: var(--cis-text-tertiary);
   text-align: center;
-  border-top: 1px solid var(--cis-border-color-light);
+  border-top: 1px solid var(--cis-border);
   flex-shrink: 0;
   letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .app-sidebar__collapse-btn {
@@ -223,7 +219,7 @@ const activeMenu = computed(() => route.path)
   justify-content: center;
   padding: 12px 0;
   border: none;
-  border-top: 1px solid var(--cis-border-color-light);
+  border-top: 1px solid var(--cis-border);
   background: transparent;
   cursor: pointer;
   color: var(--cis-text-tertiary);
@@ -231,17 +227,15 @@ const activeMenu = computed(() => route.path)
   flex-shrink: 0;
   font-family: inherit;
 }
-
 .app-sidebar__collapse-btn:hover {
   color: var(--cis-primary);
-  background-color: var(--cis-primary-light-9);
+  background-color: var(--cis-surface-2);
 }
 
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

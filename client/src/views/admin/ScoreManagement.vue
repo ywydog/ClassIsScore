@@ -1,108 +1,130 @@
 <template>
   <div class="score-management">
-    <h2 id="score-management-title" class="score-management__header">{{ t('scoreManagement') }}</h2>
-    <div class="score-management__actions">
-      <el-button @click="showExportDialog = true" aria-label="导出报表">
-        <el-icon aria-hidden="true"><Download /></el-icon>
-        {{ t('exportReport') }}
-      </el-button>
-      <el-button @click="showImportDialog = true" aria-label="从表格导入">
-        <el-icon aria-hidden="true"><Upload /></el-icon>
-        从表格导入
-      </el-button>
-      <el-button @click="showBatchDialog = true" aria-label="批量操作">
-        <el-icon aria-hidden="true"><Operation /></el-icon>
-        {{ t('batchOperation') }}
-      </el-button>
-      <el-button v-if="isXianxiaMode" type="warning" @click="openBattleDialog" aria-label="道友切磋">
-        ⚔️ 道友切磋
-      </el-button>
-    </div>
+    <!-- 顶部标题 -->
+    <header class="score-management__head">
+      <div>
+        <span class="cis-eyebrow">Score</span>
+        <h1 class="cis-display score-management__title">{{ t('scoreManagement') }}</h1>
+      </div>
+      <div class="score-management__head-actions">
+        <el-button @click="showExportDialog = true" aria-label="导出报表">
+          <el-icon aria-hidden="true"><Download /></el-icon>
+          {{ t('exportReport') }}
+        </el-button>
+        <el-button @click="showImportDialog = true" aria-label="从表格导入">
+          <el-icon aria-hidden="true"><Upload /></el-icon>
+          从表格导入
+        </el-button>
+        <el-button @click="showBatchDialog = true" aria-label="批量操作">
+          <el-icon aria-hidden="true"><Operation /></el-icon>
+          {{ t('batchOperation') }}
+        </el-button>
+        <el-button v-if="isXianxiaMode" type="warning" plain @click="openBattleDialog" aria-label="道友切磋">
+          切磋
+        </el-button>
+      </div>
+    </header>
 
     <!-- 内联积分操作区 -->
-    <div class="score-management__operator">
-      <div class="score-operator">
-        <div class="score-operator__row">
-          <el-select
-            v-model="addForm.studentId"
-            :placeholder="t('selectStudent')"
-            filterable
-            class="score-operator__student-select"
-            aria-label="选择学生"
+    <section class="score-operator cis-hairline">
+      <div class="score-operator__row">
+        <el-select
+          v-model="addForm.studentId"
+          :placeholder="t('selectStudent')"
+          filterable
+          class="score-operator__student-select"
+          aria-label="选择学生"
+        >
+          <el-option
+            v-for="s in studentStore.students"
+            :key="s.id"
+            :label="s.name"
+            :value="s.id"
           >
-            <el-option
-              v-for="s in studentStore.students"
-              :key="s.id"
-              :label="s.name"
-              :value="s.id"
-            >
-              <span>{{ s.name }}</span>
-              <span style="float: right; color: var(--cis-text-tertiary); font-size: 12px; font-variant-numeric: tabular-nums">{{ s.score }}{{ t('scoreUnit') }}</span>
-            </el-option>
-          </el-select>
-          <el-input-number
-            v-model="addForm.scoreChange"
-            :step="1"
-            :min="-100"
-            :max="100"
-            controls-position="right"
-            class="score-operator__score-input"
-            inputmode="numeric"
-            aria-label="分值变化"
-          />
-          <el-input
-            v-model="addForm.reason"
-            placeholder="请输入原因…"
-            maxlength="50"
-            class="score-operator__reason-input"
-            aria-label="原因"
-            autocomplete="off"
-            @keyup.enter="handleAddScore"
-          />
-          <el-button type="success" :loading="scoreStore.loading" @click="handleAddScore">
-            {{ t('addScore') }}
-          </el-button>
-          <el-button type="danger" :loading="scoreStore.loading" @click="handleSubtractScore">
-            {{ t('subtractScore') }}
-          </el-button>
-        </div>
-        <!-- 选中学生的周期积分 -->
-        <div v-if="selectedStudentStats" class="score-operator__stats">
-          <span class="score-operator__stats-item score-operator__stats-item--day">
-            今日 <em>+{{ selectedStudentStats.dayPlus }}</em> / <em>{{ selectedStudentStats.dayMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.dayNet) }}</strong>
-          </span>
-          <span class="score-operator__stats-item score-operator__stats-item--week">
-            本周 <em>+{{ selectedStudentStats.weekPlus }}</em> / <em>{{ selectedStudentStats.weekMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.weekNet) }}</strong>
-          </span>
-          <span class="score-operator__stats-item score-operator__stats-item--month">
-            本月 <em>+{{ selectedStudentStats.monthPlus }}</em> / <em>{{ selectedStudentStats.monthMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.monthNet) }}</strong>
-          </span>
-          <span v-if="selectedStudentStats.semesterNet !== undefined" class="score-operator__stats-item score-operator__stats-item--semester">
-            学期 <em>+{{ selectedStudentStats.semesterPlus }}</em> / <em>{{ selectedStudentStats.semesterMinus }}</em> = <strong>{{ formatStatNet(selectedStudentStats.semesterNet) }}</strong>
-          </span>
-        </div>
-        <!-- 快捷评价项 -->
-        <div class="score-operator__quick">
-          <span class="score-operator__quick-label">{{ t('quickLabel') + '：' }}</span>
-          <div class="score-operator__quick-items">
-            <div
-              v-for="item in evaluationItems"
-              :key="item.id"
-              :class="['score-operator__quick-item', item.isPositive ? 'score-operator__quick-item--positive' : 'score-operator__quick-item--negative']"
-              role="button"
-              tabindex="0"
-              :aria-label="`应用评估项 ${item.name}，分值变化 ${item.isPositive ? '+' : ''}${item.scoreChange}`"
-              @click="applyEvaluationItem(item)"
-              @keydown.enter="applyEvaluationItem(item)"
-              @keydown.space.prevent="applyEvaluationItem(item)"
-            >
-              <span class="score-operator__quick-item-name">{{ item.name }}</span>
-              <span class="score-operator__quick-item-value">{{ item.isPositive ? '+' : '' }}{{ item.scoreChange }}</span>
-            </div>
-          </div>
+            <span>{{ s.name }}</span>
+            <span class="score-operator__option-score cis-num">{{ s.score }}{{ t('scoreUnit') }}</span>
+          </el-option>
+        </el-select>
+        <el-input-number
+          v-model="addForm.scoreChange"
+          :step="1"
+          :min="-100"
+          :max="100"
+          controls-position="right"
+          class="score-operator__score-input"
+          inputmode="numeric"
+          aria-label="分值变化"
+        />
+        <el-input
+          v-model="addForm.reason"
+          placeholder="请输入原因…"
+          maxlength="50"
+          class="score-operator__reason-input"
+          aria-label="原因"
+          autocomplete="off"
+          @keyup.enter="handleAddScore"
+        />
+        <el-button type="primary" :loading="scoreStore.loading" @click="handleAddScore">
+          {{ t('addScore') }}
+        </el-button>
+        <el-button type="danger" plain :loading="scoreStore.loading" @click="handleSubtractScore">
+          {{ t('subtractScore') }}
+        </el-button>
+      </div>
+      <!-- 选中学生的周期积分 -->
+      <div v-if="selectedStudentStats" class="score-operator__stats">
+        <span class="score-operator__stats-item score-operator__stats-item--day">
+          <span class="cis-eyebrow">Day</span>
+          <em class="cis-num">+{{ selectedStudentStats.dayPlus }}</em>
+          <span class="score-operator__stats-sep">/</span>
+          <em class="cis-num">{{ selectedStudentStats.dayMinus }}</em>
+          <span class="score-operator__stats-eq">=</span>
+          <strong class="cis-num">{{ formatStatNet(selectedStudentStats.dayNet) }}</strong>
+        </span>
+        <span class="score-operator__stats-item score-operator__stats-item--week">
+          <span class="cis-eyebrow">Week</span>
+          <em class="cis-num">+{{ selectedStudentStats.weekPlus }}</em>
+          <span class="score-operator__stats-sep">/</span>
+          <em class="cis-num">{{ selectedStudentStats.weekMinus }}</em>
+          <span class="score-operator__stats-eq">=</span>
+          <strong class="cis-num">{{ formatStatNet(selectedStudentStats.weekNet) }}</strong>
+        </span>
+        <span class="score-operator__stats-item score-operator__stats-item--month">
+          <span class="cis-eyebrow">Month</span>
+          <em class="cis-num">+{{ selectedStudentStats.monthPlus }}</em>
+          <span class="score-operator__stats-sep">/</span>
+          <em class="cis-num">{{ selectedStudentStats.monthMinus }}</em>
+          <span class="score-operator__stats-eq">=</span>
+          <strong class="cis-num">{{ formatStatNet(selectedStudentStats.monthNet) }}</strong>
+        </span>
+        <span v-if="selectedStudentStats.semesterNet !== undefined" class="score-operator__stats-item score-operator__stats-item--semester">
+          <span class="cis-eyebrow">Term</span>
+          <em class="cis-num">+{{ selectedStudentStats.semesterPlus }}</em>
+          <span class="score-operator__stats-sep">/</span>
+          <em class="cis-num">{{ selectedStudentStats.semesterMinus }}</em>
+          <span class="score-operator__stats-eq">=</span>
+          <strong class="cis-num">{{ formatStatNet(selectedStudentStats.semesterNet) }}</strong>
+        </span>
+      </div>
+      <!-- 快捷评价项 -->
+      <div class="score-operator__quick">
+        <span class="cis-eyebrow score-operator__quick-label">{{ t('quickLabel') }}</span>
+        <div class="score-operator__quick-items">
+          <button
+            v-for="item in evaluationItems"
+            :key="item.id"
+            type="button"
+            class="score-operator__quick-item"
+            :class="item.isPositive ? 'is-plus' : 'is-minus'"
+            :aria-label="`应用评估项 ${item.name}，分值变化 ${item.isPositive ? '+' : ''}${item.scoreChange}`"
+            @click="applyEvaluationItem(item)"
+          >
+            <span class="score-operator__quick-item-name">{{ item.name }}</span>
+            <span class="score-operator__quick-item-value cis-num">{{ item.isPositive ? '+' : '' }}{{ item.scoreChange }}</span>
+          </button>
         </div>
       </div>
-    </div>
+    </section>
 
     <div class="score-management__content">
       <div class="score-management__history">
@@ -114,19 +136,22 @@
           @admin-revert="handleAdminRevert"
         />
       </div>
-      <div class="score-management__stats-panel">
+      <aside class="score-management__stats-panel cis-hairline">
         <div class="stats-panel">
-          <div class="stats-panel__header">
-            <span class="stats-panel__title">{{ t('scoreStats') }}</span>
-            <div class="stats-panel__toggles">
+          <header class="stats-panel__header">
+            <span class="stats-panel__title">周期积分</span>
+            <div class="stats-panel__tabs" role="tablist">
               <button
                 v-for="p in periodOptions"
                 :key="p.key"
-                :class="['stats-panel__toggle', { 'stats-panel__toggle--active': activePeriod === p.key }]"
+                type="button"
+                class="stats-panel__tab"
+                :class="{ 'is-active': activePeriod === p.key }"
+                :aria-selected="activePeriod === p.key"
                 @click="activePeriod = p.key"
               >{{ p.label }}</button>
             </div>
-          </div>
+          </header>
           <div class="stats-panel__body">
             <div
               v-for="stat in periodStatsList"
@@ -135,12 +160,15 @@
               :class="{ 'stats-panel__row--highlight': addForm.studentId && String(stat.studentId) === String(addForm.studentId) }"
             >
               <span class="stats-panel__name">{{ stat.studentName }}</span>
-              <span class="stats-panel__detail" style="font-variant-numeric: tabular-nums">
+              <span class="stats-panel__detail cis-num">
                 <span class="stats-panel__plus">+{{ stat.plus }}</span>
                 <span class="stats-panel__slash">/</span>
                 <span class="stats-panel__minus">{{ stat.minus }}</span>
               </span>
-              <span class="stats-panel__net" :class="stat.net > 0 ? 'stats-panel__net--pos' : stat.net < 0 ? 'stats-panel__net--neg' : ''" style="font-variant-numeric: tabular-nums">
+              <span
+                class="stats-panel__net cis-num"
+                :class="stat.net > 0 ? 'is-plus' : stat.net < 0 ? 'is-minus' : ''"
+              >
                 {{ formatStatNet(stat.net) }}
               </span>
             </div>
@@ -149,7 +177,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
 
     <!-- 批量操作对话框 -->
@@ -719,45 +747,35 @@ function closeImportDialog() {
 </script>
 
 <style scoped>
-.score-management__header {
-  margin: 0 0 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--cis-border-color-light);
-  font-family: var(--cis-font-family-display);
-  font-size: 22px;
-  color: var(--cis-text-primary);
-  padding-left: 12px;
-  border-left: 3px solid var(--cis-primary);
-  background: linear-gradient(135deg, var(--cis-primary), var(--cis-primary-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  scroll-margin-top: 80px;
+/* ===== 顶部标题 ===== */
+.score-management__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-.score-management__actions {
+.score-management__title {
+  font-size: 28px;
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+.score-management__head-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
 }
 
-/* 内联积分操作区 */
-.score-management__operator {
-  margin-bottom: 20px;
-}
-
+/* ===== 内联积分操作区 ===== */
 .score-operator {
-  background: var(--cis-card-bg);
-  border-radius: var(--cis-radius-lg);
-  box-shadow: var(--cis-shadow-card);
+  background: var(--cis-surface-1);
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-card);
   padding: 16px 20px;
-  border: 1px solid var(--cis-border-color-light);
-  transition: box-shadow var(--cis-transition-fast);
-}
-
-.score-operator:hover {
-  box-shadow: var(--cis-shadow-card-hover);
+  margin-bottom: 20px;
 }
 
 .score-operator__row {
@@ -781,20 +799,69 @@ function closeImportDialog() {
   min-width: 120px;
 }
 
-.score-operator__quick {
+.score-operator__option-score {
+  float: right;
+  color: var(--cis-text-tertiary);
+  font-size: 12px;
+  margin-left: 16px;
+}
+
+/* ===== 周期积分 chips ===== */
+.score-operator__stats {
   display: flex;
-  align-items: flex-start;
   gap: 8px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--cis-border-color-lighter, rgba(0, 0, 0, 0.06));
+  border-top: 1px solid var(--cis-border-light);
+  flex-wrap: wrap;
+}
+
+.score-operator__stats-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-btn);
+  background: var(--cis-surface-1);
+  font-size: 12px;
+  color: var(--cis-text-secondary);
+}
+
+.score-operator__stats-item em {
+  font-style: normal;
+  font-weight: 500;
+}
+
+.score-operator__stats-item .cis-eyebrow {
+  color: var(--cis-text-tertiary);
+  margin-right: 2px;
+}
+
+.score-operator__stats-sep,
+.score-operator__stats-eq {
+  color: var(--cis-text-tertiary);
+  font-size: 11px;
+}
+
+.score-operator__stats-item strong {
+  font-weight: 700;
+  color: var(--cis-text-primary);
+}
+
+/* ===== 快捷评价项 ===== */
+.score-operator__quick {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cis-border-light);
 }
 
 .score-operator__quick-label {
-  font-size: 13px;
-  color: var(--cis-text-secondary);
-  line-height: 32px;
   flex-shrink: 0;
+  padding-top: 4px;
 }
 
 .score-operator__quick-items {
@@ -806,51 +873,36 @@ function closeImportDialog() {
 .score-operator__quick-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border-radius: var(--cis-radius-md, 6px);
-  cursor: pointer;
-  font-size: 13px;
-  transition: all var(--cis-transition-fast, 0.15s);
-  user-select: none;
-  border: 1px solid transparent;
-}
-
-.score-operator__quick-item:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--cis-shadow-card);
-}
-
-.score-operator__quick-item:active {
-  transform: translateY(0) scale(0.97);
-}
-
-.score-operator__quick-item--positive {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.15));
-  color: var(--cis-success, #22c55e);
-  border-color: rgba(34, 197, 94, 0.2);
-}
-
-.score-operator__quick-item--positive:hover {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.2));
-  border-color: rgba(34, 197, 94, 0.35);
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
-}
-
-.score-operator__quick-item--negative {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.15));
-  color: var(--cis-danger, #ef4444);
-  border-color: rgba(239, 68, 68, 0.2);
-}
-
-.score-operator__quick-item--negative:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.2));
-  border-color: rgba(239, 68, 68, 0.35);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
-}
-
-.score-operator__quick-item-name {
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-btn);
+  background: var(--cis-surface-1);
+  color: var(--cis-text-secondary);
+  font-size: 12px;
   font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  font-family: inherit;
+  transition: border-color var(--cis-transition-fast), color var(--cis-transition-fast);
+}
+
+.score-operator__quick-item.is-plus {
+  color: var(--cis-success);
+  border-color: rgba(21, 128, 61, 0.3);
+  background: var(--cis-success-tint);
+}
+.score-operator__quick-item.is-plus:hover {
+  border-color: var(--cis-success);
+}
+
+.score-operator__quick-item.is-minus {
+  color: var(--cis-accent);
+  border-color: rgba(185, 28, 28, 0.3);
+  background: var(--cis-accent-tint);
+}
+.score-operator__quick-item.is-minus:hover {
+  border-color: var(--cis-accent);
 }
 
 .score-operator__quick-item-value {
@@ -858,62 +910,22 @@ function closeImportDialog() {
   font-size: 12px;
 }
 
-.score-operator__stats {
-  display: flex;
-  gap: 16px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--cis-border-color-lighter, rgba(0, 0, 0, 0.06));
-  flex-wrap: wrap;
-}
-
-.score-operator__stats-item {
-  font-size: 12px;
-  color: var(--cis-text-secondary);
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: var(--cis-fill-color-light, #f5f7fa);
-}
-
-.score-operator__stats-item em {
-  font-style: normal;
-  font-weight: 600;
-}
-
-.score-operator__stats-item strong {
-  font-weight: 700;
-  margin-left: 2px;
-}
-
-.score-operator__stats-item--day strong { color: #3b82f6; }
-.score-operator__stats-item--week strong { color: #a855f7; }
-.score-operator__stats-item--month strong { color: #f59e0b; }
-.score-operator__stats-item--semester strong { color: #0d9488; }
-
+/* ===== 主体网格 ===== */
 .score-management__content {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr 300px;
   gap: 16px;
   align-items: start;
 }
 
 .score-management__history,
 .score-management__stats-panel {
-  background: var(--cis-card-bg);
-  border-radius: var(--cis-radius-lg);
-  box-shadow: var(--cis-shadow-card);
-  transition: box-shadow var(--cis-transition-fast);
+  background: var(--cis-surface-1);
+  border: 1px solid var(--cis-border);
+  border-radius: var(--cis-radius-card);
 }
 
-.score-management__history:hover,
-.score-management__stats-panel:hover {
-  box-shadow: var(--cis-shadow-card-hover);
-}
-
-/* 周期积分统计面板 */
+/* ===== 周期积分面板 ===== */
 .stats-panel {
   padding: 16px;
 }
@@ -923,72 +935,84 @@ function closeImportDialog() {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+  gap: 12px;
 }
 
 .stats-panel__title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--cis-text-primary);
 }
 
-.stats-panel__toggles {
+/* Tabs：underline 模式 */
+.stats-panel__tabs {
   display: flex;
-  gap: 3px;
+  align-items: stretch;
+  gap: 0;
+  border-bottom: 1px solid var(--cis-border-light);
 }
 
-.stats-panel__toggle {
-  padding: 3px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--cis-border-color-light, #e4e7ed);
-  background: var(--cis-fill-color-light, #f5f7fa);
-  color: var(--cis-text-secondary);
+.stats-panel__tab {
+  position: relative;
+  padding: 4px 10px 6px;
+  background: transparent;
+  border: none;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--cis-text-tertiary);
+  font-family: inherit;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: color var(--cis-transition-fast);
 }
 
-.stats-panel__toggle:focus-visible {
-  outline: 2px solid var(--cis-primary, #0d9488);
-  outline-offset: 2px;
+.stats-panel__tab:hover:not(.is-active) {
+  color: var(--cis-text-primary);
 }
 
-.stats-panel__toggle:hover {
-  border-color: var(--cis-primary, #0d9488);
-  color: var(--cis-primary, #0d9488);
+.stats-panel__tab.is-active {
+  color: var(--cis-primary);
 }
 
-.stats-panel__toggle--active {
-  background: var(--cis-primary, #0d9488);
-  border-color: var(--cis-primary, #0d9488);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+.stats-panel__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--cis-transition-fast);
+}
+
+.stats-panel__tab.is-active::after {
+  background: var(--cis-primary);
 }
 
 .stats-panel__body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 500px;
+  gap: 0;
+  max-height: 520px;
   overflow-y: auto;
 }
 
 .stats-panel__row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  transition: background 0.12s;
+  gap: 10px;
+  padding: 0 8px;
+  min-height: 36px;
+  border-bottom: 1px solid var(--cis-border-light);
+  transition: background-color var(--cis-transition-fast);
 }
 
 .stats-panel__row:hover {
-  background: var(--cis-fill-color-light, #f5f7fa);
+  background: var(--cis-primary-tint);
 }
 
 .stats-panel__row--highlight {
-  background: rgba(13, 148, 136, 0.08);
-  border: 1px solid rgba(13, 148, 136, 0.2);
+  background: var(--cis-primary-tint);
+  box-shadow: inset 2px 0 0 var(--cis-primary);
 }
 
 .stats-panel__name {
@@ -1006,37 +1030,33 @@ function closeImportDialog() {
   align-items: center;
   gap: 2px;
   font-size: 11px;
+  color: var(--cis-text-tertiary);
 }
 
 .stats-panel__plus {
-  color: var(--cis-success, #22c55e);
+  color: var(--cis-success);
   font-weight: 600;
 }
 
 .stats-panel__slash {
-  color: var(--cis-text-tertiary, #999);
+  color: var(--cis-text-tertiary);
 }
 
 .stats-panel__minus {
-  color: var(--cis-danger, #ef4444);
+  color: var(--cis-accent);
   font-weight: 600;
 }
 
 .stats-panel__net {
   font-size: 14px;
   font-weight: 700;
-  min-width: 36px;
+  min-width: 40px;
   text-align: right;
   color: var(--cis-text-secondary);
 }
 
-.stats-panel__net--pos {
-  color: var(--cis-success, #22c55e);
-}
-
-.stats-panel__net--neg {
-  color: var(--cis-danger, #ef4444);
-}
+.stats-panel__net.is-plus { color: var(--cis-success); }
+.stats-panel__net.is-minus { color: var(--cis-accent); }
 
 .stats-panel__empty {
   padding: 24px;
@@ -1045,7 +1065,7 @@ function closeImportDialog() {
   color: var(--cis-text-tertiary);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .score-management__content {
     grid-template-columns: 1fr;
   }
@@ -1061,9 +1081,10 @@ function closeImportDialog() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
+  .stats-panel__row,
+  .stats-panel__tab::after,
+  .score-operator__quick-item {
+    transition: none;
   }
 }
 </style>

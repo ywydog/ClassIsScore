@@ -1,0 +1,464 @@
+/**
+ * Element Plus 主题覆盖 + 全局排版规则
+ * 釉蓝 × 朱砂 — 反 AI 化版
+ *
+ * 把 Element Plus 默认的圆角 4px / 阴影 / 颜色都拉到我们的设计系统里
+ * 同时定义 .cis-* 通用工具类
+ */
+
+/* ===== Element Plus 圆角统一 ===== */
+:root,
+.el-button,
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-card,
+.el-dialog,
+.el-drawer,
+.el-message,
+.el-message-box,
+.el-popover,
+.el-tooltip__popper,
+.el-tag,
+.el-table,
+.el-pagination,
+.el-checkbox,
+.el-radio,
+.el-switch,
+.el-segmented,
+.el-tabs__nav-wrap,
+.el-empty {
+  --el-border-radius-base: 4px;
+  --el-border-radius-small: 2px;
+  --el-border-radius-round: 9999px;
+  --el-border-radius-circle: 9999px;
+
+  /* 主色 */
+  --el-color-primary: var(--cis-primary);
+  --el-color-primary-light-3: var(--cis-primary-tint-2);
+  --el-color-primary-light-5: var(--cis-primary-tint-2);
+  --el-color-primary-light-7: var(--cis-primary-tint);
+  --el-color-primary-light-8: var(--cis-primary-tint);
+  --el-color-primary-light-9: var(--cis-primary-tint);
+  --el-color-primary-dark-2: var(--cis-primary-press);
+
+  /* 文字 */
+  --el-text-color-primary: var(--cis-text-primary);
+  --el-text-color-regular: var(--cis-text-primary);
+  --el-text-color-secondary: var(--cis-text-secondary);
+  --el-text-color-placeholder: var(--cis-text-placeholder);
+  --el-text-color-disabled: var(--cis-text-disabled);
+
+  /* 边框 */
+  --el-border-color: var(--cis-border);
+  --el-border-color-light: var(--cis-border-light);
+  --el-border-color-lighter: var(--cis-border-light);
+  --el-border-color-extra-light: var(--cis-border-light);
+  --el-border-color-darker: var(--cis-border-strong);
+  --el-border-color-dark: var(--cis-border-strong);
+
+  /* 背景 */
+  --el-bg-color: var(--cis-surface-1);
+  --el-bg-color-page: var(--cis-canvas);
+  --el-bg-color-overlay: var(--cis-surface-1);
+  --el-fill-color: var(--cis-surface-2);
+  --el-fill-color-light: var(--cis-surface-2);
+  --el-fill-color-lighter: var(--cis-surface-3);
+  --el-fill-color-extra-light: var(--cis-surface-3);
+  --el-fill-color-dark: var(--cis-surface-2);
+  --el-fill-color-darker: var(--cis-surface-3);
+  --el-fill-color-blank: var(--cis-surface-1);
+
+  /* 字体 */
+  --el-font-family: var(--cis-font-family);
+  --el-font-size-base: 14px;
+  --el-font-size-small: 12px;
+  --el-font-size-large: 16px;
+  --el-font-weight-primary: 500;
+  --el-font-line-height-primary: 1.5;
+}
+
+/* ===== Button 改造：Linear 风 focus ===== */
+.el-button {
+  --el-button-bg-color: var(--cis-surface-1);
+  --el-button-text-color: var(--cis-text-primary);
+  --el-button-border-color: var(--cis-border-strong);
+  --el-button-hover-bg-color: var(--cis-surface-2);
+  --el-button-hover-text-color: var(--cis-primary);
+  --el-button-hover-border-color: var(--cis-primary);
+  --el-button-active-bg-color: var(--cis-primary-tint);
+  --el-button-active-border-color: var(--cis-primary-press);
+  --el-button-disabled-bg-color: var(--cis-surface-2);
+  --el-button-disabled-text-color: var(--cis-text-disabled);
+  --el-button-disabled-border-color: var(--cis-border);
+  border-radius: var(--cis-radius-btn);
+  font-weight: 500;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--cis-primary);
+  --el-button-text-color: #FFFFFF;
+  --el-button-border-color: var(--cis-primary);
+  --el-button-hover-bg-color: var(--cis-primary-hover);
+  --el-button-hover-text-color: #FFFFFF;
+  --el-button-hover-border-color: var(--cis-primary-hover);
+  --el-button-active-bg-color: var(--cis-primary-press);
+  --el-button-active-border-color: var(--cis-primary-press);
+}
+
+.el-button--danger {
+  --el-button-bg-color: var(--cis-accent);
+  --el-button-text-color: #FFFFFF;
+  --el-button-border-color: var(--cis-accent);
+  --el-button-hover-bg-color: var(--cis-accent-hover);
+  --el-button-hover-text-color: #FFFFFF;
+  --el-button-hover-border-color: var(--cis-accent-hover);
+  --el-button-active-bg-color: var(--cis-accent-press);
+  --el-button-active-border-color: var(--cis-accent-press);
+}
+
+/* ===== Input 改造：focus 底部 underline ===== */
+.el-input__wrapper {
+  background: var(--cis-surface-1);
+  border-radius: var(--cis-radius-btn);
+  box-shadow: 0 0 0 1px var(--cis-border-strong) inset !important;
+  transition: box-shadow var(--cis-transition-normal);
+}
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--cis-primary) inset !important;
+}
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--cis-primary) inset,
+              0 2px 0 0 var(--cis-primary) inset !important;
+}
+.el-textarea__inner {
+  background: var(--cis-surface-1);
+  border-radius: var(--cis-radius-btn);
+  box-shadow: 0 0 0 1px var(--cis-border-strong) inset;
+}
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--cis-primary) inset,
+              0 2px 0 0 var(--cis-primary) inset;
+}
+
+/* ===== Card 改造：1px hairline 代替阴影 ===== */
+.el-card {
+  border: 1px solid var(--cis-border);
+  background: var(--cis-surface-1);
+  border-radius: var(--cis-radius-card);
+  box-shadow: none;
+}
+.el-card.is-hover-shadow:hover {
+  border-color: var(--cis-border-strong);
+  box-shadow: var(--cis-shadow-card);
+  transition: border-color var(--cis-transition-normal),
+              box-shadow var(--cis-transition-normal);
+}
+
+/* ===== Dialog 改造：4px 实心阴影（neo-brutal 微混） ===== */
+.el-overlay {
+  background-color: rgba(15, 23, 42, 0.5);
+}
+.el-dialog {
+  border: 1px solid var(--cis-border-strong);
+  border-radius: var(--cis-radius-card);
+  box-shadow: var(--cis-shadow-pop);
+  background: var(--cis-surface-1);
+}
+.el-message-box {
+  border: 1px solid var(--cis-border-strong);
+  border-radius: var(--cis-radius-card);
+  box-shadow: var(--cis-shadow-pop);
+}
+
+/* ===== Table 改造 ===== */
+.el-table {
+  --el-table-border-color: var(--cis-border-light);
+  --el-table-header-bg-color: var(--cis-surface-2);
+  --el-table-header-text-color: var(--cis-text-secondary);
+  --el-table-row-hover-bg-color: var(--cis-primary-tint);
+  --el-table-text-color: var(--cis-text-primary);
+  background: var(--cis-surface-1);
+  font-variant-numeric: tabular-nums;
+}
+.el-table th.el-table__cell {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: var(--cis-letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--cis-text-tertiary);
+  background: var(--cis-surface-2);
+}
+.el-table td.el-table__cell {
+  border-bottom: 1px solid var(--cis-border-light);
+}
+
+/* ===== Tabs 改造：Linear 风 underline ===== */
+.el-tabs__nav-wrap::after {
+  background-color: var(--cis-border) !important;
+  height: 1px;
+}
+.el-tabs__active-bar {
+  background-color: var(--cis-primary) !important;
+  height: 2px;
+  border-radius: 1px;
+}
+.el-tabs__item {
+  font-weight: 500;
+  color: var(--cis-text-tertiary);
+  font-size: 13px;
+}
+.el-tabs__item.is-active {
+  color: var(--cis-primary);
+  font-weight: 600;
+}
+.el-tabs__item:hover:not(.is-active) {
+  color: var(--cis-text-primary);
+}
+
+/* ===== Tag 改造：方形 + 深底白字（Stripe 风） ===== */
+.el-tag {
+  --el-tag-bg-color: var(--cis-surface-2);
+  --el-tag-border-color: transparent;
+  --el-tag-text-color: var(--cis-text-secondary);
+  border-radius: var(--cis-radius-tag);
+  font-weight: 500;
+  font-size: 12px;
+  height: 22px;
+  padding: 0 8px;
+  line-height: 20px;
+}
+.el-tag.el-tag--primary {
+  --el-tag-bg-color: var(--cis-primary);
+  --el-tag-text-color: #FFFFFF;
+}
+.el-tag.el-tag--success {
+  --el-tag-bg-color: var(--cis-success);
+  --el-tag-text-color: #FFFFFF;
+}
+.el-tag.el-tag--warning {
+  --el-tag-bg-color: var(--cis-warning);
+  --el-tag-text-color: #FFFFFF;
+}
+.el-tag.el-tag--danger {
+  --el-tag-bg-color: var(--cis-accent);
+  --el-tag-text-color: #FFFFFF;
+}
+.el-tag.is-hit {
+  border-color: transparent;
+}
+
+/* ===== Pagination 改造 ===== */
+.el-pagination {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-button-color: var(--cis-text-secondary);
+  --el-pagination-button-disabled-bg-color: transparent;
+  justify-content: flex-end;
+}
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pager li {
+  background: transparent !important;
+  color: var(--cis-text-secondary);
+  font-weight: 500;
+}
+.el-pagination .btn-prev:hover,
+.el-pagination .btn-next:hover,
+.el-pager li:hover {
+  color: var(--cis-primary) !important;
+}
+.el-pager li.is-active {
+  color: var(--cis-primary) !important;
+  font-weight: 600;
+}
+
+/* ===== Switch 改造 ===== */
+.el-switch {
+  --el-switch-on-color: var(--cis-primary);
+  --el-switch-off-color: var(--cis-border-strong);
+}
+
+/* ===== Checkbox / Radio ===== */
+.el-checkbox__input.is-checked .el-checkbox__inner,
+.el-radio__input.is-checked .el-radio__inner {
+  background-color: var(--cis-primary) !important;
+  border-color: var(--cis-primary) !important;
+}
+.el-checkbox__input.is-checked + .el-checkbox__label,
+.el-radio__input.is-checked + .el-radio__label {
+  color: var(--cis-text-primary);
+}
+
+/* ===== Select ===== */
+.el-select__wrapper {
+  background: var(--cis-surface-1) !important;
+  box-shadow: 0 0 0 1px var(--cis-border-strong) inset !important;
+  border-radius: var(--cis-radius-btn);
+}
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--cis-primary) inset !important;
+}
+
+/* ===== Tooltip ===== */
+.el-tooltip__popper {
+  font-size: 12px;
+  border-radius: var(--cis-radius-btn);
+  background: var(--cis-surface-inverse);
+  color: #FFFFFF;
+  padding: 6px 10px;
+  font-weight: 500;
+}
+.el-tooltip__popper .el-popper__arrow::before {
+  background: var(--cis-surface-inverse);
+  border-color: var(--cis-surface-inverse);
+}
+
+/* ===== Message ===== */
+.el-message {
+  background: var(--cis-surface-1);
+  border: 1px solid var(--cis-border-strong);
+  border-left: 3px solid var(--cis-primary);
+  color: var(--cis-text-primary);
+  border-radius: var(--cis-radius-btn);
+  font-weight: 500;
+  box-shadow: var(--cis-shadow-dropdown);
+  padding: 10px 16px;
+  min-width: 280px;
+}
+.el-message--success { border-left-color: var(--cis-success); }
+.el-message--warning { border-left-color: var(--cis-warning); }
+.el-message--error { border-left-color: var(--cis-accent); }
+.el-message--info { border-left-color: var(--cis-primary); }
+
+/* ===== Notification ===== */
+.el-notification {
+  background: var(--cis-surface-1);
+  border: 1px solid var(--cis-border-strong);
+  border-radius: var(--cis-radius-card);
+  box-shadow: var(--cis-shadow-dropdown);
+}
+.el-notification__title {
+  font-weight: 600;
+  color: var(--cis-text-primary);
+}
+
+/* ===== Loading ===== */
+.el-loading-mask {
+  background-color: rgba(248, 250, 252, 0.85);
+}
+[data-theme='dark'] .el-loading-mask {
+  background-color: rgba(11, 18, 32, 0.85);
+}
+
+/* ===== Drawer ===== */
+.el-drawer {
+  background: var(--cis-canvas);
+  border-left: 1px solid var(--cis-border);
+}
+
+/* ===== Empty ===== */
+.el-empty {
+  --el-empty-fill-color-0: var(--cis-canvas);
+  --el-empty-fill-color-1: var(--cis-canvas);
+  --el-empty-fill-color-2: var(--cis-canvas);
+  --el-empty-fill-color-3: var(--cis-canvas);
+  --el-empty-fill-color-4: var(--cis-canvas);
+  --el-empty-fill-color-5: var(--cis-canvas);
+  --el-empty-fill-color-6: var(--cis-canvas);
+  --el-empty-fill-color-7: var(--cis-canvas);
+  --el-empty-fill-color-8: var(--cis-canvas);
+  --el-empty-fill-color-9: var(--cis-canvas);
+}
+
+/* ===== 全局排版 ===== */
+html, body {
+  font-family: var(--cis-font-family);
+  font-size: var(--cis-font-size-base);
+  color: var(--cis-text-primary);
+  background: var(--cis-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 等宽数字（防 AI 化） */
+.cis-mono,
+.cis-score,
+code,
+kbd,
+samp,
+pre,
+.el-table {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Serif 标题 */
+.cis-display,
+.cis-title-display {
+  font-family: var(--cis-font-serif);
+  font-weight: 600;
+  color: var(--cis-text-display);
+  letter-spacing: var(--cis-letter-spacing-display);
+  line-height: var(--cis-line-height-tight);
+}
+
+/* Mono 数字（用于分数 / 时间戳） */
+.cis-num {
+  font-family: var(--cis-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--cis-text-primary);
+}
+
+/* Eyebrow（小写大写字体） */
+.cis-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--cis-letter-spacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--cis-text-tertiary);
+}
+
+/* ===== Hairline 通用工具类 ===== */
+.cis-hairline-b { border-bottom: 1px solid var(--cis-border); }
+.cis-hairline-t { border-top: 1px solid var(--cis-border); }
+.cis-hairline { border: 1px solid var(--cis-border); }
+
+/* ===== 圆角四档 ===== */
+.cis-radius-tag { border-radius: var(--cis-radius-tag); }
+.cis-radius-btn { border-radius: var(--cis-radius-btn); }
+.cis-radius-card { border-radius: var(--cis-radius-card); }
+.cis-radius-pill { border-radius: var(--cis-radius-pill); }
+
+/* ===== 滚动条克制 ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cis-border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cis-text-tertiary);
+}
+
+/* ===== 选区颜色 ===== */
+::selection {
+  background: var(--cis-primary-tint-2);
+  color: var(--cis-primary-press);
+}
+
+/* ===== 链接 ===== */
+a {
+  color: var(--cis-primary);
+  text-decoration: none;
+  transition: color var(--cis-transition-fast);
+}
+a:hover {
+  color: var(--cis-primary-hover);
+}

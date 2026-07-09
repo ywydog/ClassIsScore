@@ -79,7 +79,7 @@ async function toggleTheme() {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: var(--cis-radius-md);
+  border-radius: var(--cis-radius-btn);
   background: transparent;
   color: var(--cis-text-tertiary);
   cursor: pointer;
@@ -87,23 +87,23 @@ async function toggleTheme() {
 }
 
 .theme-toggle:hover {
-  background: var(--cis-primary-light-9);
+  background: var(--cis-primary-tint);
   color: var(--cis-primary);
 }
 
 .theme-icon-enter-active,
 .theme-icon-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .theme-icon-enter-from {
   opacity: 0;
-  transform: rotate(-90deg) scale(0.8);
+  transform: rotate(-90deg) scale(0.85);
 }
 
 .theme-icon-leave-to {
   opacity: 0;
-  transform: rotate(90deg) scale(0.8);
+  transform: rotate(90deg) scale(0.85);
 }
 
 @media (prefers-reduced-motion: reduce) {

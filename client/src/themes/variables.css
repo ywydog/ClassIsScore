@@ -1,80 +1,142 @@
+/**
+ * ClassIsScore 全局设计 Token
+ * 釉蓝 × 朱砂 — 仿青花瓷 / 紫砂壶
+ *
+ * 反 AI 设计原则：
+ * - 不使用 Tailwind 默认色板（emerald / sky / teal）
+ * - 不使用渐变按钮 / 多层模糊阴影
+ * - 圆角四档各司其职：tag 2px / btn-input 4px / card-modal 8px / pill 9999px
+ * - 阴影靠 surface 阶梯代替，hairline 是 1px 实线
+ * - 重点数字 / 时间戳统一用等宽字体
+ */
 :root {
   color-scheme: light dark;
 
-  /* 主色调 - 思源教育绿 */
-  --cis-primary: #0D7C5F;
-  --cis-primary-light: #3FB28F;
-  --cis-primary-dark: #085540;
-  --cis-primary-light-3: #6CC6A4;
-  --cis-primary-light-5: #9DD7BF;
-  --cis-primary-light-7: #CDE9DC;
-  --cis-primary-light-9: #EBF6F1;
-  --cis-primary-dark-2: #085540;
+  /* ===== 釉蓝主色系（青花） ===== */
+  --cis-primary: #1E40AF;
+  --cis-primary-hover: #2563EB;
+  --cis-primary-press: #1E3A8A;
+  --cis-primary-tint: #EFF6FF;
+  --cis-primary-tint-2: #DBEAFE;
 
-  /* 语义色 */
-  --cis-success: #16a34a;
-  --cis-danger: #dc2626;
-  --cis-warning: #d97706;
-  --cis-info: #0D7C5F;
+  /* ===== 朱砂强调色（仅最高优先级 CTA / 危险） ===== */
+  --cis-accent: #B91C1C;
+  --cis-accent-hover: #DC2626;
+  --cis-accent-press: #991B1B;
+  --cis-accent-tint: #FEF2F2;
 
-  /* 渐变 - 克制使用，仅作为小区域强调 */
-  --cis-gradient-primary: linear-gradient(180deg, #0D7C5F 0%, #085540 100%);
-  --cis-gradient-warm: linear-gradient(180deg, #d97706 0%, #b45309 100%);
-  --cis-gradient-cool: linear-gradient(180deg, #0D7C5F 0%, #14b8a6 100%);
-  --cis-gradient-success: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+  /* ===== 语义色（避开 emerald-500，改为苔绿/琥珀/朱砂） ===== */
+  --cis-success: #15803D;
+  --cis-success-tint: #DCFCE7;
+  --cis-warning: #B45309;
+  --cis-warning-tint: #FEF3C7;
+  --cis-danger: #B91C1C;
+  --cis-danger-tint: #FEF2F2;
+  --cis-info: #1E40AF;
+  --cis-info-tint: #EFF6FF;
 
-  /* 字体 - 思源黑体 (Source Han Sans / Noto Sans SC) */
-  --cis-font-family: 'Noto Sans SC', 'Source Han Sans SC', 'Source Han Sans CN', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --cis-font-family-display: 'Noto Sans SC', 'Source Han Sans SC', 'Source Han Sans CN', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* ===== 文字墨阶 ===== */
+  --cis-text-display: #0F172A;   /* 大标题 Serif 用 */
+  --cis-text-primary: #1C1917;   /* 正文 */
+  --cis-text-secondary: #475569; /* 次级 */
+  --cis-text-tertiary: #94A3B8;  /* 弱化 */
+  --cis-text-placeholder: #CBD5E1;
+  --cis-text-disabled: #CBD5E1;
+
+  /* ===== 表面阶梯（Linear 风格：用 surface 差代替阴影） ===== */
+  --cis-canvas: #F8FAFC;          /* 画布 月白 */
+  --cis-surface-1: #FFFFFF;       /* 卡片 */
+  --cis-surface-2: #F1F5F9;       /* 浮起卡片 */
+  --cis-surface-3: #E2E8F0;       /* 嵌套层 */
+  --cis-surface-inverse: #0F172A; /* 反色（高对比文字） */
+
+  /* ===== 1px Hairline ===== */
+  --cis-border: #E2E8F0;
+  --cis-border-light: #F1F5F9;
+  --cis-border-strong: #CBD5E1;
+  --cis-border-focus: #1E40AF;
+
+  /* ===== 字体 ===== */
+  --cis-font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --cis-font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  --cis-font-mono: "JetBrains Mono", "SF Mono", "Roboto Mono", "Menlo", monospace;
+  --cis-font-family: var(--cis-font-sans);
+  --cis-font-family-display: var(--cis-font-serif);
+
+  /* ===== 字号 / 行高 / 字距 ===== */
   --cis-font-size-base: 14px;
   --cis-font-size-sm: 12px;
   --cis-font-size-lg: 16px;
   --cis-font-size-xl: 20px;
+  --cis-font-size-display: 32px;
+  --cis-line-height-tight: 1.2;
+  --cis-line-height-normal: 1.5;
+  --cis-line-height-loose: 1.7;
+  --cis-letter-spacing-display: -0.5px;
+  --cis-letter-spacing-body: 0;
+  --cis-letter-spacing-eyebrow: 0.4px;
 
-  /* 间距 */
+  /* ===== 间距 ===== */
   --cis-spacing-xs: 4px;
   --cis-spacing-sm: 8px;
   --cis-spacing-md: 16px;
   --cis-spacing-lg: 24px;
   --cis-spacing-xl: 32px;
+  --cis-spacing-2xl: 48px;
 
-  /* 圆角 - 三档克制 */
-  --cis-radius-xs: 2px;
-  --cis-radius-sm: 6px;
-  --cis-radius-md: 10px;
-  --cis-radius-lg: 14px;
-  --cis-radius-xl: 20px;
-  --cis-radius-2xl: 28px;
+  /* ===== 圆角四档 ===== */
+  --cis-radius-tag: 2px;        /* 数字徽章 / 角标 */
+  --cis-radius-btn: 4px;        /* 按钮 / 输入框 */
+  --cis-radius-card: 8px;       /* 卡片 / 模态 */
+  --cis-radius-pill: 9999px;    /* 头像 / 状态点 */
+  --cis-radius-sm: 4px;
+  --cis-radius-md: 8px;
+  --cis-radius-lg: 8px;
+  --cis-radius-xl: 12px;
   --cis-radius-full: 9999px;
 
-  /* 阴影 - 单层柔和 */
-  --cis-shadow-sm: 0 1px 2px rgba(8, 85, 64, 0.06);
-  --cis-shadow-md: 0 2px 6px rgba(8, 85, 64, 0.08);
-  --cis-shadow-lg: 0 6px 16px rgba(8, 85, 64, 0.10);
-  --cis-shadow-card: 0 1px 2px rgba(8, 85, 64, 0.05);
-  --cis-shadow-card-hover: 0 4px 10px rgba(13, 124, 95, 0.10);
-  --cis-shadow-glow: 0 0 0 3px rgba(13, 124, 95, 0.15);
-  --cis-shadow-dropdown: 0 8px 24px rgba(8, 85, 64, 0.12);
+  /* ===== 阴影（克制：仅 3 档） ===== */
+  --cis-shadow-card: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --cis-shadow-pop: 4px 4px 0 rgba(15, 23, 42, 0.08);
+  --cis-shadow-dropdown: 0 8px 24px rgba(15, 23, 42, 0.10);
+  --cis-shadow-glow: 0 0 0 3px rgba(30, 64, 175, 0.18);
+  --cis-shadow-sm: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --cis-shadow-md: 0 1px 0 rgba(15, 23, 42, 0.06);
+  --cis-shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.08);
 
-  /* 过渡 */
+  /* ===== 过渡 ===== */
   --cis-transition-fast: 0.15s ease;
-  --cis-transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --cis-transition-normal: 0.2s ease;
   --cis-transition-spring: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cis-motion-duration: 0.2s;
 
-  /* 边框 */
-  --cis-border-color: #e2e8e4;
-  --cis-border-color-light: #eef2ef;
-  --cis-border-radius: var(--cis-radius-md);
-
-  /* Z-index */
+  /* ===== Z-index ===== */
   --cis-z-toast: 500;
+  --cis-z-modal: 1000;
+  --cis-z-tooltip: 2000;
 
-  /* 安全区 - 用于 Tauri 窗口与移动端 notch */
+  /* ===== 安全区 ===== */
   --cis-safe-top: env(safe-area-inset-top, 0);
   --cis-safe-right: env(safe-area-inset-right, 0);
   --cis-safe-bottom: env(safe-area-inset-bottom, 0);
   --cis-safe-left: env(safe-area-inset-left, 0);
 
-  /* 全局减少动画变体开关（可被 prefers-reduced-motion 媒体查询覆盖） */
-  --cis-motion-duration: 0.25s;
+  /* ===== 兼容旧 token 别名（保留以免破坏未迁移的组件） ===== */
+  --cis-bg: var(--cis-canvas);
+  --cis-bg-secondary: var(--cis-surface-2);
+  --cis-bg-elevated: var(--cis-surface-1);
+  --cis-card-bg: var(--cis-surface-1);
+  --cis-header-bg: var(--cis-surface-1);
+  --cis-sidebar-bg: var(--cis-surface-1);
+  --cis-border-color: var(--cis-border);
+  --cis-border-color-light: var(--cis-border-light);
+  --cis-border-color-lighter: var(--cis-border-light);
+  --cis-border-radius: var(--cis-radius-md);
+  --cis-primary-light: var(--cis-primary-hover);
+  --cis-primary-dark: var(--cis-primary-press);
+  --cis-primary-light-3: var(--cis-primary-hover);
+  --cis-primary-light-5: var(--cis-primary-tint-2);
+  --cis-primary-light-7: var(--cis-primary-tint);
+  --cis-primary-light-9: var(--cis-primary-tint);
+  --cis-primary-dark-2: var(--cis-primary-press);
 }

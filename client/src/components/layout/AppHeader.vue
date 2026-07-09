@@ -1,6 +1,6 @@
 <template>
   <div class="app-header">
-    <h1 class="app-header__title">
+    <div class="app-header__left">
       <el-button
         :icon="Fold"
         text
@@ -8,8 +8,11 @@
         aria-label="切换侧边栏"
         @click="$emit('toggle-sidebar')"
       />
-      <span>{{ pageTitle }}</span>
-    </h1>
+      <div class="app-header__titles">
+        <span class="cis-eyebrow app-header__eyebrow">{{ routeMetaEyebrow }}</span>
+        <h1 class="app-header__title">{{ pageTitle }}</h1>
+      </div>
+    </div>
     <div class="app-header__actions">
       <el-tooltip content="打开大屏展示" placement="bottom">
         <el-button
@@ -69,12 +72,29 @@ const routeNameTitles: Record<string, string> = {
   'StudentProfile': '学生详情',
 }
 
+const pageEyebrows: Record<string, string> = {
+  '/admin/dashboard': 'Dashboard',
+  '/admin/scores': 'Score',
+  '/admin/students': 'Students',
+  '/admin/groups': 'Groups',
+  '/admin/leaderboard': 'Leaderboard',
+  '/admin/evaluation': 'Evaluation',
+  '/admin/settlement': 'Settlement',
+  '/admin/settings': 'Settings',
+  '/admin/plugins': 'Plugins',
+  '/admin/themes': 'Themes',
+  '/admin/admin-settings': 'Admin',
+  '/admin/about': 'About',
+}
+
 const pageTitle = computed(() => {
   if (route.name && routeNameTitles[route.name as string]) {
     return routeNameTitles[route.name as string]
   }
   return pageTitles[route.path] || 'ClassIsScore'
 })
+
+const routeMetaEyebrow = computed(() => pageEyebrows[route.path] || 'Workspace')
 
 function openDisplayWindow() {
   invoke('open_display_window').catch(() => {
@@ -93,20 +113,42 @@ function openFloatingBar() {
 .app-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
   height: 100%;
+  gap: 12px;
 }
 
-.app-header__title {
+.app-header__left {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--cis-font-family-display);
-  font-size: 16px;
+  min-width: 0;
+}
+
+.app-header__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: 4px;
+  min-width: 0;
+}
+
+.app-header__eyebrow {
+  line-height: 1;
+}
+
+.app-header__title {
+  font-family: var(--cis-font-serif);
+  font-size: 17px;
   font-weight: 600;
-  color: var(--cis-text-primary);
+  color: var(--cis-text-display);
   margin: 0;
-  padding-left: 4px;
+  line-height: 1.2;
+  letter-spacing: var(--cis-letter-spacing-display);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-header__toggle {
@@ -121,11 +163,11 @@ function openFloatingBar() {
 }
 
 .app-header__actions {
-  margin-left: auto;
   -webkit-app-region: no-drag;
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .app-header__action-btn {
@@ -139,8 +181,8 @@ function openFloatingBar() {
 
 .app-header__divider {
   width: 1px;
-  height: 16px;
-  background-color: var(--cis-border-color);
-  margin: 0 4px;
+  height: 18px;
+  background-color: var(--cis-border);
+  margin: 0 6px;
 }
 </style>
