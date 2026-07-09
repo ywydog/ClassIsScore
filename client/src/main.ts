@@ -4,6 +4,8 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 // 主题样式
+// 字体必须在 variables.css 之前声明（variables.css 里 --cis-font-* 引用字体名）
+import './themes/fonts.css'
 import './themes/element-overrides.css'
 
 import App from './App.vue'
