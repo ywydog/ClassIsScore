@@ -31,6 +31,11 @@
           <span class="admin-layout__status-time cis-num">{{ nowText }}</span>
         </div>
         <div class="admin-layout__footer-right">
+          <router-link
+            v-if="mobileEquivalent"
+            :to="mobileEquivalent"
+            class="admin-layout__footer-link"
+          >切换到移动版</router-link>
           <span translate="no" class="cis-mono">ClassIsScore · v1.0.0</span>
         </div>
       </el-footer>
@@ -40,11 +45,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import StatusToast from '@/components/common/StatusToast.vue'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
+
+const route = useRoute()
+
+// 桌面端页面 → 对应移动端页面映射（仅展示给桌面内嵌 admin 视图用）
+const mobileEquivalent = computed(() => {
+  if (!route.path.startsWith('/admin/')) return ''
+  return route.path.replace(/^\/admin/, '/m')
+})
 
 const isCollapsed = ref(false)
 const isConnected = ref(false)
@@ -200,6 +214,24 @@ onBeforeUnmount(() => {
   color: var(--cis-text-tertiary);
   font-size: 11px;
   letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-layout__footer-link {
+  color: var(--cis-text-secondary);
+  text-decoration: none;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: var(--cis-radius-btn);
+  transition: color var(--cis-transition-fast), background-color var(--cis-transition-fast);
+  -webkit-app-region: no-drag;
+}
+
+.admin-layout__footer-link:hover {
+  color: var(--cis-primary);
+  background: var(--cis-primary-tint);
 }
 
 /* 页面切换动画：克制的 fade，不要 translateY（避免 12px 滑动感） */
