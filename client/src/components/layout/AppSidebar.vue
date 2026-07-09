@@ -169,7 +169,7 @@ const activeMenu = computed(() => route.path)
   font-weight: 600;
   color: var(--cis-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.6px;
 }
 
 /* 菜单项：Linear 风（左侧 2px 竖线） */
@@ -183,8 +183,10 @@ const activeMenu = computed(() => route.path)
   border-radius: var(--cis-radius-btn);
   height: 36px;
   line-height: 36px;
+  /* Apple nav-link 风：13px / 600 / -0.1px tracking，紧凑 */
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.1px;
   transition: background-color var(--cis-transition-fast), color var(--cis-transition-fast);
 }
 .app-sidebar__menu :deep(.el-menu-item:hover) {

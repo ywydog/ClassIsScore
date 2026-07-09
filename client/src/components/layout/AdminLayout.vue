@@ -115,9 +115,20 @@ onBeforeUnmount(() => {
   -webkit-app-region: drag;
   display: flex;
   align-items: center;
-  background: var(--cis-surface-1);
+  /* Apple 风格 frosted-glass：80% 透明白 + backdrop-filter blur(20px) saturate(180%) */
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--cis-border);
   padding: 0 20px;
+  /* 防止 backdrop-filter 与内容重叠时的边缘白边 */
+  position: relative;
+  z-index: 5;
+}
+
+/* 暗色主题下 frosted-glass 用深色墨海 */
+:global([data-theme='dark']) .admin-layout__header {
+  background: rgba(11, 18, 32, 0.78);
 }
 
 .admin-layout__content {
@@ -132,11 +143,20 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  background: var(--cis-surface-1);
+  /* Apple 风格 footer：frosted-glass + 12px 链接列呼吸行高 1.8 */
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--cis-border);
   font-size: 11px;
   color: var(--cis-text-tertiary);
   -webkit-app-region: drag;
+  line-height: 1.8;
+  letter-spacing: 0.1px;
+}
+
+:global([data-theme='dark']) .admin-layout__footer {
+  background: rgba(11, 18, 32, 0.78);
 }
 
 .admin-layout__footer-left {

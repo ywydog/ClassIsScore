@@ -71,14 +71,14 @@
 
   /* 字体 */
   --el-font-family: var(--cis-font-family);
-  --el-font-size-base: 14px;
+  --el-font-size-base: 15px;
   --el-font-size-small: 12px;
-  --el-font-size-large: 16px;
+  --el-font-size-large: 17px;
   --el-font-weight-primary: 500;
-  --el-font-line-height-primary: 1.5;
+  --el-font-line-height-primary: 1.55;
 }
 
-/* ===== Button 改造：Linear 风 focus ===== */
+/* ===== Button 改造：Linear 风 focus + Apple 风格 active scale ===== */
 .el-button {
   --el-button-bg-color: var(--cis-surface-1);
   --el-button-text-color: var(--cis-text-primary);
@@ -93,6 +93,15 @@
   --el-button-disabled-border-color: var(--cis-border);
   border-radius: var(--cis-radius-btn);
   font-weight: 500;
+  /* Apple 风格：active 用 transform scale，不用 background 跳变 */
+  transition: background-color var(--cis-transition-fast),
+              border-color var(--cis-transition-fast),
+              color var(--cis-transition-fast),
+              transform var(--cis-transition-fast) !important;
+}
+
+.el-button:active:not(.is-disabled):not(.is-loading) {
+  transform: scale(var(--cis-press-scale));
 }
 
 .el-button--primary {
@@ -106,6 +115,11 @@
   --el-button-active-border-color: var(--cis-primary-press);
 }
 
+.el-button--primary:active:not(.is-disabled):not(.is-loading) {
+  /* 主 CTA 下压更强（Apple 0.95） */
+  transform: scale(var(--cis-press-scale-strong));
+}
+
 .el-button--danger {
   --el-button-bg-color: var(--cis-accent);
   --el-button-text-color: #FFFFFF;
@@ -115,6 +129,10 @@
   --el-button-hover-border-color: var(--cis-accent-hover);
   --el-button-active-bg-color: var(--cis-accent-press);
   --el-button-active-border-color: var(--cis-accent-press);
+}
+
+.el-button--danger:active:not(.is-disabled):not(.is-loading) {
+  transform: scale(var(--cis-press-scale-strong));
 }
 
 /* ===== Input 改造：focus 底部 underline ===== */

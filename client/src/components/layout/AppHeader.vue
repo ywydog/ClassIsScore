@@ -119,6 +119,8 @@ function openFloatingBar() {
   gap: 12px;
 }
 
+/* AppHeader 本身交给 AdminLayout 的 .admin-layout__header 加 frosted-glass */
+
 .app-header__left {
   display: flex;
   align-items: center;
