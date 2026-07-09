@@ -68,10 +68,11 @@
       title="添加学生"
       width="320px"
       :close-on-click-modal="false"
-      destroy-on-close
+      :show-close="true"
       class="m-students__dialog"
+      @close="resetForm"
     >
-      <el-form label-position="top" @submit.prevent="submitCreate">
+      <el-form label-position="top" @submit.prevent>
         <el-form-item label="姓名" required>
           <el-input
             v-model="form.name"
@@ -80,6 +81,7 @@
             show-word-limit
             autocomplete="off"
             aria-label="学生姓名"
+            @keyup.enter="submitCreate"
           />
         </el-form-item>
         <el-form-item label="学号">
@@ -89,10 +91,11 @@
             maxlength="20"
             autocomplete="off"
             aria-label="学号"
+            @keyup.enter="submitCreate"
           />
         </el-form-item>
         <el-form-item label="分组">
-          <el-select v-model="form.groupId" placeholder="未分组" clearable aria-label="所属分组" class="m-students__group-select">
+          <el-select v-model="form.groupId" placeholder="未分组" clearable aria-label="所属分组" class="m-students__group-select" @keyup.enter="submitCreate">
             <el-option
               v-for="g in groups"
               :key="g.id"
@@ -201,23 +204,39 @@ function openCreateDialog() {
   createOpen.value = true
 }
 
+function resetForm() {
+  form.name = ''
+  form.studentNumber = ''
+  form.groupId = ''
+}
+
 async function submitCreate() {
+  // 入口清空残留 toast，避免堆叠遮住表单
+  ElMessage.closeAll()
+
   const name = form.name.trim()
   if (!name) {
     ElMessage.warning('请填写学生姓名')
     return
   }
+
+  // 二次防御：正在提交时直接吞掉
+  if (submitting.value) return
   submitting.value = true
+
   try {
     await studentStore.createStudent({
       name,
       studentNumber: form.studentNumber.trim() || undefined,
       groupId: form.groupId || undefined,
     })
-    ElMessage.success('已添加')
+    ElMessage.success(`已添加 ${name}`)
     createOpen.value = false
-  } catch {
-    ElMessage.error('添加失败')
+    resetForm()
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[StudentManagement] createStudent failed', err)
+    ElMessage.error(`添加失败：${msg || '未知错误'}`)
   } finally {
     submitting.value = false
   }
