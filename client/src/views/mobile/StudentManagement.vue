@@ -23,6 +23,14 @@
         <el-option value="name-asc" label="姓名 A→Z" />
         <el-option value="name-desc" label="姓名 Z→A" />
       </el-select>
+      <button
+        type="button"
+        class="m-students__export-btn"
+        aria-label="导出学生"
+        @click="showExportSheet = true"
+      >
+        <el-icon :size="16" aria-hidden="true"><Download /></el-icon>
+      </button>
     </div>
 
     <ul v-if="filteredStudents.length > 0" class="m-students__list" role="list">
@@ -106,17 +114,41 @@
         </div>
       </template>
     </el-dialog>
+
+    <BottomSheet v-model="showExportSheet" title="导出学生" height="auto">
+      <p class="m-students__sheet-hint">选择导出格式与范围。</p>
+      <div class="m-students__sheet-section">
+        <span class="cis-eyebrow m-students__sheet-label">格式</span>
+        <el-radio-group v-model="exportForm.format" aria-label="导出格式" class="m-students__sheet-radio">
+          <el-radio-button value="xlsx">Excel</el-radio-button>
+          <el-radio-button value="csv">CSV</el-radio-button>
+        </el-radio-group>
+      </div>
+      <div class="m-students__sheet-section">
+        <span class="cis-eyebrow m-students__sheet-label">范围</span>
+        <el-radio-group v-model="exportForm.scope" aria-label="导出范围" class="m-students__sheet-radio">
+          <el-radio-button value="all">全部学生</el-radio-button>
+          <el-radio-button value="filtered">当前筛选</el-radio-button>
+        </el-radio-group>
+      </div>
+      <div class="m-students__sheet-actions">
+        <el-button @click="showExportSheet = false">取消</el-button>
+        <el-button type="primary" @click="handleExport">导出</el-button>
+      </div>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { Search, ArrowRight, Plus } from '@element-plus/icons-vue'
+import { Search, ArrowRight, Plus, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MobileEmptyState from '@/components/mobile/MobileEmptyState.vue'
+import BottomSheet from '@/components/mobile/BottomSheet.vue'
 import { useStudentStore } from '@/stores/student'
 import { groupApi } from '@/services/group'
-import type { StudentGroup } from '@/types'
+import { exportToExcel, exportToCSV } from '@/utils/excelHelper'
+import type { StudentGroup, Student } from '@/types'
 
 const studentStore = useStudentStore()
 const search = ref('')
@@ -126,6 +158,12 @@ const createOpen = ref(false)
 const submitting = ref(false)
 const form = reactive({ name: '', studentNumber: '', groupId: '' })
 const groups = ref<StudentGroup[]>([])
+
+const showExportSheet = ref(false)
+const exportForm = reactive({
+  format: 'xlsx' as 'xlsx' | 'csv',
+  scope: 'all' as 'all' | 'filtered',
+})
 
 onMounted(async () => {
   await studentStore.fetchStudents()
@@ -150,6 +188,11 @@ const filteredStudents = computed(() => {
   }
   return list
 })
+
+function getGroupName(groupId?: string): string {
+  if (!groupId) return ''
+  return groups.value.find(g => g.id === groupId)?.name || ''
+}
 
 function openCreateDialog() {
   form.name = ''
@@ -179,6 +222,42 @@ async function submitCreate() {
     submitting.value = false
   }
 }
+
+function handleExport() {
+  const sourceStudents: Student[] = exportForm.scope === 'filtered'
+    ? filteredStudents.value
+    : studentStore.students
+
+  if (sourceStudents.length === 0) {
+    ElMessage.warning('没有可导出的学生')
+    return
+  }
+
+  const columns = [
+    { header: '姓名', key: 'name' },
+    { header: '学号', key: 'studentNumber' },
+    { header: '小组', key: 'groupName' },
+    { header: '积分', key: 'score' },
+  ]
+
+  const data = sourceStudents.map(s => ({
+    name: s.name,
+    studentNumber: s.studentNumber || '',
+    groupName: getGroupName(s.groupId),
+    score: s.score,
+  }))
+
+  const filename = `学生列表_${new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}`
+
+  if (exportForm.format === 'xlsx') {
+    exportToExcel(data, columns, filename)
+  } else {
+    exportToCSV(data, columns, filename)
+  }
+
+  ElMessage.success(`已导出 ${sourceStudents.length} 名学生`)
+  showExportSheet.value = false
+}
 </script>
 
 <style scoped>
@@ -187,6 +266,8 @@ async function submitCreate() {
 .m-students__search { display: flex; gap: 8px; }
 .m-students__search .el-input { flex: 1; }
 .m-students__sort { width: 120px; }
+.m-students__export-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--cis-border); border-radius: var(--cis-radius-btn); background: var(--cis-surface-1); color: var(--cis-text-secondary); cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+.m-students__export-btn:active { transform: scale(var(--cis-press-scale)); background: var(--cis-primary-tint); color: var(--cis-primary); }
 .m-students__list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--cis-border); border-radius: var(--cis-radius-card); overflow: hidden; }
 .m-students__row { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 16px; background: var(--cis-surface-1); border-bottom: 1px solid var(--cis-border-light); color: var(--cis-text-primary); text-decoration: none; -webkit-tap-highlight-color: transparent; }
 .m-students__list li:last-child .m-students__row { border-bottom: none; }
@@ -230,4 +311,10 @@ async function submitCreate() {
   justify-content: flex-end;
   width: 100%;
 }
+
+.m-students__sheet-hint { margin: 0 0 16px; font-size: 13px; color: var(--cis-text-tertiary); }
+.m-students__sheet-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.m-students__sheet-label { color: var(--cis-text-tertiary); }
+.m-students__sheet-radio { display: flex; }
+.m-students__sheet-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 </style>
