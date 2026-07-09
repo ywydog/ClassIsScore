@@ -118,13 +118,20 @@ const drawerOpen = ref(false)
 
 let resizeTimer: ReturnType<typeof setTimeout> | null = null
 
+// 真桌面设备判定：hover + pointer + 宽度同时满足才跳
+// 触屏设备 hover: none / pointer: coarse → 永远留在 mobile（手机横屏不会被误判）
+const desktopQuery = '(hover: hover) and (pointer: fine) and (min-width: 1024px)'
+
+function isDesktopViewport(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia(desktopQuery).matches
+}
+
 function maybeRedirectToDesktop() {
   if (typeof window === 'undefined') return
-  const isWide = window.innerWidth >= 768 || (
-    window.matchMedia('(orientation: landscape)').matches &&
-    window.innerWidth >= 601
-  )
-  if (isWide && route.path.startsWith('/m/')) {
+  if (!isDesktopViewport()) return
+  // 仅在 /m/* 路由下才执行跳转
+  if (route.path.startsWith('/m/')) {
     const desktopPath = route.path.replace(/^\/m/, '/admin')
     router.replace(desktopPath).catch(() => { /* 重复导航忽略 */ })
   }

@@ -46,19 +46,44 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import StatusToast from '@/components/common/StatusToast.vue'
 import { connectWebSocket, disconnectWebSocket } from '@/services/websocket'
 
 const route = useRoute()
+const router = useRouter()
 
 // 桌面端页面 → 对应移动端页面映射（仅展示给桌面内嵌 admin 视图用）
 const mobileEquivalent = computed(() => {
   if (!route.path.startsWith('/admin/')) return ''
   return route.path.replace(/^\/admin/, '/m')
 })
+
+// 触屏设备访问 /admin/* → 自动跳到对应 /m/*（避免 desktop admin 在 mobile viewport 挤压错位）
+const mobileQuery = '(hover: none), (pointer: coarse)'
+
+function isMobileViewport(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia(mobileQuery).matches
+}
+
+let adminResizeTimer: ReturnType<typeof setTimeout> | null = null
+
+function maybeRedirectToMobile() {
+  if (typeof window === 'undefined') return
+  if (!isMobileViewport()) return
+  if (route.path.startsWith('/admin/')) {
+    const mobilePath = route.path.replace(/^\/admin/, '/m')
+    router.replace(mobilePath).catch(() => { /* 重复导航忽略 */ })
+  }
+}
+
+function debouncedAdminRedirect() {
+  if (adminResizeTimer) clearTimeout(adminResizeTimer)
+  adminResizeTimer = setTimeout(maybeRedirectToMobile, 200)
+}
 
 const isCollapsed = ref(false)
 const isConnected = ref(false)
@@ -89,6 +114,10 @@ onMounted(() => {
   updateTime()
   timeTimer = setInterval(updateTime, 30000)
 
+  // 触屏设备检测 → 跳移动端
+  maybeRedirectToMobile()
+  window.addEventListener('resize', debouncedAdminRedirect)
+
   connectWebSocket({
     onConnect: () => { isConnected.value = true },
     onDisconnect: () => { isConnected.value = false },
@@ -97,6 +126,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   disconnectWebSocket()
+  if (adminResizeTimer) clearTimeout(adminResizeTimer)
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', debouncedAdminRedirect)
+  }
 })
 
 onBeforeUnmount(() => {

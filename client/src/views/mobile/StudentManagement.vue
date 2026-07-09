@@ -45,20 +45,97 @@
       </li>
     </ul>
     <MobileEmptyState v-else eyebrow="Empty" :description="search ? '没有匹配的学生' : '暂无学生'" />
+
+    <button
+      type="button"
+      class="m-students__fab"
+      aria-label="添加学生"
+      @click="openCreateDialog"
+    >
+      <el-icon :size="22" aria-hidden="true"><Plus /></el-icon>
+    </button>
+
+    <el-dialog
+      v-model="createOpen"
+      title="添加学生"
+      width="320px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      class="m-students__dialog"
+    >
+      <el-form label-position="top" @submit.prevent="submitCreate">
+        <el-form-item label="姓名" required>
+          <el-input
+            v-model="form.name"
+            placeholder="例：张三"
+            maxlength="20"
+            show-word-limit
+            autocomplete="off"
+            aria-label="学生姓名"
+          />
+        </el-form-item>
+        <el-form-item label="学号">
+          <el-input
+            v-model="form.studentNumber"
+            placeholder="例：20240001（选填）"
+            maxlength="20"
+            autocomplete="off"
+            aria-label="学号"
+          />
+        </el-form-item>
+        <el-form-item label="分组">
+          <el-select v-model="form.groupId" placeholder="未分组" clearable aria-label="所属分组" class="m-students__group-select">
+            <el-option
+              v-for="g in groups"
+              :key="g.id"
+              :label="g.name"
+              :value="g.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="m-students__dialog-actions">
+          <el-button @click="createOpen = false">取消</el-button>
+          <el-button
+            type="primary"
+            :loading="submitting"
+            :disabled="!form.name.trim()"
+            @click="submitCreate"
+          >添加</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Search, ArrowRight } from '@element-plus/icons-vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { Search, ArrowRight, Plus } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import MobileEmptyState from '@/components/mobile/MobileEmptyState.vue'
 import { useStudentStore } from '@/stores/student'
+import { groupApi } from '@/services/group'
+import type { StudentGroup } from '@/types'
 
 const studentStore = useStudentStore()
 const search = ref('')
 const sortBy = ref<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc'>('score-desc')
 
-onMounted(async () => { await studentStore.fetchStudents() })
+const createOpen = ref(false)
+const submitting = ref(false)
+const form = reactive({ name: '', studentNumber: '', groupId: '' })
+const groups = ref<StudentGroup[]>([])
+
+onMounted(async () => {
+  await studentStore.fetchStudents()
+  try {
+    const res = await groupApi.getAll()
+    groups.value = res.data.data
+  } catch {
+    groups.value = []
+  }
+})
 
 const filteredStudents = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -73,10 +150,39 @@ const filteredStudents = computed(() => {
   }
   return list
 })
+
+function openCreateDialog() {
+  form.name = ''
+  form.studentNumber = ''
+  form.groupId = ''
+  createOpen.value = true
+}
+
+async function submitCreate() {
+  const name = form.name.trim()
+  if (!name) {
+    ElMessage.warning('请填写学生姓名')
+    return
+  }
+  submitting.value = true
+  try {
+    await studentStore.createStudent({
+      name,
+      studentNumber: form.studentNumber.trim() || undefined,
+      groupId: form.groupId || undefined,
+    })
+    ElMessage.success('已添加')
+    createOpen.value = false
+  } catch {
+    ElMessage.error('添加失败')
+  } finally {
+    submitting.value = false
+  }
+}
 </script>
 
 <style scoped>
-.m-students { display: flex; flex-direction: column; gap: 16px; }
+.m-students { display: flex; flex-direction: column; gap: 16px; padding-bottom: 96px; }
 .m-students__title { font-size: 28px; margin: 4px 0 0; font-weight: 600; }
 .m-students__search { display: flex; gap: 8px; }
 .m-students__search .el-input { flex: 1; }
@@ -92,4 +198,36 @@ const filteredStudents = computed(() => {
 .m-students__id { font-size: 12px; color: var(--cis-text-tertiary); font-family: var(--cis-font-mono); }
 .m-students__score { font-family: var(--cis-font-mono); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--cis-text-primary); flex-shrink: 0; }
 .m-students__chevron { color: var(--cis-text-tertiary); flex-shrink: 0; }
+
+/* FAB：右下浮动按钮，避开底部 nav */
+.m-students__fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0));
+  z-index: 100;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--cis-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+  -webkit-tap-highlight-color: transparent;
+}
+.m-students__fab:active {
+  transform: scale(var(--cis-press-scale-strong));
+}
+
+.m-students__group-select { width: 100%; }
+
+.m-students__dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  width: 100%;
+}
 </style>
