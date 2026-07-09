@@ -43,16 +43,20 @@ export const studentApi = {
   },
 
   async create(student: Partial<Student>) {
-    const result = await invoke<RustStudent>('student_create', {
-      input: {
-        name: student.name ?? '',
-        student_number: student.studentNumber ?? null,
-        group_id: student.groupId ? Number(student.groupId) : null,
-        avatar: student.avatar ?? null,
-        pet_type: student.petType ?? null,
-        pet_name: student.petName ?? null,
-      }
-    })
+    const input = {
+      name: student.name ?? '',
+      student_number: student.studentNumber ?? null,
+      group_id: student.groupId ? Number(student.groupId) : null,
+      avatar: student.avatar ?? null,
+      pet_type: student.petType ?? null,
+      pet_name: student.petName ?? null,
+    }
+    // 调试日志：方便定位 IPC 字段命名问题
+    if (import.meta.env.DEV || true) {
+      // eslint-disable-next-line no-console
+      console.debug('[studentApi.create] invoke args =', { input })
+    }
+    const result = await invoke<RustStudent>('student_create', { input })
     return { data: { data: toStudent(result) } }
   },
 
