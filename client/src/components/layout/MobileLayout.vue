@@ -91,8 +91,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   HomeFilled,
   Trophy,
@@ -113,7 +113,39 @@ import {
 import { invoke } from '@/services/tauri'
 
 const route = useRoute()
+const router = useRouter()
 const drawerOpen = ref(false)
+
+let resizeTimer: ReturnType<typeof setTimeout> | null = null
+
+function maybeRedirectToDesktop() {
+  if (typeof window === 'undefined') return
+  const isWide = window.innerWidth >= 768 || (
+    window.matchMedia('(orientation: landscape)').matches &&
+    window.innerWidth >= 601
+  )
+  if (isWide && route.path.startsWith('/m/')) {
+    const desktopPath = route.path.replace(/^\/m/, '/admin')
+    router.replace(desktopPath).catch(() => { /* 重复导航忽略 */ })
+  }
+}
+
+function debouncedRedirect() {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(maybeRedirectToDesktop, 200)
+}
+
+onMounted(() => {
+  maybeRedirectToDesktop()
+  window.addEventListener('resize', debouncedRedirect)
+})
+
+onBeforeUnmount(() => {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', debouncedRedirect)
+  }
+})
 
 const pageTitles: Record<string, string> = {
   '/m/dashboard': '总览',
