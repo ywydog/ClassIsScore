@@ -73,6 +73,8 @@ let adminResizeTimer: ReturnType<typeof setTimeout> | null = null
 
 function maybeRedirectToMobile() {
   if (typeof window === 'undefined') return
+  // 用户手动切换过视图 → 尊重选择，不自动跳转
+  if (localStorage.getItem('viewPreference') === 'desktop') return
   if (!isMobileViewport()) return
   if (route.path.startsWith('/admin/')) {
     const mobilePath = route.path.replace(/^\/admin/, '/m')

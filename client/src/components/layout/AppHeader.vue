@@ -14,6 +14,7 @@
       </div>
     </div>
     <div class="app-header__actions">
+      <NetworkServeToggle />
       <el-tooltip content="打开大屏展示" placement="bottom">
         <el-button
           :icon="Monitor"
@@ -35,6 +36,16 @@
         />
       </el-tooltip>
       <div class="app-header__divider" aria-hidden="true"></div>
+      <el-tooltip content="切换到移动端视图" placement="bottom">
+        <el-button
+          :icon="Cellphone"
+          text
+          size="small"
+          class="app-header__action-btn"
+          aria-label="切换到移动端视图"
+          @click="switchToMobile"
+        />
+      </el-tooltip>
       <ThemeToggle />
     </div>
   </div>
@@ -42,9 +53,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { Fold, Monitor, DataLine } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Fold, Monitor, DataLine, Cellphone } from '@element-plus/icons-vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import NetworkServeToggle from '@/components/common/NetworkServeToggle.vue'
 import { invoke } from '@tauri-apps/api/core'
 
 defineEmits<{
@@ -52,6 +64,7 @@ defineEmits<{
 }>()
 
 const route = useRoute()
+const router = useRouter()
 
 const pageTitles: Record<string, string> = {
   '/admin/dashboard': '总览',
@@ -106,6 +119,13 @@ function openFloatingBar() {
   invoke('open_floating_window').catch(() => {
     // 非Tauri环境忽略
   })
+}
+
+function switchToMobile() {
+  // 记住用户手动选择
+  localStorage.setItem('viewPreference', 'mobile')
+  const mobilePath = route.path.replace(/^\/admin/, '/m')
+  router.push(mobilePath).catch(() => { /* 重复导航忽略 */ })
 }
 </script>
 

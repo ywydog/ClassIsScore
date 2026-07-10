@@ -11,6 +11,7 @@ pub mod log;
 pub mod app;
 pub mod theme;
 pub mod plugin;
+pub mod server;
 
 use crate::state::AppState;
 use parking_lot::RwLock;

@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod db;
 pub mod platform;
+pub mod server;
 pub mod services;
 
 use crate::db::connection::create_sqlite_connection;
@@ -55,7 +56,7 @@ pub mod state {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -197,6 +198,10 @@ pub fn run() {
             commands::app::restart_app,
             commands::app::open_path,
             commands::app::open_display_window,
+            // 网络伺服
+            commands::server::server_start,
+            commands::server::server_stop,
+            commands::server::server_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

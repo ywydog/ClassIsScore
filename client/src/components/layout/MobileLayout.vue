@@ -11,6 +11,16 @@
         <el-icon :size="22" aria-hidden="true"><Expand v-if="!drawerOpen" /><Fold v-else /></el-icon>
       </button>
       <h1 class="mobile-layout__title">{{ pageTitle }}</h1>
+      <el-tooltip content="切换到桌面版视图" placement="bottom">
+        <button
+          type="button"
+          class="mobile-layout__desktop-btn"
+          aria-label="切换到桌面版视图"
+          @click="switchToDesktop"
+        >
+          <el-icon :size="20" aria-hidden="true"><Monitor /></el-icon>
+        </button>
+      </el-tooltip>
       <button
         type="button"
         class="mobile-layout__display-btn"
@@ -129,6 +139,8 @@ function isDesktopViewport(): boolean {
 
 function maybeRedirectToDesktop() {
   if (typeof window === 'undefined') return
+  // 用户手动切换过视图 → 尊重选择，不自动跳转
+  if (localStorage.getItem('viewPreference') === 'mobile') return
   if (!isDesktopViewport()) return
   // 仅在 /m/* 路由下才执行跳转
   if (route.path.startsWith('/m/')) {
@@ -218,6 +230,13 @@ function openDisplay() {
     }
   })
 }
+
+function switchToDesktop() {
+  // 记住用户手动选择
+  localStorage.setItem('viewPreference', 'desktop')
+  const desktopPath = route.path.replace(/^\/m/, '/admin')
+  router.push(desktopPath).catch(() => { /* 重复导航忽略 */ })
+}
 </script>
 
 <style scoped>
@@ -244,7 +263,8 @@ function openDisplay() {
 }
 
 .mobile-layout__menu-btn,
-.mobile-layout__display-btn {
+.mobile-layout__display-btn,
+.mobile-layout__desktop-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -260,7 +280,8 @@ function openDisplay() {
 }
 
 .mobile-layout__menu-btn:hover,
-.mobile-layout__display-btn:hover {
+.mobile-layout__display-btn:hover,
+.mobile-layout__desktop-btn:hover {
   background: var(--cis-primary-tint);
   color: var(--cis-primary);
 }
