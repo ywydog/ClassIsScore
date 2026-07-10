@@ -11,6 +11,7 @@ pub mod log;
 pub mod app;
 pub mod theme;
 pub mod plugin;
+#[cfg(not(target_os = "android"))]
 pub mod server;
 
 use crate::state::AppState;
