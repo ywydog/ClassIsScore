@@ -13,23 +13,40 @@ impl MigrationName for Migration {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // 兼容旧版：清理单数表名（学生 / 积分记录 / 小组 / 评估项 / 结算记录 / 自动评估配置）
+        // 旧版 Iden enum 是单数（Student / ScoreRecord / ...），与 entity 的复数 table_name 不匹配，
+        // 旧表会被丢弃；新版本会用复数表名创建正确表。
+        let conn = manager.get_connection();
+        let legacy_tables = [
+            "student", "score_record", "student_group",
+            "evaluation_item", "settlement_record", "auto_evaluation_config",
+        ];
+        for legacy in legacy_tables.iter() {
+            let _ = conn
+                .execute(Statement::from_string(
+                    DatabaseBackend::Sqlite,
+                    format!("DROP TABLE IF EXISTS {}", legacy),
+                ))
+                .await;
+        }
+
         // 学生表
         manager
             .create_table(
                 Table::create()
-                    .table(Student::Table)
+                    .table(Students::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Student::Id).big_integer().not_null().auto_increment().primary_key())
-                    .col(ColumnDef::new(Student::Name).string().not_null())
-                    .col(ColumnDef::new(Student::StudentNumber).string().null())
-                    .col(ColumnDef::new(Student::GroupId).big_integer().null())
-                    .col(ColumnDef::new(Student::TotalScore).integer().not_null().default(0))
-                    .col(ColumnDef::new(Student::Avatar).string().null())
-                    .col(ColumnDef::new(Student::PetType).string().null())
-                    .col(ColumnDef::new(Student::PetName).string().null())
-                    .col(ColumnDef::new(Student::PetExp).integer().not_null().default(0))
-                    .col(ColumnDef::new(Student::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
-                    .col(ColumnDef::new(Student::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(Students::Id).big_integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(Students::Name).string().not_null())
+                    .col(ColumnDef::new(Students::StudentNumber).string().null())
+                    .col(ColumnDef::new(Students::GroupId).big_integer().null())
+                    .col(ColumnDef::new(Students::TotalScore).integer().not_null().default(0))
+                    .col(ColumnDef::new(Students::Avatar).string().null())
+                    .col(ColumnDef::new(Students::PetType).string().null())
+                    .col(ColumnDef::new(Students::PetName).string().null())
+                    .col(ColumnDef::new(Students::PetExp).integer().not_null().default(0))
+                    .col(ColumnDef::new(Students::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(Students::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -38,21 +55,21 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(ScoreRecord::Table)
+                    .table(ScoreRecords::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(ScoreRecord::Id).big_integer().not_null().auto_increment().primary_key())
-                    .col(ColumnDef::new(ScoreRecord::StudentId).big_integer().not_null())
-                    .col(ColumnDef::new(ScoreRecord::ScoreChange).integer().not_null())
-                    .col(ColumnDef::new(ScoreRecord::Reason).string().null())
-                    .col(ColumnDef::new(ScoreRecord::Category).string().null())
-                    .col(ColumnDef::new(ScoreRecord::OperatorId).big_integer().null())
-                    .col(ColumnDef::new(ScoreRecord::CanQuickRevert).boolean().not_null().default(true))
-                    .col(ColumnDef::new(ScoreRecord::Reverted).boolean().not_null().default(false))
-                    .col(ColumnDef::new(ScoreRecord::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(ScoreRecords::Id).big_integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(ScoreRecords::StudentId).big_integer().not_null())
+                    .col(ColumnDef::new(ScoreRecords::ScoreChange).integer().not_null())
+                    .col(ColumnDef::new(ScoreRecords::Reason).string().null())
+                    .col(ColumnDef::new(ScoreRecords::Category).string().null())
+                    .col(ColumnDef::new(ScoreRecords::OperatorId).big_integer().null())
+                    .col(ColumnDef::new(ScoreRecords::CanQuickRevert).boolean().not_null().default(true))
+                    .col(ColumnDef::new(ScoreRecords::Reverted).boolean().not_null().default(false))
+                    .col(ColumnDef::new(ScoreRecords::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .foreign_key(
                         ForeignKey::create()
-                            .from(ScoreRecord::Table, ScoreRecord::StudentId)
-                            .to(Student::Table, Student::Id)
+                            .from(ScoreRecords::Table, ScoreRecords::StudentId)
+                            .to(Students::Table, Students::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
@@ -63,13 +80,13 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(StudentGroup::Table)
+                    .table(StudentGroups::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(StudentGroup::Id).big_integer().not_null().auto_increment().primary_key())
-                    .col(ColumnDef::new(StudentGroup::Name).string().not_null())
-                    .col(ColumnDef::new(StudentGroup::Description).string().null())
-                    .col(ColumnDef::new(StudentGroup::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
-                    .col(ColumnDef::new(StudentGroup::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(StudentGroups::Id).big_integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(StudentGroups::Name).string().not_null())
+                    .col(ColumnDef::new(StudentGroups::Description).string().null())
+                    .col(ColumnDef::new(StudentGroups::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(StudentGroups::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -78,15 +95,15 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(EvaluationItem::Table)
+                    .table(EvaluationItems::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(EvaluationItem::Id).big_integer().not_null().auto_increment().primary_key())
-                    .col(ColumnDef::new(EvaluationItem::Name).string().not_null())
-                    .col(ColumnDef::new(EvaluationItem::ScoreChange).integer().not_null())
-                    .col(ColumnDef::new(EvaluationItem::Category).string().null())
-                    .col(ColumnDef::new(EvaluationItem::IsQuickAccess).boolean().not_null().default(false))
-                    .col(ColumnDef::new(EvaluationItem::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
-                    .col(ColumnDef::new(EvaluationItem::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(EvaluationItems::Id).big_integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(EvaluationItems::Name).string().not_null())
+                    .col(ColumnDef::new(EvaluationItems::ScoreChange).integer().not_null())
+                    .col(ColumnDef::new(EvaluationItems::Category).string().null())
+                    .col(ColumnDef::new(EvaluationItems::IsQuickAccess).boolean().not_null().default(false))
+                    .col(ColumnDef::new(EvaluationItems::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(EvaluationItems::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -95,15 +112,15 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(SettlementRecord::Table)
+                    .table(SettlementRecords::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(SettlementRecord::Id).big_integer().not_null().auto_increment().primary_key())
-                    .col(ColumnDef::new(SettlementRecord::Name).string().not_null())
-                    .col(ColumnDef::new(SettlementRecord::Period).string().null())
-                    .col(ColumnDef::new(SettlementRecord::SnapshotData).string().null())
-                    .col(ColumnDef::new(SettlementRecord::Status).integer().not_null().default(0))
-                    .col(ColumnDef::new(SettlementRecord::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
-                    .col(ColumnDef::new(SettlementRecord::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(SettlementRecords::Id).big_integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(SettlementRecords::Name).string().not_null())
+                    .col(ColumnDef::new(SettlementRecords::Period).string().null())
+                    .col(ColumnDef::new(SettlementRecords::SnapshotData).string().null())
+                    .col(ColumnDef::new(SettlementRecords::Status).integer().not_null().default(0))
+                    .col(ColumnDef::new(SettlementRecords::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(SettlementRecords::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -112,24 +129,24 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(AutoEvaluationConfig::Table)
+                    .table(AutoEvaluationConfigs::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(AutoEvaluationConfig::Id).big_integer().not_null().auto_increment().primary_key())
-                    .col(ColumnDef::new(AutoEvaluationConfig::Name).string().not_null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::TriggerType).string().not_null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::TriggerTime).string().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::DayOfWeek).integer().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::DayOfMonth).integer().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::EvaluationItemId).big_integer().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::ScoreChange).double().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::Reason).string().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::TargetType).string().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::TargetGroupId).big_integer().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::TargetStudentId).big_integer().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::IsEnabled).boolean().not_null().default(false))
-                    .col(ColumnDef::new(AutoEvaluationConfig::LastExecutedAt).date_time().null())
-                    .col(ColumnDef::new(AutoEvaluationConfig::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
-                    .col(ColumnDef::new(AutoEvaluationConfig::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(AutoEvaluationConfigs::Id).big_integer().not_null().auto_increment().primary_key())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::Name).string().not_null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::TriggerType).string().not_null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::TriggerTime).string().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::DayOfWeek).integer().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::DayOfMonth).integer().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::EvaluationItemId).big_integer().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::ScoreChange).double().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::Reason).string().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::TargetType).string().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::TargetGroupId).big_integer().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::TargetStudentId).big_integer().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::IsEnabled).boolean().not_null().default(false))
+                    .col(ColumnDef::new(AutoEvaluationConfigs::LastExecutedAt).date_time().null())
+                    .col(ColumnDef::new(AutoEvaluationConfigs::CreatedAt).date_time().not_null().default(Expr::current_timestamp()))
+                    .col(ColumnDef::new(AutoEvaluationConfigs::UpdatedAt).date_time().not_null().default(Expr::current_timestamp()))
                     .to_owned(),
             )
             .await?;
@@ -168,29 +185,29 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(AdminSettings::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(AutoEvaluationConfig::Table).to_owned())
+            .drop_table(Table::drop().table(AutoEvaluationConfigs::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(SettlementRecord::Table).to_owned())
+            .drop_table(Table::drop().table(SettlementRecords::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(EvaluationItem::Table).to_owned())
+            .drop_table(Table::drop().table(EvaluationItems::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(ScoreRecord::Table).to_owned())
+            .drop_table(Table::drop().table(ScoreRecords::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(Student::Table).to_owned())
+            .drop_table(Table::drop().table(Students::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(StudentGroup::Table).to_owned())
+            .drop_table(Table::drop().table(StudentGroups::Table).to_owned())
             .await?;
         Ok(())
     }
 }
 
 #[derive(Iden)]
-enum Student {
+enum Students {
     Table,
     Id,
     Name,
@@ -206,7 +223,7 @@ enum Student {
 }
 
 #[derive(Iden)]
-enum ScoreRecord {
+enum ScoreRecords {
     Table,
     Id,
     StudentId,
@@ -220,7 +237,7 @@ enum ScoreRecord {
 }
 
 #[derive(Iden)]
-enum StudentGroup {
+enum StudentGroups {
     Table,
     Id,
     Name,
@@ -230,7 +247,7 @@ enum StudentGroup {
 }
 
 #[derive(Iden)]
-enum EvaluationItem {
+enum EvaluationItems {
     Table,
     Id,
     Name,
@@ -242,7 +259,7 @@ enum EvaluationItem {
 }
 
 #[derive(Iden)]
-enum SettlementRecord {
+enum SettlementRecords {
     Table,
     Id,
     Name,
@@ -254,7 +271,7 @@ enum SettlementRecord {
 }
 
 #[derive(Iden)]
-enum AutoEvaluationConfig {
+enum AutoEvaluationConfigs {
     Table,
     Id,
     Name,
