@@ -1,5 +1,3 @@
-use tauri::Manager;
-
 #[tauri::command]
 pub async fn restart_app(app_handle: tauri::AppHandle) -> Result<(), String> {
     // restart() 返回 never type，不会返回
@@ -26,6 +24,7 @@ fn open_external(_app_handle: &tauri::AppHandle, path: &str) -> Result<(), Strin
 }
 
 #[cfg(target_os = "android")]
+#[allow(deprecated)]
 fn open_external(app_handle: &tauri::AppHandle, path: &str) -> Result<(), String> {
     use tauri_plugin_shell::ShellExt;
     let shell = app_handle.shell();
@@ -42,7 +41,7 @@ fn open_external(app_handle: &tauri::AppHandle, path: &str) -> Result<(), String
 pub async fn open_display_window(app_handle: tauri::AppHandle) -> Result<(), String> {
     #[cfg(not(target_os = "android"))]
     {
-        use tauri::{WebviewUrl, WebviewWindowBuilder};
+        use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
         let existing = app_handle.get_webview_window("display");
         if let Some(win) = existing {
