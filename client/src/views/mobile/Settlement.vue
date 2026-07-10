@@ -125,7 +125,12 @@ async function fetchSettlements() {
   try {
     const records = await invoke<SettlementRecord[]>('settlement_list', {})
     settlements.value = records || []
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[Settlement] fetchSettlements failed', err)
+    ElMessage.error(`加载结算记录失败：${msg}`)
+    settlements.value = []
+  }
 }
 
 const totalScore = computed(() => ranking.value.reduce((sum, r) => sum + r.score, 0))
@@ -145,6 +150,12 @@ function formatTime(dateStr: string): string {
   return settlementTimeFormatter.format(new Date(dateStr))
 }
 
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === 'string') return err
+  return '未知错误'
+}
+
 async function handleSettle() {
   try {
     await ElMessageBox.confirm(
@@ -155,17 +166,29 @@ async function handleSettle() {
   } catch {
     return
   }
+  ElMessage.closeAll()
   try {
+    // 后端 settlement_create 已内置"快照+重置积分"事务；这里再显式调一次
+    // student_reset_scores 作为兜底，避免后端逻辑漏改时出现"显示结算但未重置"
     await invoke('settlement_create', {
       input: {
         name: '积分结算',
         period: new Date().toISOString().slice(0, 10),
       },
     })
+    try {
+      await invoke('student_reset_scores', {})
+    } catch (resetErr) {
+      console.warn('[Settlement] student_reset_scores 兜底重置失败（可能后端已重置）', resetErr)
+    }
     ElMessage.success('结算完成')
     await fetchSettlements()
     await studentStore.fetchStudents()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[Settlement] settlement_create failed', err)
+    ElMessage.error(`结算失败：${msg}`)
+  }
 }
 
 async function handleRevertLatest() {
@@ -185,7 +208,11 @@ async function handleRevertLatest() {
     showActionSheet.value = false
     await fetchSettlements()
     await studentStore.fetchStudents()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[Settlement] settlement_rollback failed', err)
+    ElMessage.error(`撤销失败：${msg}`)
+  }
 }
 
 function handleExportSettlement() {

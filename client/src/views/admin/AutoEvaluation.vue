@@ -245,13 +245,20 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { EvaluationItem, AutoEvaluationConfig, StudentGroup, Student } from '@/types'
-import { invoke } from '@/services/tauri'
+import { evaluationApi } from '@/services/evaluation'
+import { autoScoreApi } from '@/services/autoScore'
 import { groupApi } from '@/services/group'
 import { useStudentStore } from '@/stores/student'
 import { useTerminology } from '@/themes/xianxia/useTerminology'
 
 const { t } = useTerminology()
 const studentStore = useStudentStore()
+
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === 'string') return err
+  return '未知错误'
+}
 
 // ==================== 评估项目 ====================
 const evaluationItems = ref<EvaluationItem[]>([])
@@ -282,17 +289,21 @@ function onColorPickerChange(val: string | null) {
 
 async function fetchItems() {
   try {
-    // IPC 改造：evaluation_list
-    const items = await invoke<EvaluationItem[]>('evaluation_list', {})
-    evaluationItems.value = items || []
-  } catch { /* ignore */ }
+    const res = await evaluationApi.getAll()
+    evaluationItems.value = res.data.data || []
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] fetchItems failed', err)
+    ElMessage.error(`加载评估项失败：${msg}`)
+    evaluationItems.value = []
+  }
 }
 
 function openItemDialog(item?: EvaluationItem) {
   editingItem.value = item || null
   if (item) {
     itemForm.name = item.name
-    itemForm.scoreChange = item.scoreChange
+    itemForm.scoreChange = Math.abs(item.scoreChange)
     itemForm.isPositive = item.scoreChange >= 0
     itemForm.color = item.color || ''
   } else {
@@ -309,31 +320,42 @@ async function handleSaveItem() {
     ElMessage.warning('请输入名称')
     return
   }
-  const payload = {
-    name: itemForm.name,
-    scoreChange: itemForm.isPositive ? Math.abs(itemForm.scoreChange) : -Math.abs(itemForm.scoreChange),
-    isPositive: itemForm.isPositive,
-    color: itemForm.color || undefined,
-  }
+  const signed = itemForm.isPositive
+    ? Math.abs(itemForm.scoreChange)
+    : -Math.abs(itemForm.scoreChange)
   try {
     if (editingItem.value) {
-      await invoke('evaluation_update', { id: editingItem.value.id, ...payload })
+      await evaluationApi.update(editingItem.value.id, {
+        name: itemForm.name,
+        scoreChange: signed,
+      })
     } else {
-      await invoke('evaluation_create', payload)
+      await evaluationApi.create({
+        name: itemForm.name,
+        scoreChange: signed,
+      })
     }
     ElMessage.success('已保存')
     showItemDialog.value = false
     await fetchItems()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] handleSaveItem failed', err)
+    ElMessage.error(`保存失败：${msg}`)
+  }
 }
 
 async function handleDeleteItem(id: string) {
   await ElMessageBox.confirm('确定删除该评估项？', '确认', { type: 'warning' })
   try {
-    await invoke('evaluation_delete', { id })
+    await evaluationApi.delete(id)
     ElMessage.success('已删除')
     await fetchItems()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] handleDeleteItem failed', err)
+    ElMessage.error(`删除失败：${msg}`)
+  }
 }
 
 // ==================== 自动评估配置 ====================
@@ -360,10 +382,14 @@ const configForm = reactive({
 
 async function fetchConfigs() {
   try {
-    // IPC 改造：auto-evaluation-configs → auto_score_get_rules
-    const configs = await invoke<AutoEvaluationConfig[]>('auto_score_get_rules', {})
-    configList.value = configs || []
-  } catch { /* ignore */ }
+    const res = await autoScoreApi.getAll()
+    configList.value = res.data.data || []
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] fetchConfigs failed', err)
+    ElMessage.error(`加载自动评估配置失败：${msg}`)
+    configList.value = []
+  }
 }
 
 async function fetchGroups() {
@@ -371,7 +397,11 @@ async function fetchGroups() {
     // 改用 groupApi（已走 invoke）
     const response = await groupApi.getAll()
     groups.value = response.data.data || []
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] fetchGroups failed', err)
+    ElMessage.error(`加载小组失败：${msg}`)
+  }
 }
 
 async function fetchStudents() {
@@ -492,10 +522,10 @@ async function handleSaveConfig() {
     ElMessage.warning('请输入配置名称')
     return
   }
-  const payload = {
+  const payload: Partial<AutoEvaluationConfig> = {
     name: configForm.name,
     triggerType: configForm.triggerType,
-    triggerTime: configForm.triggerType !== 'BeforeSettlement' ? formatTimeObj(configForm.triggerTimeObj) : null,
+    triggerTime: configForm.triggerType !== 'BeforeSettlement' ? formatTimeObj(configForm.triggerTimeObj) : '',
     dayOfWeek: configForm.triggerType === 'Weekly' ? configForm.dayOfWeek : null,
     dayOfMonth: configForm.triggerType === 'Monthly' ? configForm.dayOfMonth : null,
     evaluationItemId: configForm.evaluationItemId,
@@ -508,32 +538,44 @@ async function handleSaveConfig() {
   }
   try {
     if (editingConfig.value) {
-      await invoke('auto_score_update_rule', { id: editingConfig.value.id, ...payload })
+      await autoScoreApi.update(editingConfig.value.id, payload)
     } else {
-      await invoke('auto_score_add_rule', payload)
+      await autoScoreApi.create(payload)
     }
     ElMessage.success('已保存')
     showConfigDialog.value = false
     await fetchConfigs()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] handleSaveConfig failed', err)
+    ElMessage.error(`保存失败：${msg}`)
+  }
 }
 
 async function handleToggleConfig(row: AutoEvaluationConfig) {
   try {
     // IPC 改造：auto-evaluation-configs/{id}/toggle → auto_score_toggle_rule
-    await invoke('auto_score_toggle_rule', { id: row.id, enabled: !row.isEnabled })
+    await autoScoreApi.toggle(row.id, !row.isEnabled)
     await fetchConfigs()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] handleToggleConfig failed', err)
+    ElMessage.error(`切换失败：${msg}`)
+  }
 }
 
 async function handleDeleteConfig(id: string) {
   await ElMessageBox.confirm('确定删除该自动评估配置？', '确认', { type: 'warning' })
   try {
     // IPC 改造：auto-evaluation-configs/{id} → auto_score_delete_rule
-    await invoke('auto_score_delete_rule', { id })
+    await autoScoreApi.delete(id)
     ElMessage.success('已删除')
     await fetchConfigs()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[AutoEvaluation] handleDeleteConfig failed', err)
+    ElMessage.error(`删除失败：${msg}`)
+  }
 }
 
 // ==================== 初始化 ====================

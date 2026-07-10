@@ -95,9 +95,9 @@
           <el-button @click="formOpen = false">取消</el-button>
           <el-button
             type="primary"
-            :disabled="!form.name.trim() || form.scoreChange <= 0"
+            :disabled="submitting || !form.name.trim() || form.scoreChange <= 0"
             @click="handleSubmit"
-          >确定</el-button>
+          >{{ submitting ? '保存中…' : '确定' }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -109,13 +109,20 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import MobileEmptyState from '@/components/mobile/MobileEmptyState.vue'
-import { invoke } from '@/services/tauri'
+import { evaluationApi } from '@/services/evaluation'
 import type { EvaluationItem } from '@/types'
 
 const items = ref<EvaluationItem[]>([])
 const formOpen = ref(false)
 const editingItem = ref<EvaluationItem | null>(null)
 const form = reactive({ name: '', scoreChange: 1, isPositive: true })
+const submitting = ref(false)
+
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === 'string') return err
+  return '未知错误'
+}
 
 onMounted(async () => {
   await fetchItems()
@@ -123,8 +130,14 @@ onMounted(async () => {
 
 async function fetchItems() {
   try {
-    items.value = await invoke<EvaluationItem[]>('evaluation_list', {})
-  } catch { items.value = [] }
+    const res = await evaluationApi.getAll()
+    items.value = res.data.data || []
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[Evaluation] fetchItems failed', err)
+    ElMessage.error(`加载评价项失败：${msg}`)
+    items.value = []
+  }
 }
 
 function openCreateDialog() {
@@ -144,6 +157,7 @@ function openEditDialog(item: EvaluationItem) {
 }
 
 async function handleSubmit() {
+  if (submitting.value) return
   const name = form.name.trim()
   if (!name) {
     ElMessage.warning('请输入评价项名称')
@@ -153,22 +167,32 @@ async function handleSubmit() {
     ElMessage.warning('分值必须大于 0')
     return
   }
-  const payload = {
-    name,
-    scoreChange: form.isPositive ? form.scoreChange : -form.scoreChange,
-    isPositive: form.isPositive,
-  }
+  const signed = form.isPositive ? form.scoreChange : -form.scoreChange
+  ElMessage.closeAll()
+  submitting.value = true
   try {
     if (editingItem.value) {
-      await invoke('evaluation_update', { id: Number(editingItem.value.id), ...payload })
+      await evaluationApi.update(editingItem.value.id, {
+        name,
+        scoreChange: signed,
+      })
       ElMessage.success('已更新')
     } else {
-      await invoke('evaluation_create', payload)
+      await evaluationApi.create({
+        name,
+        scoreChange: signed,
+      })
       ElMessage.success('已添加')
     }
     formOpen.value = false
     await fetchItems()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[Evaluation] submit failed', err)
+    ElMessage.error(`${editingItem.value ? '更新' : '添加'}失败：${msg}`)
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function handleDelete(item: EvaluationItem) {
@@ -178,10 +202,14 @@ async function handleDelete(item: EvaluationItem) {
     return
   }
   try {
-    await invoke('evaluation_delete', { id: Number(item.id) })
+    await evaluationApi.delete(item.id)
     ElMessage.success('已删除')
     await fetchItems()
-  } catch { /* ignore */ }
+  } catch (err) {
+    const msg = describeError(err)
+    console.error('[Evaluation] delete failed', err)
+    ElMessage.error(`删除失败：${msg}`)
+  }
 }
 </script>
 
