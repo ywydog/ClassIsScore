@@ -7,8 +7,7 @@
     <meta name="theme-color" content="#0B5A45" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; connect-src 'self' http://localhost:18888 ws://localhost:18888;" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost" />
     <!-- 字体本地自托管：woff2 文件在 public/fonts/，由 themes/fonts.css 通过 @font-face 加载。
          解决离线 / 企业内网无外网环境字体回退问题，视觉一致性得到保障。 -->
     <noscript>
