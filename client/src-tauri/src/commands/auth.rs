@@ -6,18 +6,88 @@ use crate::db::entities::settlement_record;
 use crate::db::entities::student;
 use crate::db::entities::student_group;
 use crate::state::AppState;
+use argon2::password_hash::rand_core::OsRng;
+use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
+use argon2::Argon2;
 use parking_lot::RwLock;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, Set};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use tauri::State;
 
 use super::get_db;
 
+/// 安全最佳实践：使用 Argon2id（OWASP 推荐）散列密码，自动生成随机 salt。
+/// 旧版本以裸 SHA-256 散列（无 salt），通过 `verify_password` 兼容旧数据并自动迁移。
 fn hash_password(password: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(password.as_bytes());
-    hex::encode(hasher.finalize())
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    argon2
+        .hash_password(password.as_bytes(), &salt)
+        .expect("Argon2 hash 失败")
+        .to_string()
+}
+
+/// 验证密码：优先尝试 Argon2id 格式，失败时回退到旧版 SHA-256 格式（用于平滑迁移）。
+/// 安全最佳实践：禁止明文比较，防止时序攻击；恒定时间由 Argon2 verifier 保证。
+pub(crate) fn verify_password(stored: &str, candidate: &str) -> bool {
+    if let Ok(parsed) = PasswordHash::new(stored) {
+        if Argon2::default()
+            .verify_password(candidate.as_bytes(), &parsed)
+            .is_ok()
+        {
+            return true;
+        }
+    }
+    // 旧格式兼容：32 字节 hex（SHA-256）共 64 字符。比对使用恒定时间。
+    if stored.len() == 64 && stored.chars().all(|c| c.is_ascii_hexdigit()) {
+        let mut hasher = Sha256::new();
+        hasher.update(candidate.as_bytes());
+        let candidate_hash = hex::encode(hasher.finalize());
+        // 长度相等且用恒定时间比较
+        if candidate_hash.len() == stored.len() {
+            return constant_time_eq(stored.as_bytes(), candidate_hash.as_bytes());
+        }
+    }
+    false
+}
+
+/// 恒定时间字节比较（避免时序侧信道）。
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+/// 如果当前存储是旧 SHA-256 格式，登录成功后自动升级为 Argon2id。
+/// 安全最佳实践：透明升级用户凭证，避免强制重置。
+async fn maybe_upgrade_password(
+    db: &sea_orm::DatabaseConnection,
+    model: admin_settings::Model,
+    raw_password: &str,
+) {
+    if model.setting_value.as_deref().map_or(true, |v| v.len() != 64) {
+        // 已经是 Argon2id 格式或无值，无需升级
+        return;
+    }
+    if !model
+        .setting_value
+        .as_deref()
+        .map(|v| v.chars().all(|c| c.is_ascii_hexdigit()))
+        .unwrap_or(false)
+    {
+        return;
+    }
+    let new_hash = hash_password(raw_password);
+    let mut active: admin_settings::ActiveModel = model.into_active_model();
+    active.setting_value = Set(Some(new_hash));
+    active.updated_at = Set(chrono::Local::now().naive_utc());
+    let _ = active.update(db).await;
 }
 
 async fn upsert_setting(
@@ -76,12 +146,15 @@ pub async fn auth_login(
     match setting {
         Some(model) => {
             let stored_hash = model.setting_value.clone().unwrap_or_default();
-            if stored_hash == hash_password(&password) {
+            if verify_password(&stored_hash, &password) {
+                // 安全最佳实践：透明升级旧 SHA-256 凭据为 Argon2id
+                maybe_upgrade_password(&db, model, &password).await;
                 Ok(AuthResult {
                     success: true,
                     message: "登录成功".to_string(),
                 })
             } else {
+                // 安全最佳实践：统一错误信息，避免泄露"未设置"指纹
                 Ok(AuthResult {
                     success: false,
                     message: "密码错误".to_string(),
@@ -90,7 +163,7 @@ pub async fn auth_login(
         }
         None => Ok(AuthResult {
             success: false,
-            message: "管理员密码未设置".to_string(),
+            message: "密码错误".to_string(),
         }),
     }
 }
@@ -112,7 +185,7 @@ pub async fn auth_change_password(
     match setting {
         Some(model) => {
             let stored_hash = model.setting_value.clone().unwrap_or_default();
-            if stored_hash != hash_password(&old_password) {
+            if !verify_password(&stored_hash, &old_password) {
                 return Ok(AuthResult {
                     success: false,
                     message: "旧密码错误".to_string(),
@@ -129,7 +202,7 @@ pub async fn auth_change_password(
         }
         None => Ok(AuthResult {
             success: false,
-            message: "管理员密码未设置".to_string(),
+            message: "旧密码错误".to_string(),
         }),
     }
 }
@@ -150,7 +223,7 @@ pub async fn auth_verify(
     match setting {
         Some(model) => {
             let stored_hash = model.setting_value.clone().unwrap_or_default();
-            if stored_hash == hash_password(&password) {
+            if verify_password(&stored_hash, &password) {
                 Ok(AuthResult {
                     success: true,
                     message: "验证通过".to_string(),
@@ -164,7 +237,7 @@ pub async fn auth_verify(
         }
         None => Ok(AuthResult {
             success: false,
-            message: "管理员密码未设置".to_string(),
+            message: "密码错误".to_string(),
         }),
     }
 }
@@ -222,6 +295,40 @@ pub async fn auth_set_passwords(
     Ok(AuthResult {
         success: true,
         message: "密码设置成功".to_string(),
+    })
+}
+
+/// 设置/更新网络伺服 PIN
+///
+/// 安全最佳实践：PIN 通过 Argon2id 散列后存储于 admin_settings.network_serve_pin。
+/// 启动网络伺服时该值被加载到 ServerState，所有 HTTP 请求必须携带匹配的 Bearer 头。
+/// 设空字符串或空 Option 表示清除（不允许网络伺服匿名访问）。
+#[tauri::command]
+pub async fn auth_set_network_pin(
+    state: State<'_, Arc<RwLock<AppState>>>,
+    network_serve_pin: String,
+) -> Result<AuthResult, String> {
+    let db = get_db(&state)?;
+
+    if network_serve_pin.trim().is_empty() {
+        // 清除 PIN：拒绝网络伺服任何访问
+        upsert_setting(&db, "network_serve_pin", String::new()).await?;
+        // 同时立即关闭已运行的网络伺服（先取 clone 释放 guard 再跨 await）
+        let server_state_clone = crate::commands::server::server_state().map(|s| s.read().clone());
+        if let Some(state) = server_state_clone {
+            crate::server::shutdown(&state).await?;
+        }
+        return Ok(AuthResult {
+            success: true,
+            message: "已清除网络伺服 PIN".to_string(),
+        });
+    }
+
+    upsert_setting(&db, "network_serve_pin", hash_password(&network_serve_pin)).await?;
+
+    Ok(AuthResult {
+        success: true,
+        message: "网络伺服 PIN 已设置".to_string(),
     })
 }
 

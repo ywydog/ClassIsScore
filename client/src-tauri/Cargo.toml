@@ -32,10 +32,12 @@ tracing-appender = "0.2"
 once_cell = "1"
 parking_lot = "0.12"
 axum = "0.7"
-tower-http = { version = "0.6", features = ["cors", "fs"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "limit"] }
 sha2 = "0.10"
 hex = "0.4"
 rand = "0.8"
+# 密码 hash（替代 SHA-256：使用 OWASP 推荐的 Argon2id，自带 salt 与 cost）
+argon2 = "0.5"
 
 # 桌面专属依赖
 [target.'cfg(not(target_os = "android"))'.dependencies]
