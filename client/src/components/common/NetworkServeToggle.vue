@@ -86,7 +86,9 @@ async function copyUrl() {
     await navigator.clipboard.writeText(statusUrl.value)
     ElMessage.success('地址已复制')
   } catch {
-    // fallback
+    // 安全最佳实践：Clipboard API 不可用时回退到 execCommand。
+    // 该 API 已被主流浏览器标记 deprecated，仅在 HTTPS / 受信上下文可用，
+    // 故仅作为最后 fallback 使用。statusUrl 是后端拼接的 IP+端口，不含用户输入。
     const input = document.createElement('input')
     input.value = statusUrl.value
     document.body.appendChild(input)

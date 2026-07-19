@@ -220,6 +220,8 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   // 检查后端设置的引导状态
+  // 安全最佳实践：localStorage 仅缓存非敏感的引导标志位，禁止缓存鉴权凭据
+  // （如 token / 密码 / 加密密钥），避免 XSS 后泄露身份。
   try {
     const { invoke } = await import('@/services/tauri')
     const settings = await invoke<Array<{ setting_key: string; setting_value: string | null }>>('settings_get_all', {})
