@@ -67,6 +67,27 @@ export const settingsApi = {
     return { data: { data: undefined } }
   },
 
+  /**
+   * 设置/更新网络伺服 PIN。
+   * - 非空字符串：保存 Argon2id 散列到 admin_settings.network_serve_pin
+   * - 空字符串：清除 PIN 并关闭当前网络伺服
+   */
+  async setNetworkPin(pin: string) {
+    const result = await invoke<{ success: boolean; message: string }>('auth_set_network_pin', {
+      network_serve_pin: pin,
+    })
+    return { data: { data: result } }
+  },
+
+  /**
+   * 查询当前是否已配置网络伺服 PIN。
+   * 通过 settings_get_all 中是否存在 network_serve_pin 键判断（值已散列，永不返回明文）。
+   */
+  async hasNetworkPin(): Promise<boolean> {
+    const settings = await invoke<RustSetting[]>('settings_get_all', {})
+    return settings.some((s) => s.setting_key === 'network_serve_pin' && !!s.setting_value)
+  },
+
   async exportSettings() {
     const result = await invoke('settings_export', {})
     return { data: { data: result } }

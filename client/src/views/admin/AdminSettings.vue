@@ -51,6 +51,62 @@
             </el-form-item>
           </template>
 
+          <!-- 网络伺服 PIN 设置（H-2: HTTP Bearer 鉴权） -->
+          <el-divider content-position="left">网络伺服 PIN</el-divider>
+          <el-form-item label="启用状态">
+            <el-tag v-if="hasNetworkPin" type="success">已启用 PIN 鉴权</el-tag>
+            <el-tag v-else type="info">未启用（拒绝任何网络访问）</el-tag>
+          </el-form-item>
+          <el-form-item label="设置 PIN">
+            <div class="password-section">
+              <el-input
+                v-model="newNetworkPin"
+                type="password"
+                placeholder="请输入网络 PIN…"
+                show-password
+                autocomplete="new-password"
+                aria-label="网络伺服 PIN"
+                style="flex: 1"
+              />
+              <el-input
+                v-model="confirmNetworkPin"
+                type="password"
+                placeholder="确认网络 PIN…"
+                show-password
+                autocomplete="new-password"
+                aria-label="确认网络伺服 PIN"
+                style="flex: 1; margin-left: 8px"
+              />
+              <el-button
+                type="primary"
+                @click="handleSetNetworkPin"
+                :disabled="!newNetworkPin || !confirmNetworkPin"
+              >
+                保存 PIN
+              </el-button>
+              <el-button
+                v-if="hasNetworkPin"
+                type="danger"
+                plain
+                @click="handleClearNetworkPin"
+                style="margin-left: 8px"
+              >
+                清除 PIN
+              </el-button>
+            </div>
+          </el-form-item>
+          <el-alert
+            type="info"
+            :closable="false"
+            show-icon
+            style="margin-bottom: 16px"
+          >
+            <template #title>
+              网络伺服启动后所有 HTTP 请求必须携带 <code>Authorization: Bearer &lt;PIN&gt;</code> 头，
+              否则返回 401。PIN 通过 Argon2id 散列后存储，本地永不保留明文。
+            </template>
+          </el-alert>
+
           <!-- U盘验证设置 -->
           <template v-if="adminSettings.verificationMethod === 'Usb' && adminSettings.isEnabled">
             <el-form-item label="U盘设备">
@@ -190,6 +246,9 @@ const adminSettings = reactive<AdminSettingsExtended>({
 const newPassword = ref('')
 const confirmPassword = ref('')
 const hasPassword = ref(false)
+const newNetworkPin = ref('')
+const confirmNetworkPin = ref('')
+const hasNetworkPin = ref(false)
 const manualUsbDeviceId = ref('')
 const saving = ref(false)
 const detectingUsb = ref(false)
@@ -212,6 +271,12 @@ onMounted(async () => {
     }
   } catch {
     // first use
+  }
+  // 单独探测网络伺服 PIN 状态（不读取明文值，仅判断是否存在）
+  try {
+    hasNetworkPin.value = await settingsApi.hasNetworkPin()
+  } catch {
+    hasNetworkPin.value = false
   }
 })
 
@@ -255,6 +320,61 @@ async function handleSetPassword() {
     ElMessage.success('密码设置成功')
   } catch {
     ElMessage.error('密码设置失败')
+  }
+}
+
+async function handleSetNetworkPin() {
+  if (!newNetworkPin.value || !confirmNetworkPin.value) {
+    ElMessage.warning('请输入并确认网络 PIN')
+    return
+  }
+  if (newNetworkPin.value !== confirmNetworkPin.value) {
+    ElMessage.error('两次输入的网络 PIN 不一致')
+    return
+  }
+  if (newNetworkPin.value.length < 4) {
+    ElMessage.warning('PIN 长度不能少于 4 位')
+    return
+  }
+  if (newNetworkPin.value.length > 64) {
+    ElMessage.warning('PIN 长度不能超过 64 位')
+    return
+  }
+  try {
+    const response = await settingsApi.setNetworkPin(newNetworkPin.value)
+    const result = response.data.data
+    if (result?.success) {
+      hasNetworkPin.value = true
+      newNetworkPin.value = ''
+      confirmNetworkPin.value = ''
+      ElMessage.success(result.message || '网络伺服 PIN 已保存')
+    } else {
+      ElMessage.error(result?.message || '网络伺服 PIN 保存失败')
+    }
+  } catch (e) {
+    ElMessage.error(`网络伺服 PIN 保存失败: ${e}`)
+  }
+}
+
+async function handleClearNetworkPin() {
+  await ElMessageBox.confirm(
+    '清除网络伺服 PIN 将立即停止当前网络伺服，并拒绝所有后续 HTTP 请求。是否继续？',
+    '清除网络 PIN',
+    { type: 'warning', confirmButtonText: '确认清除', cancelButtonText: '取消' }
+  )
+  try {
+    const response = await settingsApi.setNetworkPin('')
+    const result = response.data.data
+    if (result?.success) {
+      hasNetworkPin.value = false
+      newNetworkPin.value = ''
+      confirmNetworkPin.value = ''
+      ElMessage.success(result.message || '已清除网络伺服 PIN')
+    } else {
+      ElMessage.error(result?.message || '清除失败')
+    }
+  } catch {
+    ElMessage.error('清除网络伺服 PIN 失败')
   }
 }
 
