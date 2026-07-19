@@ -3,9 +3,14 @@
 //! 提供前端调用的命令：启动/停止/查询 HTTP 伺服状态。
 //! 学习 SiYuan 的设计，在原生应用内启动 HTTP 服务器，
 //! 让局域网内其他设备可通过浏览器访问。
+//!
+//! 安全最佳实践：网络伺服启动时从 admin_settings 读取预存的网络伺服 PIN（Argon2 散列），
+//! 所有访问者必须携带匹配的 Authorization: Bearer 头才能访问静态资源与 API。
 
+use crate::db::entities::admin_settings;
 use crate::server::{self, ServerState};
 use parking_lot::RwLock;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Manager, State};
@@ -23,6 +28,8 @@ pub struct ServerStatus {
 ///
 /// 启动后，局域网内其他设备可通过浏览器访问应用的 Web 界面。
 /// 绑定 0.0.0.0，允许外部访问。
+/// 安全最佳实践：必须先在 admin_settings 中设置 `network_serve_pin`（Argon2 散列），
+/// 任何客户端访问必须携带匹配的 Authorization: Bearer 头。
 #[tauri::command]
 pub async fn server_start(
     state: State<'_, Arc<RwLock<AppState>>>,
@@ -64,6 +71,27 @@ pub async fn server_start(
     let port = 6806u16; // 默认端口
     let network_serve = true; // 网络伺服模式始终绑定 0.0.0.0
 
+    // 安全最佳实践：从 admin_settings 读取预存的 Argon2 散列 PIN
+    let pin_hash = {
+        let db = {
+            let guard = state.read();
+            guard
+                .db
+                .get()
+                .ok_or("数据库未初始化")?
+                .clone()
+        };
+        let pin_setting = admin_settings::Entity::find()
+            .filter(admin_settings::Column::SettingKey.eq("network_serve_pin"))
+            .one(&db)
+            .await
+            .map_err(|e| e.to_string())?;
+        match pin_setting {
+            Some(model) => model.setting_value,
+            None => None,
+        }
+    };
+
     // 获取或创建 ServerState
     let global_state = SERVER_STATE.get_or_init(|| Arc::new(RwLock::new(ServerState::new())));
     let server_state = {
@@ -71,7 +99,14 @@ pub async fn server_start(
         guard.clone()
     };
 
-    let actual_port = server::serve(server_state.clone(), frontend_dir, port, network_serve).await?;
+    let actual_port = server::serve(
+        server_state.clone(),
+        frontend_dir,
+        port,
+        network_serve,
+        pin_hash,
+    )
+    .await?;
 
     // 获取本机 IP 用于显示
     let local_ip = get_local_ip().unwrap_or_else(|| "127.0.0.1".to_string());
@@ -148,6 +183,11 @@ pub async fn server_status() -> Result<ServerStatus, String> {
 
 /// 全局 ServerState（懒加载单例）
 static SERVER_STATE: std::sync::OnceLock<Arc<RwLock<ServerState>>> = std::sync::OnceLock::new();
+
+/// 暴露给其他模块（如 auth）在需要时访问 ServerState 以关闭网络伺服。
+pub fn server_state() -> Option<Arc<RwLock<ServerState>>> {
+    SERVER_STATE.get().cloned()
+}
 
 /// 获取本机局域网 IP 地址
 fn get_local_ip() -> Option<String> {

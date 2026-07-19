@@ -108,6 +108,7 @@ macro_rules! commands_handler {
             commands::auth::auth_verify,
             commands::auth::auth_get_info,
             commands::auth::auth_set_passwords,
+            commands::auth::auth_set_network_pin,
             commands::auth::admin_reset,
             // 自动评估
             commands::auto_score::auto_score_get_rules,

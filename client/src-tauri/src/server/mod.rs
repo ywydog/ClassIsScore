@@ -6,23 +6,32 @@
 //! - User-Agent 检测自动切换桌面/移动端视图
 //! - CORS 跨域支持
 //! - 可配置端口（默认 6806）
+//!
+//! 安全最佳实践：
+//! - 网络伺服通过 Bearer PIN 鉴权（PIN 在 admin_settings 中以 Argon2 散列存储）
+//! - CORS 不使用 `Any` 而是限制到局域网回环/同源
+//! - 请求体大小限制 1 MiB，避免 LAN 攻击者耗尽内存
 
 use axum::{
-    extract::Request,
-    http::header,
+    extract::{Request, State as AxumState},
+    http::{header, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Redirect, Response},
     routing::get,
     Router,
 };
+use parking_lot::RwLock;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
+use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::services::ServeDir;
+
+use crate::commands::auth::verify_password;
 
 /// 服务器运行状态
 #[derive(Clone)]
@@ -31,6 +40,8 @@ pub struct ServerState {
     /// 当前端口。使用 AtomicU32 而非 Mutex<u16> 避免跨 await 的 Send 问题
     pub port: Arc<std::sync::atomic::AtomicU32>,
     pub shutdown_tx: Arc<Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
+    /// Argon2 散列后的网络伺服 PIN（如果未设置则强制要求首次启动时配置）
+    pub pin_hash: Arc<RwLock<Option<String>>>,
 }
 
 impl ServerState {
@@ -39,6 +50,7 @@ impl ServerState {
             running: Arc::new(AtomicBool::new(false)),
             port: Arc::new(std::sync::atomic::AtomicU32::new(0)),
             shutdown_tx: Arc::new(Mutex::new(None)),
+            pin_hash: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -49,6 +61,12 @@ impl ServerState {
     pub fn get_port(&self) -> u16 {
         self.port.load(Ordering::SeqCst) as u16
     }
+
+    /// 设置网络伺服 PIN（Argon2 散列格式）。设为 None 关闭网络伺服鉴权。
+    /// 安全最佳实践：即使 LAN 内部，鉴权也防止未授权设备访问业务页面。
+    pub fn set_pin_hash(&self, hash: Option<String>) {
+        *self.pin_hash.write() = hash;
+    }
 }
 
 /// 启动 HTTP 伺服
@@ -57,11 +75,13 @@ impl ServerState {
 /// * `frontend_dir` - 前端 dist 目录路径
 /// * `port` - 监听端口，0 表示自动分配
 /// * `network_serve` - true 绑定 0.0.0.0，false 绑定 127.0.0.1
+/// * `pin_hash` - 网络伺服访问 PIN（Argon2 散列）；None 表示无 PIN
 pub async fn serve(
     state: ServerState,
     frontend_dir: PathBuf,
     port: u16,
     network_serve: bool,
+    pin_hash: Option<String>,
 ) -> Result<u16, String> {
     if state.is_running() {
         return Err("服务器已在运行".to_string());
@@ -82,16 +102,34 @@ pub async fn serve(
         .port();
 
     let serve_dir = frontend_dir.clone();
+    state.set_pin_hash(pin_hash);
 
+    // 安全最佳实践：
+    // - CORS 限制到同源/同网域扩展（不开放 `Any` 防止第三方网站跨域读取响应）
+    // - Body 上限 1 MiB 防 DoS
+    // - 顶层鉴权中间件（无 PIN 时拒绝所有访问；带 PIN 时检查 Authorization 头）
     let app = Router::new()
         .route("/api/health", get(|| async { "ok" }))
         .fallback_service(ServeDir::new(serve_dir.clone()))
+        .layer(RequestBodyLimitLayer::new(1024 * 1024))
         .layer(
             CorsLayer::new()
-                .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any),
+                .allow_origin([
+                    "http://localhost".parse().unwrap(),
+                    "http://127.0.0.1".parse().unwrap(),
+                    "tauri://localhost".parse().unwrap(),
+                ])
+                .allow_methods([
+                    axum::http::Method::GET,
+                    axum::http::Method::POST,
+                    axum::http::Method::HEAD,
+                ])
+                .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE]),
         )
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            pin_auth_middleware,
+        ))
         .layer(middleware::from_fn(move |req, next| {
             let dir = serve_dir.clone();
             ua_detect_middleware(req, next, dir)
@@ -127,6 +165,51 @@ pub async fn shutdown(state: &ServerState) -> Result<(), String> {
     }
     state.running.store(false, Ordering::SeqCst);
     Ok(())
+}
+
+/// PIN 鉴权中间件
+///
+/// 安全最佳实践：网络伺服必须携带 Authorization: Bearer <PIN> 才能访问。
+/// PIN 通过 Argon2id 散列存储（与管理员密码同等强度）。
+/// `ping` 端点（`/api/health`）豁免，用于局域网存活探测。
+async fn pin_auth_middleware(
+    AxumState(state): AxumState<ServerState>,
+    req: Request,
+    next: Next,
+) -> Response {
+    let path = req.uri().path().to_string();
+
+    // 健康检查端点豁免（仅返回 "ok"，无业务信息泄露）
+    if path == "/api/health" {
+        return next.run(req).await;
+    }
+
+    let stored_hash = state.pin_hash.read().clone();
+    let stored_hash = match stored_hash {
+        Some(h) => h,
+        None => {
+            // 安全最佳实践：未配置 PIN 时拒绝所有非健康检查访问
+            return (StatusCode::UNAUTHORIZED, "network serve PIN not configured").into_response();
+        }
+    };
+
+    let auth_header = req
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+
+    let token = auth_header.strip_prefix("Bearer ").unwrap_or("").trim();
+
+    if token.is_empty() {
+        return (StatusCode::UNAUTHORIZED, "missing bearer token").into_response();
+    }
+
+    if !verify_password(&stored_hash, token) {
+        return (StatusCode::UNAUTHORIZED, "invalid token").into_response();
+    }
+
+    next.run(req).await
 }
 
 /// User-Agent 检测中间件
