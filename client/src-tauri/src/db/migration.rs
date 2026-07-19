@@ -132,7 +132,8 @@ impl MigrationTrait for Migration {
                     .table(AutoEvaluationConfigs::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(AutoEvaluationConfigs::Id).big_integer().not_null().auto_increment().primary_key())
-                    .col(ColumnDef::new(AutoEvaluationConfigs::Name).string().not_null())
+            .col(ColumnDef::new(AutoEvaluationConfigs::PublicId).string().not_null().unique_key())
+            .col(ColumnDef::new(AutoEvaluationConfigs::Name).string().not_null())
                     .col(ColumnDef::new(AutoEvaluationConfigs::TriggerType).string().not_null())
                     .col(ColumnDef::new(AutoEvaluationConfigs::TriggerTime).string().null())
                     .col(ColumnDef::new(AutoEvaluationConfigs::DayOfWeek).integer().null())
@@ -176,6 +177,22 @@ impl MigrationTrait for Migration {
                 ))
                 .await;
         }
+
+        // 安全最佳实践：为 auto_evaluation_configs 补齐 public_id (UUID) 列
+        // 已存在行用占位 UUID 填充，等待应用层在下一次写入时覆盖。
+        let _ = conn
+            .execute(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                "ALTER TABLE auto_evaluation_configs ADD COLUMN public_id TEXT",
+            ))
+            .await;
+        // 把存量行填上占位 UUID（应用启动时 auto_score 模块的兼容层会回填正式 UUID）
+        let _ = conn
+            .execute(Statement::from_string(
+                DatabaseBackend::Sqlite,
+                "UPDATE auto_evaluation_configs SET public_id = lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random())%4+1,1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))) WHERE public_id IS NULL OR public_id = ''",
+            ))
+            .await;
 
         Ok(())
     }
@@ -274,6 +291,7 @@ enum SettlementRecords {
 enum AutoEvaluationConfigs {
     Table,
     Id,
+    PublicId,
     Name,
     TriggerType,
     TriggerTime,

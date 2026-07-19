@@ -1,10 +1,11 @@
 use crate::db::entities::auto_evaluation_config;
 use crate::state::AppState;
 use parking_lot::RwLock;
-use sea_orm::{ActiveModelTrait, EntityTrait, QueryOrder, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::State;
+use uuid::Uuid;
 
 use super::get_db;
 
@@ -46,6 +47,7 @@ pub async fn auto_score_add_rule(
     let db = get_db(&state)?;
 
     let rule = auto_evaluation_config::ActiveModel {
+        public_id: Set(Uuid::new_v4().to_string()),
         name: Set(input.name),
         trigger_type: Set(input.trigger_type),
         trigger_time: Set(input.trigger_time),
@@ -68,13 +70,15 @@ pub async fn auto_score_add_rule(
 #[tauri::command]
 pub async fn auto_score_update_rule(
     state: State<'_, Arc<RwLock<AppState>>>,
-    id: i64,
+    // 安全最佳实践：使用 public_id（UUID）作为外部 ID，避免暴露自增主键
+    public_id: String,
     input: AutoScoreRuleInput,
 ) -> Result<auto_evaluation_config::Model, String> {
     let db = get_db(&state)?;
 
     let existing: auto_evaluation_config::ActiveModel =
-        auto_evaluation_config::Entity::find_by_id(id)
+        auto_evaluation_config::Entity::find()
+            .filter(auto_evaluation_config::Column::PublicId.eq(&public_id))
             .one(&db)
             .await
             .map_err(|e| e.to_string())?
@@ -104,11 +108,13 @@ pub async fn auto_score_update_rule(
 #[tauri::command]
 pub async fn auto_score_delete_rule(
     state: State<'_, Arc<RwLock<AppState>>>,
-    id: i64,
+    // 安全最佳实践：使用 public_id（UUID）作为外部 ID
+    public_id: String,
 ) -> Result<(), String> {
     let db = get_db(&state)?;
 
-    auto_evaluation_config::Entity::delete_by_id(id)
+    auto_evaluation_config::Entity::delete_many()
+        .filter(auto_evaluation_config::Column::PublicId.eq(&public_id))
         .exec(&db)
         .await
         .map_err(|e| e.to_string())?;
@@ -119,13 +125,15 @@ pub async fn auto_score_delete_rule(
 #[tauri::command]
 pub async fn auto_score_toggle_rule(
     state: State<'_, Arc<RwLock<AppState>>>,
-    id: i64,
+    // 安全最佳实践：使用 public_id（UUID）作为外部 ID
+    public_id: String,
     is_enabled: bool,
 ) -> Result<auto_evaluation_config::Model, String> {
     let db = get_db(&state)?;
 
     let existing: auto_evaluation_config::ActiveModel =
-        auto_evaluation_config::Entity::find_by_id(id)
+        auto_evaluation_config::Entity::find()
+            .filter(auto_evaluation_config::Column::PublicId.eq(&public_id))
             .one(&db)
             .await
             .map_err(|e| e.to_string())?

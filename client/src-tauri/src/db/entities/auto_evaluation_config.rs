@@ -7,6 +7,10 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i64,
+    /// 安全最佳实践：外部 API 一律使用 public_id（UUID v4），不暴露自增 i64，
+    /// 避免攻击者从 ID 推算其他规则或系统规模。
+    #[sea_orm(unique)]
+    pub public_id: String,
     pub name: String,
     pub trigger_type: String,
     pub trigger_time: Option<String>,

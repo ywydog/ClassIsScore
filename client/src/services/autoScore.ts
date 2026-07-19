@@ -2,7 +2,9 @@ import { invoke } from './tauri'
 import type { AutoEvaluationConfig } from '@/types'
 
 interface RustAutoEval {
+  // 安全最佳实践：使用 UUID public_id 而非自增 id 作为外部标识
   id: number
+  public_id: string
   name: string
   trigger_type: string
   trigger_time: string | null
@@ -22,7 +24,8 @@ interface RustAutoEval {
 
 function toAutoEval(r: RustAutoEval): AutoEvaluationConfig {
   return {
-    id: String(r.id),
+    // 暴露给前端的 id 使用 public_id（UUID），后端数据库自增 id 不外泄
+    id: r.public_id,
     name: r.name,
     triggerType: r.trigger_type as AutoEvaluationConfig['triggerType'],
     triggerTime: r.trigger_time ?? '',
@@ -64,9 +67,10 @@ export const autoScoreApi = {
     return { data: { data: toAutoEval(result) } }
   },
 
+  // 安全最佳实践：使用 public_id（UUID 字符串）作为外部 ID
   async update(id: string, rule: Partial<AutoEvaluationConfig>) {
     const result = await invoke<RustAutoEval>('auto_score_update_rule', {
-      id: Number(id),
+      public_id: id,
       input: {
         name: rule.name ?? '',
         trigger_type: rule.triggerType ?? 'Daily',
@@ -85,12 +89,12 @@ export const autoScoreApi = {
   },
 
   async delete(id: string) {
-    await invoke('auto_score_delete_rule', { id: Number(id) })
+    await invoke('auto_score_delete_rule', { public_id: id })
     return { data: { data: undefined } }
   },
 
   async toggle(id: string, enabled: boolean) {
-    const result = await invoke<RustAutoEval>('auto_score_toggle_rule', { id: Number(id), is_enabled: enabled })
+    const result = await invoke<RustAutoEval>('auto_score_toggle_rule', { public_id: id, is_enabled: enabled })
     return { data: { data: toAutoEval(result) } }
   },
 }
