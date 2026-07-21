@@ -39,6 +39,10 @@ rand = "0.8"
 # 密码 hash（替代 SHA-256：使用 OWASP 推荐的 Argon2id，自带 salt 与 cost）
 argon2 = "0.5"
 
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
 # 桌面专属依赖
 [target.'cfg(not(target_os = "android"))'.dependencies]
 open = "5"

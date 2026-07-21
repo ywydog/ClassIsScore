@@ -7,6 +7,7 @@
 //! 安全最佳实践：网络伺服启动时从 admin_settings 读取预存的网络伺服 PIN（Argon2 散列），
 //! 所有访问者必须携带匹配的 Authorization: Bearer 头才能访问静态资源与 API。
 
+use crate::commands::auth_settings_keys::AdminSettingKey;
 use crate::db::entities::admin_settings;
 use crate::server::{self, ServerState};
 use parking_lot::RwLock;
@@ -82,7 +83,10 @@ pub async fn server_start(
                 .clone()
         };
         let pin_setting = admin_settings::Entity::find()
-            .filter(admin_settings::Column::SettingKey.eq("network_serve_pin"))
+            .filter(
+                admin_settings::Column::SettingKey
+                    .eq(AdminSettingKey::NetworkServePin.as_str()),
+            )
             .one(&db)
             .await
             .map_err(|e| e.to_string())?;

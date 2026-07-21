@@ -31,7 +31,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::services::ServeDir;
 
-use crate::commands::auth::verify_password;
+use crate::services::crypto::verify_password;
 
 /// 服务器运行状态
 #[derive(Clone)]
@@ -268,5 +268,147 @@ fn detect_mobile(ua: &str) -> bool {
     }
 
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::services::crypto::hash_password;
+    use axum::body::Body;
+    use axum::http::{Request as HttpRequest, StatusCode as AxumStatus};
+    use axum::middleware::from_fn_with_state;
+    use axum::routing::get;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    /// 用 middleware 包裹一个返回 200 的 dummy handler，
+    /// 通过 axum 真实管道发送请求，验证鉴权逻辑。
+    async fn build_test_router(state: ServerState) -> axum::Router {
+        axum::Router::new()
+            .route(
+                "/api/protected",
+                get(|| async { axum::Json(serde_json::json!({"ok": true})) }),
+            )
+            .route(
+                "/api/health",
+                get(|| async { "ok" }),
+            )
+            .route(
+                "/",
+                get(|| async { axum::Json(serde_json::json!({"root": true})) }),
+            )
+            .layer(from_fn_with_state(state.clone(), pin_auth_middleware))
+            .with_state(state)
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_does_not_require_token() {
+        let state = ServerState::new(); // no PIN configured
+        let app = build_test_router(state).await;
+
+        let req = HttpRequest::builder()
+            .uri("/api/health")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), AxumStatus::OK);
+    }
+
+    #[tokio::test]
+    async fn protected_endpoint_without_pin_returns_401() {
+        let state = ServerState::new(); // no PIN
+        let app = build_test_router(state).await;
+
+        let req = HttpRequest::builder()
+            .uri("/api/protected")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), AxumStatus::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn protected_endpoint_with_wrong_bearer_returns_401() {
+        let state = ServerState::new();
+        let hash = hash_password("correct-pin");
+        state.set_pin_hash(Some(hash));
+        let app = build_test_router(state).await;
+
+        let req = HttpRequest::builder()
+            .uri("/api/protected")
+            .header(header::AUTHORIZATION, "Bearer wrong-pin")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), AxumStatus::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn protected_endpoint_with_correct_bearer_returns_200() {
+        let state = ServerState::new();
+        let hash = hash_password("correct-pin");
+        state.set_pin_hash(Some(hash));
+        let app = build_test_router(state).await;
+
+        let req = HttpRequest::builder()
+            .uri("/api/protected")
+            .header(header::AUTHORIZATION, "Bearer correct-pin")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), AxumStatus::OK);
+
+        let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
+        let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+        assert_eq!(body, serde_json::json!({"ok": true}));
+    }
+
+    #[tokio::test]
+    async fn protected_endpoint_without_auth_header_returns_401() {
+        let state = ServerState::new();
+        let hash = hash_password("some-pin");
+        state.set_pin_hash(Some(hash));
+        let app = build_test_router(state).await;
+
+        let req = HttpRequest::builder()
+            .uri("/api/protected")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), AxumStatus::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn non_bearer_auth_scheme_returns_401() {
+        let state = ServerState::new();
+        let hash = hash_password("some-pin");
+        state.set_pin_hash(Some(hash));
+        let app = build_test_router(state).await;
+
+        // "Basic xxx" 不应被识别为 Bearer
+        let req = HttpRequest::builder()
+            .uri("/api/protected")
+            .header(header::AUTHORIZATION, "Basic dXNlcjpwYXNz")
+            .body(Body::empty())
+            .unwrap();
+        let resp = app.oneshot(req).await.unwrap();
+        assert_eq!(resp.status(), AxumStatus::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn ua_mobile_detection_basic() {
+        // iPhone / iPod / 显式含 "Mobile" → 移动端
+        assert!(detect_mobile(
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)"
+        ));
+        assert!(detect_mobile(
+            "Mozilla/5.0 (Linux; Android 10; Pixel 3 Build/QP1A.191005.007.A3; Mobile)"
+        ));
+        // Android 但不含 Mobile 标记 → 视为桌面端（与 SiYuan 的 serve.go 行为一致）
+        assert!(!detect_mobile(
+            "Mozilla/5.0 (Linux; Android 9; SM-T720)"
+        ));
+        assert!(!detect_mobile("Mozilla/5.0 (Windows NT 10.0)"));
+    }
 }
 

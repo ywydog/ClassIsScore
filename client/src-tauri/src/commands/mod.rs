@@ -6,6 +6,7 @@ pub mod leaderboard;
 pub mod settlement;
 pub mod settings;
 pub mod auth;
+pub mod auth_settings_keys;
 pub mod auto_score;
 pub mod log;
 pub mod app;
