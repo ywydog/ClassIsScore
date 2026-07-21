@@ -89,6 +89,10 @@ pub async fn score_add(
 
     let reason_text = input.reason.clone().unwrap_or_default();
 
+    // 安全最佳实践：积分记录与学生总分必须原子写入，
+    // 避免"积分记录存在但 total_score 未更新"的脏数据。
+    let txn = db.begin().await.map_err(|e| e.to_string())?;
+
     // 创建积分记录
     let record = score_record::ActiveModel {
         student_id: Set(input.student_id),
@@ -99,11 +103,11 @@ pub async fn score_add(
         ..Default::default()
     };
 
-    let result = record.insert(&db).await.map_err(|e| e.to_string())?;
+    let result = record.insert(&txn).await.map_err(|e| e.to_string())?;
 
     // 更新学生总分
     let student_model = student::Entity::find_by_id(input.student_id)
-        .one(&db)
+        .one(&txn)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "学生不存在".to_string())?;
@@ -114,9 +118,11 @@ pub async fn score_add(
     let new_score = current_score + input.score_change;
     active.total_score = Set(new_score);
     active.updated_at = Set(chrono::Local::now().naive_utc());
-    active.update(&db).await.map_err(|e| e.to_string())?;
+    active.update(&txn).await.map_err(|e| e.to_string())?;
 
-    // 发出积分更新事件
+    txn.commit().await.map_err(|e| e.to_string())?;
+
+    // 事务提交后发出积分更新事件
     emit_score_update(&state, input.student_id, student_name, input.score_change, new_score, reason_text);
 
     Ok(result)
@@ -186,8 +192,11 @@ pub async fn score_revert(
 ) -> Result<(), String> {
     let db = get_db(&state)?;
 
+    // 安全最佳实践：标记撤销 + 回退总分必须原子写入。
+    let txn = db.begin().await.map_err(|e| e.to_string())?;
+
     let record = score_record::Entity::find_by_id(id)
-        .one(&db)
+        .one(&txn)
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "积分记录不存在".to_string())?;
@@ -204,12 +213,13 @@ pub async fn score_revert(
     // 标记撤销
     let mut active: score_record::ActiveModel = record.into();
     active.reverted = Set(true);
-    active.update(&db).await.map_err(|e| e.to_string())?;
+    active.update(&txn).await.map_err(|e| e.to_string())?;
 
     // 回退学生总分
+    let mut emit_payload: Option<(String, i32, String)> = None;
     if let Some(student_model) =
         student::Entity::find_by_id(student_id)
-            .one(&db)
+            .one(&txn)
             .await
             .map_err(|e| e.to_string())?
     {
@@ -219,9 +229,15 @@ pub async fn score_revert(
         let new_score = current_score - score_change;
         student_active.total_score = Set(new_score);
         student_active.updated_at = Set(chrono::Local::now().naive_utc());
-        student_active.update(&db).await.map_err(|e| e.to_string())?;
+        student_active.update(&txn).await.map_err(|e| e.to_string())?;
 
-        // 发出积分更新事件
+        emit_payload = Some((student_name, new_score, reason_text));
+    }
+
+    txn.commit().await.map_err(|e| e.to_string())?;
+
+    // 事务提交后发出积分更新事件
+    if let Some((student_name, new_score, reason_text)) = emit_payload {
         emit_score_update(&state, student_id, student_name, -score_change, new_score, reason_text);
     }
 
